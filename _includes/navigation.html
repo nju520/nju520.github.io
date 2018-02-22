@@ -1,0 +1,17 @@
+<div class="nav">
+  <h3 class="nav-title">Home</h3>
+  <a href="#" class="nav-close">
+    <span class="hidden">Close</span>
+  </a>
+  <ul>
+    <li class="nav-home {% if page.current == 'home' %} nav-current{% endif %}" role="presentation"><a href="{{ site.baseurl }}">Home</a></li>
+    <!-- <li class="nav-about {% if page.current == 'about' %} nav-current{% endif %}" role="presentation"><a href="{{ site.baseurl }}about">About</a></li>
+    <li class="nav-author {% if page.current == 'author' %} nav-current{% endif %}" role="presentation"><a href="{{ site.baseurl }}author/casper">Author</a></li> -->
+    <li class="nav-ios {% if page.url contains 'iOS' %} nav-current{% endif %}" role="presentation"><a href="{{ site.baseurl }}tag/iOS">iOS</a></li>
+    <li class="nav-mvc {% if page.url contains 'MVC' %} nav-current{% endif %}" role="presentation"><a href="{{ site.baseurl }}tag/MVC">MVC</a></li>
+    <li class="nav-server {% if page.url contains 'server' %} nav-current{% endif %}" role="presentation"><a href="{{ site.baseurl }}tag/server">Server</a></li>
+    <li class="nav-ruby {% if page.url contains 'ruby' %} nav-current{% endif %}" role="presentation"><a href="{{ site.baseurl }}tag/ruby">Ruby</a></li>
+  </ul>
+  <a class="subscribe-button icon-feed" href="{{ site.baseurl }}feed.xml">Subscribe</a>
+</div>
+<span class="nav-cover"></span>

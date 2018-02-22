@@ -1,0 +1,38 @@
+<link rel="canonical" href="{{ site.baseurl }}" />
+<meta name="referrer" content="origin" />
+<link rel="next" href="{{ site.baseurl }}page2/" />
+
+<meta property="og:site_name" content="{{ site.name }}" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="{{ page.title }}" />
+{% if page.desc %}
+<meta property="og:description" content="{{ page.desc }}" />
+{% else %}
+<meta property="og:description" content="{{ page.description }}" />
+{% endif %}
+<meta property="og:url" content="{{ site.url }}{{ page.permalink }}" />
+<meta property="og:image" content="{{ page.cover }}" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="{{ page.title }}" />
+{% if page.desc %}
+<meta name="twitter:description" content="{{ page.desc }}" />
+{% else %}
+<meta name="twitter:description" content="{{ page.description }}" />
+{% endif %}
+<meta name="twitter:url" content="{{ site.url }}{{ page.permalink }}" />
+<meta name="twitter:image:src" content="{{ page.cover }}" />
+
+<script type="application/ld+json">
+  {
+  "@context": "http://schema.org",
+  "@type": "Website",
+  "publisher": "nju520",
+  "url": "{{ site.url }}{{ page.permalink }}",
+  "image": "{{ page.cover }}",
+  "description": "{{ page.desc }}"
+  }
+</script>
+
+<meta name="generator" content="Jekyll 3.0.0" />
+<link rel="alternate" type="application/rss+xml" title="{{ site.name }}" href="{{ site.baseurl }}feed.xml" />

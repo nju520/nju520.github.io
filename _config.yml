@@ -1,0 +1,72 @@
+# Jykell configuration
+# highlighter: pygments
+markdown: kramdown
+kramdown:
+  syntax_highlighter_opts:
+    disable : true
+  auto_ids: true
+  input: GFM
+  toc_levels: 1..2
+
+highlighter: none
+paginate: 15
+language: 'en-uk'
+host_url: 'https://nju520.me'
+
+# Website info
+name: '雄关漫道真如铁'
+description: "nju520's Blog"
+
+# Author's info
+author: 'nju520'
+# edit 'categories' in the front matter of every post to match this username
+nickname: nju520
+bio: 'Ruby / JS / Go'
+location: 'Hangzhou, China'
+url: 'https://nju520.me'
+img_url: 'https://img.nju520.me'
+image: 'assets/images/draven.png'
+
+short_url: 'nju520.me'
+google_analytics: UA-56898419-1
+disqus: nju520
+# edit baseurl to simply '/' if using as your personal page (instead of a project page)
+baseurl: /
+
+# Permalinks
+# permalink: /:title
+permalink: pretty
+# permalink: /tag/:tag
+
+# gems and other configs
+plugins:
+  - jekyll-paginate
+  - jekyll-redirect-from
+  - jekyll-toc
+whitelist:
+  - jekyll-redirect-from
+
+exclude: [vendor]
+
+sass:
+  style: compressed
+
+safe: false
+lsi: false
+username: nju520
+repo: jekyll-blog
+branch: master
+# relative_source: ../jasper/
+# destination: ../jasper-pages/
+production_url:  https://biomadeira.github.io/jasper/
+source_url:      https://github.com/biomadeira/jasper/
+
+exclude:
+  - README.md
+  - Rakefile
+  - Gemfile
+  - Gemfile.lock
+  - changelog.md
+  - "*.Rmd"
+  - vendor
+  - .travis.yml
