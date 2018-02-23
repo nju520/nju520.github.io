@@ -1,0 +1,447 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    
+    <title>nju520.me</title>
+    
+    <link>http://localhost:4000</link>
+    <description>nju520's Blog</description>
+    <language>en-uk</language>
+    <managingEditor> nju520</managingEditor>
+    <atom:link href="rss" rel="self" type="application/rss+xml" />
+    
+<item>
+  <title>如何优雅地使用 KVO</title>
+  <link>//kvocontroller</link>
+  <author>nju520</author>
+  <pubDate>2017-03-06T00:34:44+08:00</pubDate>
+  <guid>//kvocontroller</guid>
+  <description><![CDATA[
+  <p>KVO 作为 iOS 中一种强大并且有效的机制，为 iOS 开发者们提供了很多的便利；我们可以使用 KVO 来检测对象属性的变化、快速做出响应，这能够为我们在开发强交互、响应式应用以及实现视图和模型的双向绑定时提供大量的帮助。</p>
+
+<p>但是在大多数情况下，除非遇到不用 KVO 无法解决的问题，笔者都会尽量避免它的使用，这并不是因为 KVO 有性能问题或者使用场景不多，总重要的原因是 KVO 的使用是在是太 ** <strong>麻烦</strong>了。</p>
+
+<p><img src="https://img.nju520.me/2017-03-06-trouble.jpg-1000width" alt="trouble" /></p>
+
+<p>使用 KVO 时，既需要进行<strong>注册成为某个对象属性的观察者</strong>，还要在合适的时间点将自己<strong>移除</strong>，再加上需要<strong>覆写一个又臭又长的方法</strong>，并在方法里<strong>判断这次是不是自己要观测的属性发生了变化</strong>，每次想用 KVO 解决一些问题的时候，作者的第一反应就是头疼，这篇文章会为各位为 KVO 所苦的开发者提供一种更优雅的解决方案。</p>
+
+<h2 id="使用-kvo">使用 KVO</h2>
+
+<p>不过在介绍如何优雅地使用 KVO 之前，我们先来回忆一下，在通常情况下，我们是如何使用 KVO 进行键值观测的。</p>
+
+<p>首先，我们有一个 <code>Fizz</code> 类，其中包含一个 <code>number</code> 属性，它在初始化时会自动被赋值为 <code>@0</code>：</p>
+
+<pre><code class="language-objectivec">// Fizz.h
+@interface Fizz : NSObject
+
+@property (nonatomic, strong) NSNumber *number;
+
+@end
+
+// Fizz.m
+@implementation Fizz
+
+- (instancetype)init {
+    if (self = [super init]) {
+        _number = @0;
+    }
+    return self;
+}
+
+@end
+</code></pre>
+
+<p>我们想在 <code>Fizz</code> 对象中的 <code>number</code> 对象发生改变时获得通知得到<strong>新</strong>的和<strong>旧</strong>的值，这时我们就要祭出 <code>-addObserver:forKeyPath:options:context</code> 方法来监控 <code>number</code> 属性的变化：</p>
+
+<pre><code class="language-objectivec">Fizz *fizz = [[Fizz alloc] init];
+[fizz addObserver:self
+       forKeyPath:@"number"
+          options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld
+          context:nil];
+fizz.number = @2;
+</code></pre>
+
+<p>在将当前对象 <code>self </code>注册成为 <code>fizz</code> 的观察者之后，我们需要在当前对象中覆写 <code>-observeValueForKeyPath:ofObject:change:context:</code> 方法：</p>
+
+<pre><code class="language-objectivec">- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary&lt;NSKeyValueChangeKey,id&gt; *)change context:(void *)context {
+    if ([keyPath isEqualToString:@"number"]) {
+        NSLog(@"%@", change);
+    }
+}
+</code></pre>
+
+<p>在大多数情况下我们只需要对比 <code>keyPath</code> 的值，就可以知道我们到底监控的是哪个对象，但是在更复杂的业务场景下，使用 <code>context</code> 上下文以及其它辅助手段才能够帮助我们更加精准地确定被观测的对象。</p>
+
+<p>但是当上述代码运行时，虽然可以成功打印出 <code>change</code> 字典，但是却会发生崩溃，你会在控制台中看到下面的内容：</p>
+
+<pre><code class="language-objectivec">2017-02-26 23:44:19.666 KVOTest[15888:513229] {
+    kind = 1;
+    new = 2;
+    old = 0;
+}
+2017-02-26 23:44:19.720 KVOTest[15888:513229] *** Terminating app due to uncaught exception 'NSInternalInconsistencyException', reason: 'An instance 0x60800001dd20 of class Fizz was deallocated while key value observers were still registered with it. Current observation info: &lt;NSKeyValueObservationInfo 0x60800003d320&gt; (
+&lt;NSKeyValueObservance 0x608000057310: Observer: 0x7fa098f07590, Key path: number, Options: &lt;New: YES, Old: YES, Prior: NO&gt; Context: 0x0, Property: 0x608000057400&gt;
+)'
+</code></pre>
+
+<p>这是因为 <code>fizz</code> 对象没有被其它对象引用，在脱离 <code>viewDidLoad</code> 作用于之后就被回收了，然而在 <code>-dealloc</code> 时，并没有移除观察者，所以会造成崩溃。</p>
+
+<p>我们可以使用下面的代码来验证上面的结论是否正确：</p>
+
+<pre><code class="language-objectivec">// Fizz.h
+@interface Fizz : NSObject
+
+@property (nonatomic, strong) NSNumber *number;
+@property (nonatomic, weak) NSObject *observer;
+
+@end
+
+// Fizz.m
+@implementation Fizz
+
+- (instancetype)init {
+    if (self = [super init]) {
+        _number = @0;
+    }
+    return self;
+}
+
+- (void)dealloc {
+    [self removeObserver:self.observer forKeyPath:@"number"];
+}
+
+@end
+</code></pre>
+
+<p>在 <code>Fizz</code> 类的接口中添加一个 <code>observer</code> 弱引用来持有对象的观察者，并在对象 <code>-dealloc</code> 时将它移除，重新运行这段代码，就不会发生崩溃了。</p>
+
+<p><img src="https://img.nju520.me/2017-03-06-not-crash-with-remove-observer-when-dealloc.png-1000width" alt="not-crash-with-remove-observer-when-deallo" /></p>
+
+<p>由于没有移除观察者导致崩溃使用 KVO 时经常会遇到的问题之一，解决办法其实有很多，我们在这里简单介绍一个，使用当前对象持有被观测的对象，并在当前对象 <code>-dealloc</code> 时，移除观察者：</p>
+
+<pre><code class="language-objectivec">- (void)viewDidLoad {
+    [super viewDidLoad];
+    self.fizz = [[Fizz alloc] init];
+    [self.fizz addObserver:self
+                forKeyPath:@"number"
+                   options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld
+                   context:nil];
+    self.fizz.number = @2;
+}
+
+- (void)dealloc {
+    [self.fizz removeObserver:self forKeyPath:@"number"];
+}
+</code></pre>
+
+<p>这也是我们经常使用来避免崩溃的办法，但是在笔者看来也是非常的不优雅，除了上述的崩溃问题，使用 KVO 的过程也非常的别扭和痛苦：</p>
+
+<ol>
+  <li>需要手动<strong>移除观察者</strong>，且移除观察者的<strong>时机必须合适</strong>；</li>
+  <li>注册观察者的代码和事件发生处的代码上下文不同，<strong>传递上下文</strong>是通过 <code>void *</code> 指针；</li>
+  <li>需要覆写 <code>-observeValueForKeyPath:ofObject:change:context:</code> 方法，比较麻烦；</li>
+  <li>在复杂的业务逻辑中，准确判断被观察者相对比较麻烦，有多个被观测的对象和属性时，需要在方法中写大量的 <code>if</code> 进行判断；</li>
+</ol>
+
+<p>虽然上述几个问题并不影响 KVO 的使用，不过这也足够成为笔者尽量不使用 KVO 的理由了。</p>
+
+<h2 id="优雅地使用-kvo">优雅地使用 KVO</h2>
+
+<p>如何优雅地解决上一节提出的几个问题呢？我们在这里只需要使用 Facebook 开源的 <a href="https://github.com/facebook/KVOController">KVOController</a> 框架就可以优雅地解决这些问题了。</p>
+
+<p>如果想要实现同样的业务需求，当使用 KVOController 解决上述问题时，只需要以下代码就可以达到与上一节中<strong>完全相同</strong>的效果：</p>
+
+<pre><code class="language-objectivec">[self.KVOController observe:self.fizz
+                    keyPath:@"number"
+                    options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld
+                      block:^(id  _Nullable observer, id  _Nonnull object, NSDictionary&lt;NSString    *,id&gt; * _Nonnull change) {
+                          NSLog(@"%@", change);
+                      }];
+</code></pre>
+
+<p>我们可以在任意对象上<strong>获得</strong> <code>KVOController</code> 对象，然后调用它的实例方法 <code>-observer:keyPath:options:block:</code> 就可以检测某个对象对应的属性了，该方法传入的参数还是非常容易理解的，在 block 中也可以获得所有与 KVO 有关的参数。</p>
+
+<p>使用 KVOController 进行键值观测可以说完美地解决了在使用原生 KVO 时遇到的各种问题。</p>
+
+<ol>
+  <li>不需要手动移除观察者；</li>
+  <li>实现 KVO 与事件发生处的代码上下文相同，不需要跨方法传参数；</li>
+  <li>使用 block 来替代方法能够减少使用的复杂度，提升使用 KVO 的体验；</li>
+  <li>每一个 <code>keyPath</code> 会对应一个属性，不需要在 block 中使用 <code>if</code> 判断 <code>keyPath</code>；</li>
+</ol>
+
+<h2 id="kvocontroller-的实现">KVOController 的实现</h2>
+
+<p>KVOController 其实是对 Cocoa 中 KVO 的封装，它的实现其实也很简单，整个框架中只有两个实现文件，先来简要看一下 KVOController 如何为所有的 <code>NSObject</code> 对象都提供 <code>-KVOController</code> 属性的吧。</p>
+
+<h3 id="分类和-kvocontroller-的初始化">分类和 KVOController 的初始化</h3>
+
+<p>KVOController 不止为 Cocoa Touch 中所有的对象提供了 <code>-KVOController</code> 属性还提供了另一个 <code>KVOControllerNonRetaining</code> 属性，实现方法就是分类和 ObjC Runtime。</p>
+
+<pre><code class="language-objectivec">@interface NSObject (FBKVOController)
+
+@property (nonatomic, strong) FBKVOController *KVOController;
+@property (nonatomic, strong) FBKVOController *KVOControllerNonRetaining;
+
+@end
+</code></pre>
+
+<p>从名字可以看出 <code>KVOControllerNonRetaining</code> 在使用时并不会<strong>持有</strong>被观察的对象，与它相比 <code>KVOController</code> 就会持有该对象了。</p>
+
+<p>对于 <code>KVOController</code> 和 <code>KVOControllerNonRetaining</code> 属性来说，其实现都非常简单，对运行时非常熟悉的读者都应该知道使用关联对象就可以轻松实现这一需求。</p>
+
+<pre><code class="language-objectivec">- (FBKVOController *)KVOController {
+  id controller = objc_getAssociatedObject(self, NSObjectKVOControllerKey);
+  if (nil == controller) {
+    controller = [FBKVOController controllerWithObserver:self];
+    self.KVOController = controller;
+  }
+  return controller;
+}
+
+- (void)setKVOController:(FBKVOController *)KVOController {
+  objc_setAssociatedObject(self, NSObjectKVOControllerKey, KVOController, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (FBKVOController *)KVOControllerNonRetaining {
+  id controller = objc_getAssociatedObject(self, NSObjectKVOControllerNonRetainingKey);
+  if (nil == controller) {
+    controller = [[FBKVOController alloc] initWithObserver:self retainObserved:NO];
+    self.KVOControllerNonRetaining = controller;
+  }
+  return controller;
+}
+
+- (void)setKVOControllerNonRetaining:(FBKVOController *)KVOControllerNonRetaining {
+  objc_setAssociatedObject(self, NSObjectKVOControllerNonRetainingKey, KVOControllerNonRetaining, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+</code></pre>
+
+<p>两者的 <code>setter</code> 方法都只是使用 <code>objc_setAssociatedObject</code> 按照键值简单地存一下，而 <code>getter</code> 中不同的其实也就是对于 <code>FBKVOController</code> 的初始化了。</p>
+
+<p><img src="https://img.nju520.me/2017-03-06-easy.jpg-1000width" alt="easy" /></p>
+
+<p>到这里这个整个 FBKVOController 框架中的两个实现文件中的一个就介绍完了，接下来要看一下其中的另一个文件中的类 <code>KVOController</code>。</p>
+
+<h4 id="kvocontroller-的初始化">KVOController 的初始化</h4>
+
+<p><code>KVOController</code> 是整个框架中提供 KVO 接口的类，作为 KVO 的管理者，其必须持有当前对象所有与 KVO 有关的信息，而在 <code>KVOController</code> 中，用于存储这个信息的数据结构就是 <code>NSMapTable</code>。</p>
+
+<p><img src="https://img.nju520.me/2017-03-06-KVOController.png-1000width" alt="KVOControlle" /></p>
+
+<p>为了使 <code>KVOController</code> 达到线程安全，它还必须持有一把 <code>pthread_mutex_t</code> 锁，用于在操作 <code>_objectInfosMap</code> 时使用。</p>
+
+<p>再回到上一节提到的初始化问题，<code>NSObject</code> 的属性 <code>FBKVOController</code> 和 <code>KVOControllerNonRetaining</code> 的区别在于前者会持有观察者，使其引用计数加一。</p>
+
+<pre><code class="language-objectivec">- (instancetype)initWithObserver:(nullable id)observer retainObserved:(BOOL)retainObserved {
+  self = [super init];
+  if (nil != self) {
+    _observer = observer;
+    NSPointerFunctionsOptions keyOptions = retainObserved ? NSPointerFunctionsStrongMemory|NSPointerFunctionsObjectPointerPersonality : NSPointerFunctionsWeakMemory|NSPointerFunctionsObjectPointerPersonality;
+    _objectInfosMap = [[NSMapTable alloc] initWithKeyOptions:keyOptions valueOptions:NSPointerFunctionsStrongMemory|NSPointerFunctionsObjectPersonality capacity:0];
+    pthread_mutex_init(&amp;_lock, NULL);
+  }
+  return self;
+}
+</code></pre>
+
+<p>在初始化方法中使用各自的方法对 <code>KVOController</code> 对象持有的所有实例变量进行初始化，<code>KVOController</code> 和 <code>KVOControllerNonRetaining</code> 的区别就体现在生成的 <code>NSMapTable</code> 实例时传入的是 <code>NSPointerFunctionsStrongMemory</code> 还是 <code>NSPointerFunctionsWeakMemory</code> 选项。</p>
+
+<h3 id="kvo-的过程">KVO 的过程</h3>
+
+<p>使用 <code>KVOController</code> 实现键值观测时，大都会调用实例方法 <code>-observe:keyPath:options:block</code> 来注册成为某个对象的观察者，监控属性的变化：</p>
+
+<pre><code class="language-objectivec">- (void)observe:(nullable id)object keyPath:(NSString *)keyPath options:(NSKeyValueObservingOptions)options block:(FBKVONotificationBlock)block {
+  _FBKVOInfo *info = [[_FBKVOInfo alloc] initWithController:self keyPath:keyPath options:options block:block];
+
+  [self _observe:object info:info];
+}
+</code></pre>
+
+<h4 id="数据结构-_fbkvoinfo">数据结构 _FBKVOInfo</h4>
+
+<p>这个方法中就涉及到另外一个私有的数据结构 <code>_FBKVOInfo</code>，这个类中包含着所有与 KVO 有关的信息：</p>
+
+<p><img src="https://img.nju520.me/2017-03-06-_FBKVOInfo.png-1000width" alt="_FBKVOInfo" /></p>
+
+<p><code>_FBKVOInfo</code> 在 <code>KVOController</code> 中充当的作用仅仅是一个数据结构，我们主要用它来存储整个 KVO 过程中所需要的全部信息，其内部没有任何值得一看的代码，需要注意的是，<code>_FBKVOInfo</code> 覆写了 <code>-isEqual:</code> 方法用于对象之间的判等以及方便 <code>NSMapTable</code> 的存储。</p>
+
+<p>如果再有点别的什么特别作用的就是，其中的 <code>state</code> 表示当前的 KVO 状态，不过在本文中不会具体介绍。</p>
+
+<pre><code class="language-objectivec">typedef NS_ENUM(uint8_t, _FBKVOInfoState) {
+  _FBKVOInfoStateInitial = 0,
+  _FBKVOInfoStateObserving,
+  _FBKVOInfoStateNotObserving,
+};
+</code></pre>
+
+<h4 id="observe-的过程">observe 的过程</h4>
+
+<p>在使用 <code>-observer:keyPath:options:block:</code> 监听某一个对象属性的变化时，该过程的核心调用栈其实还是比较简单：</p>
+
+<p><img src="https://img.nju520.me/2017-03-06-KVOController-Observe-Stack.png-1000width" alt="KVOController-Observe-Stack" /></p>
+
+<p>我们从栈底开始简单分析一下整个封装 KVO 的过程，其中栈底的方法，也就是我们上面提到的 <code>-observer:keyPath:options:block:</code> 初始化了一个名为 <code>_FBKVOInfo</code> 的对象：</p>
+
+<pre><code class="language-objectivec">- (void)observe:(nullable id)object keyPath:(NSString *)keyPath options:(NSKeyValueObservingOptions)options block:(FBKVONotificationBlock)block {
+  _FBKVOInfo *info = [[_FBKVOInfo alloc] initWithController:self keyPath:keyPath options:options block:block];
+  [self _observe:object info:info];
+}
+</code></pre>
+
+<p>在创建了 <code>_FBKVOInfo</code> 之后执行了另一个私有方法 <code>-_observe:info:</code>：</p>
+
+<pre><code class="language-objectivec">- (void)_observe:(id)object info:(_FBKVOInfo *)info {
+  pthread_mutex_lock(&amp;_lock);
+  NSMutableSet *infos = [_objectInfosMap objectForKey:object];
+
+  _FBKVOInfo *existingInfo = [infos member:info];
+  if (nil != existingInfo) {
+    pthread_mutex_unlock(&amp;_lock);
+    return;
+  }
+
+  if (nil == infos) {
+    infos = [NSMutableSet set];
+    [_objectInfosMap setObject:infos forKey:object];
+  }
+  [infos addObject:info];
+  pthread_mutex_unlock(&amp;_lock);
+
+  [[_FBKVOSharedController sharedController] observe:object info:info];
+}
+</code></pre>
+
+<p>这个私有方法通过自身持有的 <code>_objectInfosMap</code> 来判断当前对象、属性以及各种上下文是否已经注册在表中存在了，在这个 <code>_objectInfosMap</code> 中保存着对象以及与对象有关的 <code>_FBKVOInfo</code> 集合：</p>
+
+<p><img src="https://img.nju520.me/2017-03-06-objectInfosMap.png-1000width" alt="objectInfosMap" /></p>
+
+<p>在操作了当前 <code>KVOController</code> 持有的 <code>_objectInfosMap</code> 之后，才会执行私有的 <code>_FBKVOSharedController</code> 类的实例方法 <code>-observe:info:</code>：</p>
+
+<pre><code class="language-objectivec">- (void)observe:(id)object info:(nullable _FBKVOInfo *)info {
+  pthread_mutex_lock(&amp;_mutex);
+  [_infos addObject:info];
+  pthread_mutex_unlock(&amp;_mutex);
+
+  [object addObserver:self forKeyPath:info-&gt;_keyPath options:info-&gt;_options context:(void *)info];
+
+  if (info-&gt;_state == _FBKVOInfoStateInitial) {
+    info-&gt;_state = _FBKVOInfoStateObserving;
+  } else if (info-&gt;_state == _FBKVOInfoStateNotObserving) {
+    [object removeObserver:self forKeyPath:info-&gt;_keyPath context:(void *)info];
+  }
+}
+</code></pre>
+
+<p><code>_FBKVOSharedController</code> 才是最终调用 Cocoa 中的 <code>-observe:forKeyPath:options:context:</code> 方法开始对属性的监听的地方；同时，在整个应用运行时，只会存在一个 <code>_FBKVOSharedController</code> 实例：</p>
+
+<pre><code class="language-objectivec">+ (instancetype)sharedController {
+  static _FBKVOSharedController *_controller = nil;
+  static dispatch_once_t onceToken;
+  dispatch_once(&amp;onceToken, ^{
+    _controller = [[_FBKVOSharedController alloc] init];
+  });
+  return _controller;
+}
+</code></pre>
+
+<p>这个唯一的 <code>_FBKVOSharedController</code> 实例会在 KVO 的回调方法中将事件分发给 KVO 的观察者。</p>
+
+<pre><code class="language-objectivec">- (void)observeValueForKeyPath:(nullable NSString *)keyPath
+                      ofObject:(nullable id)object
+                        change:(nullable NSDictionary&lt;NSString *, id&gt; *)change
+                       context:(nullable void *)context {
+    _FBKVOInfo *info;
+    pthread_mutex_lock(&amp;_mutex);
+    info = [_infos member:(__bridge id)context];
+    pthread_mutex_unlock(&amp;_mutex);
+
+    FBKVOController *controller = info-&gt;_controller;
+    id observer = controller.observer;
+
+    if (info-&gt;_block) {
+        NSDictionary&lt;NSString *, id&gt; *changeWithKeyPath = change;
+        if (keyPath) {
+            NSMutableDictionary&lt;NSString *, id&gt; *mChange = [NSMutableDictionary dictionaryWithObject:keyPath forKey:FBKVONotificationKeyPathKey];
+            [mChange addEntriesFromDictionary:change];
+            changeWithKeyPath = [mChange copy];
+        }
+        info-&gt;_block(observer, object, changeWithKeyPath);
+    } else if (info-&gt;_action) {
+        [observer performSelector:info-&gt;_action withObject:change withObject:object];
+    } else {
+        [observer observeValueForKeyPath:keyPath ofObject:object change:change context:info-&gt;_context];
+    }
+}
+</code></pre>
+
+<p>在这个 <code>-observeValueForKeyPath:ofObject:change:context:</code> 回调方法中，<code>_FBKVOSharedController</code> 会根据 KVO 的信息 <code>_KVOInfo</code> 选择不同的方式分发事件，如果观察者没有传入 block 或者选择子，就会调用观察者 KVO 回调方法。</p>
+
+<p><img src="https://img.nju520.me/2017-03-06-KVOSharedController.png-1000width" alt="KVOSharedControlle" /></p>
+
+<p>上图就是在使用 KVOController 时，如果一个 KVO 事件触发之后，整个框架是如何对这个事件进行处理以及回调的。</p>
+
+<h3 id="如何-removeobserver">如何 removeObserver</h3>
+
+<p>在使用 KVOController 时，我们并不需要手动去处理 KVO 观察者的移除，因为所有的 KVO 事件都由私有的 <code>_KVOSharedController</code> 来处理；</p>
+
+<p><img src="https://img.nju520.me/2017-03-06-KVOController-Unobserve-Stack.png-1000width" alt="KVOController-Unobserve-Stack" /></p>
+
+<p>当每一个 <code>KVOController</code> 对象被释放时，都会将它自己持有的所有 KVO 的观察者交由 <code>_KVOSharedController</code> 的 <code>-unobserve:infos:</code> 方法处理：</p>
+
+<pre><code class="language-objectivec">- (void)unobserve:(id)object infos:(nullable NSSet&lt;_FBKVOInfo *&gt; *)infos {
+  pthread_mutex_lock(&amp;_mutex);
+  for (_FBKVOInfo *info in infos) {
+    [_infos removeObject:info];
+  }
+  pthread_mutex_unlock(&amp;_mutex);
+
+  for (_FBKVOInfo *info in infos) {
+    if (info-&gt;_state == _FBKVOInfoStateObserving) {
+      [object removeObserver:self forKeyPath:info-&gt;_keyPath context:(void *)info];
+    }
+    info-&gt;_state = _FBKVOInfoStateNotObserving;
+  }
+}
+</code></pre>
+
+<p>该方法会遍历所有传入的 <code>_FBKVOInfo</code>，从其中取出 <code>keyPath</code> 并将 <code>_KVOSharedController</code> 移除观察者。</p>
+
+<p>除了在 <code>KVOController</code> 析构时会自动移除观察者，我们也可以通过它的实例方法 <code>-unobserve:keyPath:</code> 操作达到相同的效果；不过在调用这个方法时，我们能够得到一个不同的调用栈：</p>
+
+<p><img src="https://img.nju520.me/2017-03-06-KVOController-Unobserve-Object-Stack.png-1000width" alt="KVOController-Unobserve-Object-Stack" /></p>
+
+<p>功能的实现过程其实都是类似的，都是通过 <code>-removeObserver:forKeyPath:context:</code> 方法移除观察者：</p>
+
+<pre><code class="language-objectivec">- (void)unobserve:(id)object info:(nullable _FBKVOInfo *)info {
+  pthread_mutex_lock(&amp;_mutex);
+  [_infos removeObject:info];
+  pthread_mutex_unlock(&amp;_mutex);
+
+  if (info-&gt;_state == _FBKVOInfoStateObserving) {
+    [object removeObserver:self forKeyPath:info-&gt;_keyPath context:(void *)info];
+  }
+  info-&gt;_state = _FBKVOInfoStateNotObserving;
+}
+</code></pre>
+
+<p>不过由于这个方法的参数并不是一个数组，所以并不需要使用 <code>for</code> 循环，而是只需要将该 <code>_FBKVOInfo</code> 对应的 KVO 事件移除就可以了。</p>
+
+<h2 id="总结">总结</h2>
+
+<p>KVOController 对于 Cocoa 中 KVO 的封装非常的简洁和优秀，我们只需要调用一个方法就可以完成一个对象的键值观测，同时不需要处理移除观察者等问题，能够降低我们出错的可能性。</p>
+
+<p>在笔者看来 KVOController 中唯一不是很优雅的地方就是，需要写出 <code>object.KVOController</code> 才可以执行 KVO，如果能将 <code>KVOController</code> 换成更短的形式可能看起来更舒服一些：</p>
+
+<pre><code class="language-objectivec">[self.kvo observer:keyPath:options:block:];
+</code></pre>
+
+<p>不过这并不是一个比较大的问题，同时也只是笔者自己的看法，况且不影响 KVOController 的使用，所以各位读者也无须太过介意。</p>
+
+  ]]></description>
+</item>
+
+
+  </channel>
+</rss>

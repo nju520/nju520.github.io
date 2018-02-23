@@ -1,0 +1,3355 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    
+    <title>nju520.me</title>
+    
+    <link>http://localhost:4000</link>
+    <description>nju520's Blog</description>
+    <language>en-uk</language>
+    <managingEditor> nju520</managingEditor>
+    <atom:link href="rss" rel="self" type="application/rss+xml" />
+    
+<item>
+  <title>谈谈 Rack 的协议与实现</title>
+  <link>//rack</link>
+  <author>nju520</author>
+  <pubDate>2017-10-29T00:00:00+08:00</pubDate>
+  <guid>//rack</guid>
+  <description><![CDATA[
+  <ul>
+  <li><a href="https://nju520.me/rack">谈谈 Rack 协议与实现</a></li>
+  <li><a href="https://nju520.me/rack-webrick">浅谈 WEBrick 的多线程模型</a></li>
+  <li><a href="https://nju520.me/rack-thin">浅谈 Thin 的事件驱动模型</a></li>
+  <li><a href="https://nju520.me/rack-unicorn">浅谈 Unicorn 的多进程模型</a></li>
+  <li><a href="https://nju520.me/rack-puma">浅谈 Puma 的并发模型与实现</a></li>
+  <li><a href="https://nju520.me/ruby-webserver">Ruby Web 服务器的并发模型与性能</a></li>
+</ul>
+
+<p>作为 Rails 开发者，基本上每天都与 Rails 的各种 API 以及数据库打交道，Rails 的世界虽然非常简洁，不过其内部的实现还是很复杂的，很多刚刚接触 Rails 的开发者可能都不知道 Rails 其实就是一个 <a href="https://github.com/rack/rack">Rack</a> 应用，在这一系列的文章中，我们会分别介绍 Rack 以及一些常见的遵循 Rack 协议的 webserver 的实现原理。</p>
+
+<p><img src="https://img.nju520.me/2017-10-29-rack-logo.png" alt="rack-logo" /></p>
+
+<p>不只是 Rails，几乎所有的 Ruby 的 Web 框架都是一个 Rack 的应用，除了 Web 框架之外，Rack 也支持相当多的 Web 服务器，可以说 Ruby 世界几乎一切与 Web 相关的服务都与 Rack 有关。</p>
+
+<p><img src="https://img.nju520.me/2017-10-29-rack-and-web-servers-frameworks.png" alt="rack-and-web-servers-frameworks" /></p>
+
+<p>所以如果想要了解 Rails 或者其他 Web 服务底层的实现，那么一定需要了解 Rack 是如何成为应用容器（webserver）和应用框架之间的桥梁的，本文中介绍的是 2.0.3 版本的 rack。</p>
+
+<h2 id="rack-协议">Rack 协议</h2>
+
+<p>在 Rack 的协议中，将 Rack 应用描述成一个可以响应 <code>call</code> 方法的 Ruby 对象，它仅接受来自外界的一个参数，也就是环境，然后返回一个只包含三个值的数组，按照顺序分别是状态码、HTTP Headers 以及响应请求的正文。</p>
+
+<blockquote>
+  <p>A Rack application is a Ruby object (not a class) that responds to call. It takes exactly one argument, the environment and returns an Array of exactly three values: The status, the headers, and the body.</p>
+</blockquote>
+
+<p><img src="https://img.nju520.me/2017-10-29-rack-protocol.png" alt="rack-protoco" /></p>
+
+<p>Rack 在 webserver 和应用框架之间提供了一套最小的 API 接口，如果 webserver 都遵循 Rack 提供的这套规则，那么所有的框架都能通过协议任意地改变底层使用 webserver；所有的 webserver 只需要在 <code>Rack::Handler</code> 的模块中创建一个实现了 <code>.run</code> 方法的类就可以了：</p>
+
+<pre><code class="language-ruby">module Rack
+  module Handler
+    class WEBrick &lt; ::WEBrick::HTTPServlet::AbstractServlet
+      def self.run(app, options={})
+        # ..
+      end
+    end
+  end
+end
+</code></pre>
+
+<p>这个类方法接受两个参数，分别是一个 Rack 应用对象和一个包含各种参数的 <code>options</code> 字典，其中可能包括自定义的 ip 地址和端口号以及各种配置，根据 Rack 协议，所有应用对象在接受到一个 <code>#call</code> 方法并且传入 <code>env</code> 时，都会返回一个三元组：</p>
+
+<p><img src="https://img.nju520.me/2017-10-29-rack-app.png" alt="rack-app" /></p>
+
+<p>最后的 <code>body</code> 响应体其实是一个由多个响应内容组成的数组，Rack 使用的 webserver 会将 <code>body</code> 中几个部分的连接到一起最后拼接成一个 HTTP 响应后返回。</p>
+
+<h2 id="rack-的使用">Rack 的使用</h2>
+
+<p>我们在大致了解 Rack 协议之后，其实可以从一段非常简单的代码入手来了解 Rack 是如何启动 webserver 来处理来自用户的请求的，我们可以在任意目录下创建如下所示的 config.ru 文件：</p>
+
+<pre><code class="language-ruby"># config.ru
+
+run Proc.new { |env| ['200', {'Content-Type' =&gt; 'text/html'}, ['get rack\'d']] }
+</code></pre>
+
+<blockquote>
+  <p>因为 <code>Proc</code> 对象也能够响应 <code>#call</code> 方法，所以上述的 Proc 对象也可以看做是一个 Rack 应用。</p>
+</blockquote>
+
+<p>接下来，我们在同一目录使用 <code>rackup</code> 命令在命令行中启动一个 webserver 进程：</p>
+
+<pre><code class="language-bash">$ rackup config.ru
+[2017-10-26 22:59:26] INFO  WEBrick 1.3.1
+[2017-10-26 22:59:26] INFO  ruby 2.3.3 (2016-11-21) [x86_64-darwin16]
+[2017-10-26 22:59:26] INFO  WEBrick::HTTPServer#start: pid=83546 port=9292
+</code></pre>
+
+<p>从命令的输出我们可以看到，使用 rackup 运行了一个 WEBrick 的进程，监听了 9292 端口，如果我们使用 curl 来访问对应的请求，就可以得到在 config.ru 文件中出现的 <code>'get rack\'d'</code> 文本：</p>
+
+<blockquote>
+  <p>在这篇文章中，作者都会使用开源的工具 <a href="https://github.com/jakubroztocil/httpie">httpie</a> 代替 curl 在命令行中发出 HTTP 请求，相比 curl 而言 httpie 能够提供与 HTTP 响应有关的更多信息。</p>
+</blockquote>
+
+<pre><code class="language-ruby">$ http http://localhost:9292
+HTTP/1.1 200 OK
+Connection: Keep-Alive
+Content-Type: text/html
+Date: Thu, 26 Oct 2017 15:07:47 GMT
+Server: WEBrick/1.3.1 (Ruby/2.3.3/2016-11-21)
+Transfer-Encoding: chunked
+
+get rack'd
+</code></pre>
+
+<p>从上述请求返回的 HTTP 响应头中的信息，我们可以看到 WEBrick 确实按照 config.ru 文件中的代码对当前的 HTTP 请求进行了处理。</p>
+
+<h3 id="中间件">中间件</h3>
+
+<p>Rack 协议和中间件是 Rack 能达到今天地位不可或缺的两个功能或者说特性，Rack 协议规定了 webserver 和 Rack 应用之间应该如何通信，而 Rack 中间件能够在上层改变 HTTP 的响应或者请求，在不改变应用的基础上为 Rack 应用增加新的功能。</p>
+
+<p>Rack 的中间件是一个实现了两个方法 <code>.initialize</code> 和 <code>#call</code> 的类，初始化方法会接受两个参数，分别是 <code>app</code> 和 <code>options</code> 字典，而 <code>#call</code> 方法接受一个参数也就是 HTTP 请求的环境参数 <code>env</code>，在这里我们创建了一个新的 Rack 中间件 <code>StatusLogger</code>：</p>
+
+<pre><code class="language-ruby">class StatusLogger
+  def initialize(app, options={})
+    @app = app
+  end
+
+  def call(env)
+    status, headers, body = @app.call(env)
+    puts status
+    [status, headers, body]
+  end
+end
+</code></pre>
+
+<p>在所有的 <code>#call</code> 方法中都<strong>应该</strong>调用 <code>app.call</code> 让应用对 HTTP 请求进行处理并在方法结束时将所有的参数按照顺序返回。</p>
+
+<pre><code class="language-ruby">use StatusLogger
+run Proc.new { |env| ['200', {'Content-Type' =&gt; 'text/html'}, ['get rack\'d']] }
+</code></pre>
+
+<p>如果需要使用某一个 Rack 中间件只需要在当前文件中使用 <code>use</code> 方法，在每次接收到来自用户的 HTTP 请求时都会打印出当前响应的状态码。</p>
+
+<pre><code class="language-ruby">$ rackup
+[2017-10-27 19:46:40] INFO  WEBrick 1.3.1
+[2017-10-27 19:46:40] INFO  ruby 2.3.3 (2016-11-21) [x86_64-darwin16]
+[2017-10-27 19:46:40] INFO  WEBrick::HTTPServer#start: pid=5274 port=9292
+200
+127.0.0.1 - - [27/Oct/2017:19:46:53 +0800] "GET / HTTP/1.1" 200 - 0.0004
+</code></pre>
+
+<p>除了直接通过 <code>use</code> 方法直接传入 <code>StatusLogger</code> 中间件之外，我们也可以在 <code>use</code> 中传入配置参数，所有的配置都会通过 <code>options</code> 最终初始化一个中间件的实例，比如，我们有以下的中间件 <code>BodyTransformer</code>：</p>
+
+<pre><code class="language-ruby">class BodyTransformer
+  def initialize(app, options={})
+    @app = app
+    @count = options[:count]
+  end
+
+  def call(env)
+    status, headers, body = @app.call(env)
+    body = body.map { |str| str[0...@count].upcase + str[@count..-1] }
+    [status, headers, body]
+  end
+end
+</code></pre>
+
+<p>上述中间件会在每次调用时都将 Rack 应用返回的 <code>body</code> 中前 <code>count</code> 个字符变成大写的，我们可以在 config.ru 中添加一个新的中间件：</p>
+
+<pre><code class="language-ruby">use StatusLogger
+use BodyTransformer, count: 3
+run Proc.new { |env| ['200', {'Content-Type' =&gt; 'text/html'}, ['get rack\'d']] }
+</code></pre>
+
+<p>当我们再次使用 http 命令请求相同的 URL 时，就会获得不同的结果，同时由于我们保留了 <code>StatusLogger</code>，所以在 console 中也会打印出当前响应的状态码：</p>
+
+<pre><code class="language-ruby"># session 1
+$ rackup
+[2017-10-27 21:04:05] INFO  WEBrick 1.3.1
+[2017-10-27 21:04:05] INFO  ruby 2.3.3 (2016-11-21) [x86_64-darwin16]
+[2017-10-27 21:04:05] INFO  WEBrick::HTTPServer#start: pid=7524 port=9292
+200
+127.0.0.1 - - [27/Oct/2017:21:04:19 +0800] "GET / HTTP/1.1" 200 - 0.0005
+
+# session 2
+$ http http://localhost:9292
+HTTP/1.1 200 OK
+Connection: Keep-Alive
+Content-Type: text/html
+Date: Fri, 27 Oct 2017 13:04:19 GMT
+Server: WEBrick/1.3.1 (Ruby/2.3.3/2016-11-21)
+Transfer-Encoding: chunked
+
+GET rack'd
+</code></pre>
+
+<p>Rack 的中间件的使用其实非常简单，我们只需要定义符合要求的类，然后在合适的方法中返回合适的结果就可以了，在接下来的部分我们将介绍 Rack 以及中间件的实现原理。</p>
+
+<h2 id="rack-的实现原理">Rack 的实现原理</h2>
+
+<p>到这里，我们已经对 Rack 的使用有一些基本的了解了，包括如何使用 <code>rackup</code> 命令启动一个 webserver，也包括 Rack 的中间件如何使用，接下来我们就准备开始对 Rack 是如何实现上述功能进行分析了。</p>
+
+<h3 id="rackup-命令">rackup 命令</h3>
+
+<p>那么 <code>rackup</code> 到底是如何工作的呢，首先我们通过 <code>which</code> 命令来查找当前 <code>rackup</code> 的执行路径并打印出该文件的全部内容：</p>
+
+<pre><code class="language-ruby">$ which rackup
+/Users/nju520/.rvm/gems/ruby-2.3.3/bin/rackup
+
+$ cat /Users/nju520/.rvm/gems/ruby-2.3.3/bin/rackup
+#!/usr/bin/env ruby_executable_hooks
+#
+# This file was generated by RubyGems.
+#
+# The application 'rack' is installed as part of a gem, and
+# this file is here to facilitate running it.
+#
+
+require 'rubygems'
+
+version = "&gt;= 0.a"
+
+if ARGV.first
+  str = ARGV.first
+  str = str.dup.force_encoding("BINARY") if str.respond_to? :force_encoding
+  if str =~ /\A_(.*)_\z/ and Gem::Version.correct?($1) then
+    version = $1
+    ARGV.shift
+  end
+end
+
+load Gem.activate_bin_path('rack', 'rackup', version)
+</code></pre>
+
+<p>从上述文件中的注释中可以看到当前文件是由 RubyGems 自动生成的，在文件的最后由一个 <code>load</code> 方法加载了某一个文件中的代码，我们可以在 pry 中尝试运行一下这个命令。</p>
+
+<p>首先，通过 <code>gem list</code> 命令得到当前机器中所有 rack 的版本，然后进入 pry 执行 <code>.activate_bin_path</code> 命令：</p>
+
+<pre><code class="language-ruby">$ gem list "^rack$"
+
+*** LOCAL GEMS ***
+
+rack (2.0.3, 2.0.1, 1.6.8, 1.2.3)
+
+$ pry
+[1] pry(main)&gt; Gem.activate_bin_path('rack', 'rackup', '2.0.3')
+=&gt; "/Users/nju520/.rvm/gems/ruby-2.3.3/gems/rack-2.0.3/bin/rackup"
+
+$ cat /Users/nju520/.rvm/gems/ruby-2.3.3/gems/rack-2.0.3/bin/rackup
+#!/usr/bin/env ruby
+
+require "rack"
+Rack::Server.start
+</code></pre>
+
+<blockquote>
+  <p><code>rackup</code> 命令定义在 rack 工程的 bin/rackup 文件中，在通过 rubygems 安装后会生成另一个加载该文件的可执行文建。</p>
+</blockquote>
+
+<p>在最后打印了该文件的内容，到这里我们就应该知道 <code>.activate_bin_path</code> 方法会查找对应 gem 当前生效的版本，并返回文件的路径；在这个可执行文件中，上述代码只是简单的 <code>require</code> 了一下 rack 方法，之后运行 <code>.start</code> 启动了一个 <code>Rack::Server</code>。</p>
+
+<h3 id="server-的启动">Server 的启动</h3>
+
+<p>从这里开始，我们就已经从 rackup 命令的执行进入了 rack 的源代码，可以直接使用 pry 找到 <code>.start</code> 方法所在的文件，从方法中可以看到当前类方法初始化了一个新的实例后，在新的对象上执行了 <code>#start</code> 方法：</p>
+
+<pre><code class="language-ruby">$ pry
+[1] pry(main)&gt; require 'rack'
+=&gt; true
+[2] pry(main)&gt; $ Rack::Server.start
+
+From: lib/rack/server.rb @ line 147:
+Owner: #&lt;Class:Rack::Server&gt;
+
+def self.start(options = nil)
+  new(options).start
+end
+</code></pre>
+
+<h3 id="初始化和配置">初始化和配置</h3>
+
+<p>在 <code>Rack::Server</code> 启动的过程中初始化了一个新的对象，初始化的过程中其实也包含了整个服务器的配置过程：</p>
+
+<pre><code class="language-ruby">From: lib/rack/server.rb @ line 185:
+Owner: #&lt;Class:Rack::Server&gt;
+
+def initialize(options = nil)
+  @ignore_options = []
+
+  if options
+    @use_default_options = false
+    @options = options
+    @app = options[:app] if options[:app]
+  else
+    argv = defined?(SPEC_ARGV) ? SPEC_ARGV : ARGV
+    @use_default_options = true
+    @options = parse_options(argv)
+  end
+end
+</code></pre>
+
+<p>在这个 <code>Server</code> 对象的初始化器中，虽然可以通过 <code>options</code> 从外界传入参数，但是当前类中仍然存在这个 <code>#options</code> 和 <code>#default_options</code> 两个实例方法：</p>
+
+<pre><code class="language-ruby">From: lib/rack/server.rb @ line 199:
+Owner: Rack::Server
+
+def options
+  merged_options = @use_default_options ? default_options.merge(@options) : @options
+  merged_options.reject { |k, v| @ignore_options.include?(k) }
+end
+
+From: lib/rack/server.rb @ line 204:
+Owner: Rack::Server
+
+def default_options
+  environment  = ENV['RACK_ENV'] || 'development'
+  default_host = environment == 'development' ? 'localhost' : '0.0.0.0'
+  {
+    :environment =&gt; environment,
+    :pid         =&gt; nil,
+    :Port        =&gt; 9292,
+    :Host        =&gt; default_host,
+    :AccessLog   =&gt; [],
+    :config      =&gt; "config.ru"
+  }
+end
+</code></pre>
+
+<p>上述两个方法中处理了一些对象本身定义的一些参数，比如默认的端口号 9292 以及默认的 config 文件，config 文件也就是 <code>rackup</code> 命令接受的一个文件参数，文件中的内容就是用来配置一个 Rack 服务器的代码，在默认情况下为 config.ru，也就是如果文件名是 config.ru，我们不需要向 <code>rackup</code> 命令传任何参数，它会自动找当前目录的该文件：</p>
+
+<pre><code class="language-ruby">$ rackup
+[2017-10-27 09:00:34] INFO  WEBrick 1.3.1
+[2017-10-27 09:00:34] INFO  ruby 2.3.3 (2016-11-21) [x86_64-darwin16]
+[2017-10-27 09:00:34] INFO  WEBrick::HTTPServer#start: pid=96302 port=9292
+</code></pre>
+
+<p>访问相同的 URL 能得到完全一致的结果，在这里就不再次展示了，有兴趣的读者可以亲自尝试一下。</p>
+
+<h3 id="包装应用">『包装』应用</h3>
+
+<p>当我们执行了 <code>.initialize</code> 方法初始化了一个新的实例之后，接下来就会进入 <code>#start</code> 实例方法尝试启动一个 webserver 处理 config.ru 中定义的应用了：</p>
+
+<pre><code class="language-ruby">From: lib/rack/server.rb @ line 258:
+Owner: Rack::Server
+
+def start &amp;blk
+  # ...
+
+  wrapped_app
+  # ..
+
+  server.run wrapped_app, options, &amp;blk
+end
+</code></pre>
+
+<p>我们已经从上述方法中删除了很多对于本文来说不重要的代码实现，所以上述方法中最重要的部分就是 <code>#wrapped_app</code> 方法，以及另一个 <code>#server</code> 方法，首先来看 <code>#wrapped_app</code> 方法的实现。</p>
+
+<pre><code class="language-ruby">From: lib/rack/server.rb @ line 353:
+Owner: Rack::Server
+
+def wrapped_app
+  @wrapped_app ||= build_app app
+end
+</code></pre>
+
+<p>上述方法有两部分组成，分别是 <code>#app</code> 和 <code>#build_app</code> 两个实例方法，其中 <code>#app</code> 方法的调用栈比较复杂：</p>
+
+<p><img src="https://img.nju520.me/2017-10-29-server-app-call-stack.png" alt="server-app-call-stack" /></p>
+
+<p>整个方法在最终会执行 <code>Builder.new_from_string</code> 通过 Ruby 中元编程中经常使用的 <code>eval</code> 方法，将输入文件中的全部内容与两端字符串拼接起来，并直接执行这段代码：</p>
+
+<pre><code class="language-ruby">From: lib/rack/builder.rb @ line 48:
+Owner: Rack::Builder
+
+def self.new_from_string(builder_script, file="(rackup)")
+  eval "Rack::Builder.new {\n" + builder_script + "\n}.to_app",
+    TOPLEVEL_BINDING, file, 0
+end
+</code></pre>
+
+<p>在 <code>eval</code> 方法中执行代码的作用其实就是如下所示的：</p>
+
+<pre><code class="language-ruby">Rack::Builder.new {
+  use StatusLogger
+  use BodyTransformer, count: 3
+  run Proc.new { |env| ['200', {'Content-Type' =&gt; 'text/html'}, ['get rack\'d']] }
+}.to_app
+</code></pre>
+
+<p>我们先暂时不管这段代码是如何执行的，我们只需要知道上述代码存储了所有的中间件以及 Proc 对象，最后通过 <code>#to_app</code> 方法返回一个 Rack 应用。</p>
+
+<p>在这之后会使用 <code>#build_app</code> 方法将所有的中间件都包括在 Rack 应用周围，因为所有的中间件也都是一个响应 <code>#call</code> 方法，返回三元组的对象，其实也就是一个遵循协议的 App，唯一的区别就是中间件中会调用初始化时传入的 Rack App：</p>
+
+<pre><code class="language-ruby">From: lib/rack/server.rb @ line 343:
+Owner: Rack::Server
+
+def build_app(app)
+  middleware[options[:environment]].reverse_each do |middleware|
+    middleware = middleware.call(self) if middleware.respond_to?(:call)
+    next unless middleware
+    klass, *args = middleware
+    app = klass.new(app, *args)
+  end
+  app
+end
+</code></pre>
+
+<p>经过上述方法，我们在一个 Rack 应用周围一层一层包装上了所有的中间件，最后调用的中间件在整个调用栈中的最外层，当包装后的应用接受来自外界的请求时，会按照如下的方式进行调用：</p>
+
+<p><img src="https://img.nju520.me/2017-10-29-wrapped-app.png" alt="wrapped-app" /></p>
+
+<p>所有的请求都会先经过中间件，每一个中间件都会在 <code>#call</code> 方法内部调用另一个中间件或者应用，在接收到应用的返回之后会分别对响应进行处理最后由最先定义的中间件返回。</p>
+
+<h3 id="中间件的实现">中间件的实现</h3>
+
+<p>在 Rack 中，中间件是由两部分的代码共同处理的，分别是 <code>Rack::Builder</code> 和 <code>Rack::Server</code> 两个类，前者包含所有的能够在 config.ru 文件中使用的 DSL 方法，当我们使用 <code>eval</code> 执行 config.ru 文件中的代码时，会先初始化一个 <code>Builder</code> 的实例，然后执行 <code>instance_eval</code> 运行代码块中的所有内容：</p>
+
+<pre><code class="language-ruby">From: lib/rack/builder.rb @ line 53:
+Owner: Rack::Builder
+
+def initialize(default_app = nil, &amp;block)
+  @use, @map, @run, @warmup = [], nil, default_app, nil
+  instance_eval(&amp;block) if block_given?
+end
+</code></pre>
+
+<p>在这时，config.ru 文件中的代码就会在当前实例的环境下执行，文件中的 <code>#use</code> 和 <code>#run</code> 方法在调用时就会执行 <code>Builder</code> 的实例方法，我们可以先看一下 <code>#use</code> 方法是如何实现的：</p>
+
+<pre><code class="language-ruby">From: lib/rack/builder.rb @ line 81:
+Owner: Rack::Builder
+
+def use(middleware, *args, &amp;block)
+  @use &lt;&lt; proc { |app| middleware.new(app, *args, &amp;block) }
+end
+</code></pre>
+
+<p>上述方法会将传入的参数组合成一个接受 <code>app</code> 作为入参的 <code>Proc</code> 对象，然后加入到 <code>@use</code> 数组中存储起来，在这里并没有发生任何其他的事情，另一个 <code>#run</code> 方法的实现其实就更简单了：</p>
+
+<pre><code class="language-ruby">From: lib/rack/builder.rb @ line 103:
+Owner: Rack::Builder
+
+def run(app)
+  @run = app
+end
+</code></pre>
+
+<p>它只是将传入的 <code>app</code> 对象存储到持有的 <code>@run</code> 实例变量中，如果我们想要获取当前的 <code>Builder</code> 生成的应用，只需要通过 <code>#to_app</code> 方法：</p>
+
+<pre><code class="language-ruby">From: lib/rack/builder.rb @ line 144:
+Owner: Rack::Builder
+
+def to_app
+  fail "missing run or map statement" unless @run
+  @use.reverse.inject(@run) { |a,e| e[a] }
+end
+</code></pre>
+
+<p>上述方法将所有传入 <code>#use</code> 和 <code>#run</code> 命令的应用和中间件进行了组合，通过 <code>#inject</code> 方法达到了如下所示的效果：</p>
+
+<pre><code class="language-ruby"># config.ru
+use MiddleWare1
+use MiddleWare2
+run RackApp
+
+# equals to
+MiddleWare1.new(MiddleWare2.new(RackApp)))
+</code></pre>
+
+<p><code>Builder</code> 类其实简单来看就做了这件事情，将一种非常难以阅读的代码，变成比较清晰可读的 DSL，最终返回了一个中间件（也可以说是应用）对象，虽然在 <code>Builder</code> 中也包含其他的 DSL 语法元素，但是在这里都没有介绍。</p>
+
+<p>上一小节提到的 <code>#build_app</code> 方法其实也只是根据当前的环境选择合适的中间件继续包裹到这个链式的调用中：</p>
+
+<pre><code class="language-ruby">From: lib/rack/server.rb @ line 343:
+Owner: Rack::Server
+
+def build_app(app)
+  middleware[options[:environment]].reverse_each do |middleware|
+    middleware = middleware.call(self) if middleware.respond_to?(:call)
+    next unless middleware
+    klass, *args = middleware
+    app = klass.new(app, *args)
+  end
+  app
+end
+</code></pre>
+
+<p>在这里的 <code>#middleware</code> 方法可以被子类覆写，如果不覆写该方法会根据环境的不同选择不同的中间件数组包裹当前的应用：</p>
+
+<pre><code class="language-ruby">From: lib/rack/server.rb @ line 229:
+Owner: #&lt;Class:Rack::Server&gt;
+
+def default_middleware_by_environment
+  m = Hash.new {|h,k| h[k] = []}
+  m["deployment"] = [
+    [Rack::ContentLength],
+    [Rack::Chunked],
+    logging_middleware,
+    [Rack::TempfileReaper]
+  ]
+  m["development"] = [
+    [Rack::ContentLength],
+    [Rack::Chunked],
+    logging_middleware,
+    [Rack::ShowExceptions],
+    [Rack::Lint],
+    [Rack::TempfileReaper]
+  ]
+  m
+end
+</code></pre>
+
+<p><code>.default_middleware_by_environment</code> 中就包含了不同环境下应该使用的中间件，<code>#build_app</code> 会视情况选择中间件加载。</p>
+
+<h3 id="webserver-的选择">webserver 的选择</h3>
+
+<p>在 <code>Server#start</code> 方法中，我们已经通过 <code>#wrapped_app</code> 方法将应用和中间件打包到了一起，然后分别执行 <code>#server</code> 和 <code>Server#run</code> 方法选择并运行 webserver，先来看 webserver 是如何选择的：</p>
+
+<pre><code class="language-ruby">From: lib/rack/server.rb @ line 300:
+Owner: Rack::Server
+
+def server
+  @_server ||= Rack::Handler.get(options[:server])
+  unless @_server
+    @_server = Rack::Handler.default
+  end
+  @_server
+end
+</code></pre>
+
+<p>如果我们在运行 <code>rackup</code> 命令时传入了 <code>server</code> 选项，例如 <code>rackup -s WEBrick</code>，就会直接使用传入的 webserver，否则就会使用默认的 Rack 处理器：</p>
+
+<pre><code class="language-ruby">From: lib/rack/handler.rb @ line 46:
+Owner: #&lt;Class:Rack::Handler&gt;
+
+def self.default
+  # Guess.
+  if ENV.include?("PHP_FCGI_CHILDREN")
+    Rack::Handler::FastCGI
+  elsif ENV.include?(REQUEST_METHOD)
+    Rack::Handler::CGI
+  elsif ENV.include?("RACK_HANDLER")
+    self.get(ENV["RACK_HANDLER"])
+  else
+    pick ['puma', 'thin', 'webrick']
+  end
+end
+</code></pre>
+
+<p>在这个方法中，调用 <code>.pick</code> 其实最终也会落到 <code>.get</code> 方法上，在 <code>.pick</code> 中我们通过遍历传入的数组<strong>尝试</strong>对其进行加载：</p>
+
+<pre><code class="language-ruby">From: lib/rack/handler.rb @ line 34:
+Owner: #&lt;Class:Rack::Handler&gt;
+
+def self.pick(server_names)
+  server_names = Array(server_names)
+  server_names.each do |server_name|
+    begin
+      return get(server_name.to_s)
+    rescue LoadError, NameError
+    end
+  end
+
+  raise LoadError, "Couldn't find handler for: #{server_names.join(', ')}."
+end
+</code></pre>
+
+<p><code>.get</code> 方法是用于加载 webserver 对应处理器的方法，方法中会通过一定的命名规范从对应的文件目录下加载相应的常量：</p>
+
+<pre><code class="language-ruby">From: lib/rack/handler.rb @ line 11:
+Owner: #&lt;Class:Rack::Handler&gt;
+
+def self.get(server)
+  return unless server
+  server = server.to_s
+
+  unless @handlers.include? server
+    load_error = try_require('rack/handler', server)
+  end
+
+  if klass = @handlers[server]
+    klass.split("::").inject(Object) { |o, x| o.const_get(x) }
+  else
+    const_get(server, false)
+  end
+
+rescue NameError =&gt; name_error
+  raise load_error || name_error
+end
+</code></pre>
+
+<p>一部分常量是预先定义在 handler.rb 文件中的，另一部分是由各个 webserver 的开发者自己定义或者遵循一定的命名规范加载的：</p>
+
+<pre><code class="language-ruby">register 'cgi', 'Rack::Handler::CGI'
+register 'fastcgi', 'Rack::Handler::FastCGI'
+register 'webrick', 'Rack::Handler::WEBrick'
+register 'lsws', 'Rack::Handler::LSWS'
+register 'scgi', 'Rack::Handler::SCGI'
+register 'thin', 'Rack::Handler::Thin'
+</code></pre>
+
+<p>在默认的情况下，如果不在启动服务时指定服务器就会按照 puma、thin 和 webrick 的顺序依次尝试加载响应的处理器。</p>
+
+<h3 id="webserver-的启动">webserver 的启动</h3>
+
+<p>当 Rack 已经使用中间件对应用进行包装并且选择了对应的 webserver 之后，我们就可以将处理好的应用作为参数传入 <code>WEBrick.run</code> 方法了：</p>
+
+<pre><code class="language-ruby">module Rack
+  module Handler
+    class WEBrick &lt; ::WEBrick::HTTPServlet::AbstractServlet
+      def self.run(app, options={})
+        environment  = ENV['RACK_ENV'] || 'development'
+        default_host = environment == 'development' ? 'localhost' : nil
+
+        options[:BindAddress] = options.delete(:Host) || default_host
+        options[:Port] ||= 8080
+        @server = ::WEBrick::HTTPServer.new(options)
+        @server.mount "/", Rack::Handler::WEBrick, app
+        yield @server  if block_given?
+        @server.start
+      end
+    end
+  end
+end
+</code></pre>
+
+<p>所有遵循 Rack 协议的 webserver 都会实现上述 <code>.run</code> 方法接受 <code>app</code>、<code>options</code> 和一个 block 作为参数运行一个进程来处理所有的来自用户的 HTTP 请求，在这里就是每个 webserver 自己需要解决的了，它其实并不属于 Rack 负责的部门，但是 Rack 实现了一些常见 webserver 的 handler，比如 CGI、Thin 和 WEBrick 等等，这些 handler 的实现原理都不会包含在这篇文章中。</p>
+
+<h2 id="rails-和-rack">Rails 和 Rack</h2>
+
+<p>在了解了 Rack 的实现之后，其实我们可以发现 Rails 应用就是一堆 Rake 中间件和一个 Rack 应用的集合，在任意的工程中我们执行 <code>rake middleware</code> 的命令都可以得到以下的输出：</p>
+
+<pre><code class="language-ruby">$ rake middleware
+use Rack::Sendfile
+use ActionDispatch::Static
+use ActionDispatch::Executor
+use ActiveSupport::Cache::Strategy::LocalCache::Middleware
+use Rack::Runtime
+use ActionDispatch::RequestId
+use ActionDispatch::RemoteIp
+use Rails::Rack::Logger
+use ActionDispatch::ShowExceptions
+use ActionDispatch::DebugExceptions
+use ActionDispatch::Reloader
+use ActionDispatch::Callbacks
+use ActiveRecord::Migration::CheckPending
+use Rack::Head
+use Rack::ConditionalGet
+use Rack::ETag
+run ApplicationName::Application.routes
+</code></pre>
+
+<p>在这里包含了很多使用 <code>use</code> 加载的 Rack 中间件，当然在最后也包含一个 Rack 应用，也就是 <code>ApplicationName::Application.routes</code>，这个对象其实是一个 <code>RouteSet</code> 实例，也就是说在 Rails 中所有的请求在经过中间件之后都会先有一个路由表来处理，路由会根据一定的规则将请求交给其他控制器处理：</p>
+
+<p><img src="https://img.nju520.me/2017-10-29-rails-application.png" alt="rails-application" /></p>
+
+<p>除此之外，<code>rake middleware</code> 命令的输出也告诉我们 Rack 其实为我们提供了很多非常方便的中间件比如 <code>Rack::Sendfile</code> 等可以减少我们在开发一个 webserver 时需要处理的事情。</p>
+
+<h2 id="总结">总结</h2>
+
+<p>Rack 协议可以说占领了整个 Ruby 服务端的市场，无论是常见的服务器还是框架都遵循 Rack 协议进行了设计，而正因为 Rack 以及 Rack 协议的存在我们在使用 Rails 或者 Sinatra 开发 Web 应用时才可以对底层使用的 webserver 进行无缝的替换，在接下来的文章中会逐一介绍不同的 webserver 是如何对 HTTP 请求进行处理以及它们拥有怎样的 I/O 模型。</p>
+
+<h2 id="reference">Reference</h2>
+
+<ul>
+  <li><a href="https://github.com/rack/rack">Rack · A modular Ruby webserver interface</a></li>
+  <li><a href="http://rack.github.io">Rack: a Ruby Webserver Interface</a></li>
+  <li><a href="http://rubydoc.info/github/rack/rack/master/file/SPEC">Rack interface specification</a></li>
+  <li><a href="http://guides.rubyonrails.org/rails_on_rack.html">Rails on Rack</a></li>
+  <li><a href="http://railscasts.com/episodes/151-rack-middleware">Rack Middleware</a></li>
+  <li><a href="http://chneukirchen.org/blog/archive/2007/02/introducing-rack.html">Introducing Rack</a></li>
+  <li><a href="https://stackoverflow.com/questions/4113299/ruby-on-rails-server-options">Ruby on Rails Server options</a></li>
+</ul>
+
+  ]]></description>
+</item>
+
+<item>
+  <title>全面理解 ActiveRecord</title>
+  <link>//activerecord</link>
+  <author>nju520</author>
+  <pubDate>2017-10-21T00:00:00+08:00</pubDate>
+  <guid>//activerecord</guid>
+  <description><![CDATA[
+  <p>最近事情并不是特别多，看了一些数据库相关的书籍，最后想到自己并不了解每天都在用的 ActiveRecord，对于它是如何创建模型、建立关系、执行 SQL 查询以及完成数据库迁移的，作者一直都有着自己的猜测，但是真正到源代码中去寻找答案一直都是没有做过的。</p>
+
+<p><img src="https://img.nju520.me/2017-10-21-activerecord-architecture.png" alt="activerecord-architecture" /></p>
+
+<p>我们可以将 ActiveRecord 理解为一个不同 SQL 数据库的 Wrapper，同时为上层提供一种简洁、优雅的 API 或者说 DSL，能够极大得减轻开发者的负担并提升工作效率。</p>
+
+<p>文章分四个部分介绍了 ActiveRecord 中的重要内容，模型的创建过程、Scope 和查询的实现、模型关系的实现以及最后的 Migrations 任务的实现和执行过程，各个模块之间没有太多的关联，由于文章内容比较多，如果读者只对某一部分的内容感兴趣，可以只挑选一部分进行阅读。</p>
+
+<h2 id="模型的创建过程">模型的创建过程</h2>
+
+<p>在这篇文章中，我们会先分析阅读 ActiveRecord 是如何创建模型并将数据插入到数据库中的，由于 ActiveRecord 的源码变更非常迅速，这里使用的 ActiveRecord 版本是 v5.1.4，如果希望重现文中对方法的追踪过程可以 checkout 到 v5.1.4 的标签上并使用如下所示的命令安装指定版本的 ActiveRecord：</p>
+
+<pre><code class="language-shell">$ gem install activerecord -v '5.1.4'
+</code></pre>
+
+<h3 id="引入-activerecord">引入 ActiveRecord</h3>
+
+<p>在正式开始使用 <a href="https://github.com/pry/pry">pry</a> 对方法进行追踪之前，我们需要现在 pry 中 <code>require</code> 对应的 gem，并且创建一个用于追踪的模型类：</p>
+
+<pre><code class="language-ruby">pry(main)&gt; require 'active_record'
+=&gt; true
+pry(main)&gt; class Post &lt; ActiveRecord::Base; end
+=&gt; nil
+</code></pre>
+
+<p>这个步骤非常的简单，这里也不多说什么了，只是创建了一个继承自 <code>ActiveRecord::Base</code> 的类 <code>Post</code>，虽然我们并没有在数据库中创建对应的表结构，不过目前来说已经够用了。</p>
+
+<h3 id="从-postcreate-开始">从 Post.create 开始</h3>
+
+<p>使用过 ActiveRecord 的人都知道，当我们使用 <code>Post.create</code> 方法的时候就会在数据库中创建一条数据记录，所以在这里我们就将该方法作为入口一探究竟：</p>
+
+<pre><code class="language-ruby">pry(main)&gt; $ Post.create
+
+From: lib/active_record/persistence.rb @ line 29:
+Owner: ActiveRecord::Persistence::ClassMethods
+
+def create(attributes = nil, &amp;block)
+  if attributes.is_a?(Array)
+    attributes.collect { |attr| create(attr, &amp;block) }
+  else
+    object = new(attributes, &amp;block)
+    object.save
+    object
+  end
+end
+</code></pre>
+
+<blockquote>
+  <p><code>$</code> 是 pry 为我们提供的用于查看方法源代码的工具，这篇文章中会省略 <code>$</code> 方法的一部分输出，还可能会对方法做一些简化减少理解方法实现时的干扰。</p>
+</blockquote>
+
+<p>通过 pry 的输出，我们可以在 ActiveRecord 的 <code>lib/active_record/persistence.rb</code> 文件中找到 <code>ActiveRecord::Base.create</code> 方法的实现，如果传入的参数是一个 <code>Hash</code>，该方法会先后执行 <code>ActiveRecord::Base.new</code> 和 <code>ActiveRecord::Base#save!</code> 创建一个新的对象并保存。</p>
+
+<h4 id="使用-pry-追踪-save">使用 pry 追踪 #save!</h4>
+
+<p><code>ActiveRecord::Base.new</code> 在大多数情况下都会调用父类的 <code>#initialize</code> 方法初始化实例，所以没有什么好说的，而 <code>ActiveRecord::Base#save!</code> 方法就做了很多事情：</p>
+
+<pre><code class="language-ruby">pry(main)&gt; $ ActiveRecord::Base#save!
+
+From: lib/active_record/suppressor.rb @ line 45:
+Owner: ActiveRecord::Suppressor
+
+def save!(*) # :nodoc:
+  SuppressorRegistry.suppressed[self.class.name] ? true : super
+end
+</code></pre>
+
+<p>首先是使用 <code>SuppressorRegistry</code> 来判断是否需要对当前的存取请求进行抑制，然后执行 <code>super</code> 方法，由于从上述代码中没有办法知道这里的 <code>super</code> 到底是什么，所以我们就需要通过 <code>.ancestors</code> 方法看看 <code>ActiveRecord::Base</code> 到底有哪些父类了：</p>
+
+<pre><code class="language-ruby">pry(main)&gt; ActiveRecord::Base.ancestors
+=&gt; [ActiveRecord::Base,
+ ActiveRecord::Suppressor,
+ ...
+ ActiveRecord::Persistence,
+ ActiveRecord::Core,
+ ActiveSupport::ToJsonWithActiveSupportEncoder,
+ Object,
+ ...
+ Kernel,
+ BasicObject]
+
+pry(main)&gt; ActiveRecord::Base.ancestors.count
+=&gt; 65
+</code></pre>
+
+<p>使用 <code>.ancestors</code> 方法，你就可以看到整个方法调用链上包含 64 个父类，在这时简单的使用 pry 就已经不能帮助我们理解方法的调用过程了，因为 pry 没法查看当前的方法在父类中是否存在，我们需要从工程中分析哪些类的 <code>#save!</code> 方法在整个过程中被执行了并根据上述列表排出它们执行的顺序；经过分析，我们得到如下的结果：</p>
+
+<p><img src="https://img.nju520.me/2017-10-21-activerecord-base-save.png" alt="activerecord-base-save" /></p>
+
+<p>从 <code>ActiveRecord::Suppressor</code> 到 <code>ActiveRecord::Persistence</code> 一共有五个 module 实现了 <code>#save!</code> 方法，上面我们已经知道了 <code>ActiveRecord::Suppressor#save!</code> 模块提供了对保存的抑制功能，接下来将依次看后四个方法都在保存模型的过程中做了什么。</p>
+
+<h4 id="事务的执行">事务的执行</h4>
+
+<p>从名字就可以看出 <code>ActiveRecord::Transactions</code> 主要是为数据库事务提供支持，并在数据库事务的不同阶段执行不同的回调，这个 module 中的 <code>#save!</code> 方法仅在 <code>#with_transaction_returning_status</code> 的 block 中执行了 <code>super</code>：</p>
+
+<pre><code class="language-ruby">module ActiveRecord
+  module Transactions
+    def save!(*) #:nodoc:
+      with_transaction_returning_status { super }
+    end
+  end
+end
+</code></pre>
+
+<p><code>#with_transaction_returning_status</code> 方法会运行外部传入的 block 通过 <code>super</code> 执行父类的 <code>#save!</code> 方法：</p>
+
+<pre><code class="language-ruby">def with_transaction_returning_status
+  status = nil
+  self.class.transaction do
+    add_to_transaction
+    begin
+      status = yield
+    rescue ActiveRecord::Rollback
+      clear_transaction_record_state
+      status = nil
+    end
+
+    raise ActiveRecord::Rollback unless status
+  end
+  status
+ensure
+  if @transaction_state &amp;&amp; @transaction_state.committed?
+    clear_transaction_record_state
+  end
+end
+</code></pre>
+
+<p>通过上述方法，我们将所有的 SQL 请求都包装在了一个 <code>.transaction</code> 中，开启一个新的数据库事务并在其中执行请求，在这里统一处理一些跟事务回滚以及异常相关的逻辑，同时 <code>ActiveRecord::Transactions</code> 又能为当前的模型添加一些回调的支持：</p>
+
+<pre><code class="language-ruby">module ActiveRecord
+  module Transactions
+    included do
+      define_callbacks :commit, :rollback,
+                       :before_commit,
+                       :before_commit_without_transaction_enrollment,
+                       :commit_without_transaction_enrollment,
+                       :rollback_without_transaction_enrollment,
+                       scope: [:kind, :name]
+    end
+  end
+end
+</code></pre>
+
+<p>开发者就能够在模型中根据需要注册回调用来监听各种数据库事务相关的事件，绝大多数的事务最终都会在 <code>ActiveRecord::ConnectionAdapters::Transaction#within_new_transaction</code> 方法中执行：</p>
+
+<pre><code class="language-ruby">def within_new_transaction(options = {})
+  @connection.lock.synchronize do
+    begin
+      transaction = begin_transaction options
+      yield
+    rescue Exception =&gt; error
+      if transaction
+        rollback_transaction
+        after_failure_actions(transaction, error)
+      end
+      raise
+    ensure
+      unless error
+        if Thread.current.status == "aborting"
+          rollback_transaction if transaction
+        else
+          begin
+            commit_transaction
+          rescue Exception
+            rollback_transaction(transaction) unless transaction.state.completed?
+            raise
+          end
+        end
+      end
+    end
+  end
+end
+</code></pre>
+
+<p>上述方法虽然看起来非常复杂，但是方法的逻辑还是还是非常清晰的，如果事务没有抛出任何的异常，就可以将上述代码简化成以下的几行代码：</p>
+
+<pre><code class="language-ruby">def within_new_transaction(options = {})
+  @connection.lock.synchronize do
+      begin_transaction options
+      yield
+      commit_transaction
+    end
+  end
+end
+</code></pre>
+
+<p>我们可以看到，经过一系列的方法调用最后会在数据库中执行 <code>BEGIN</code>、SQL 语句和 <code>COMMIT</code> 来完成数据的持久化。</p>
+
+<h4 id="追踪属性的重置">追踪属性的重置</h4>
+
+<p>当 <code>ActiveRecord::Transactions#save!</code> 通过 <code>super</code> 将方法抛给上层之后，就由 <code>ActiveRecord::AttributesMethod::Dirty</code> 来处理了：</p>
+
+<pre><code class="language-ruby">def save!(*)
+  super.tap do
+    changes_applied
+  end
+end
+</code></pre>
+
+<p>如果 <code>#save!</code> 最终执行成功，在这个阶段会将所有模型改变的标记全部清除，对包括 <code>@changed_attributes</code>、<code>@mutation_tracker</code> 在内的实例变量全部重置，为追踪下一次模型的修改做准备。</p>
+
+<h4 id="字段的验证">字段的验证</h4>
+
+<p>沿着整个继承链往下走，下一个被执行的模块就是 <code>ActiveRecord::Validations</code> 了，正如这么模块名字所暗示的，我们在这里会对模型中的字段进行验证：</p>
+
+<pre><code class="language-ruby">def save!(options = {})
+  perform_validations(options) ? super : raise_validation_error
+end
+</code></pre>
+
+<p>上述代码使用 <code>#perform_validations</code> 方法验证模型中的全部字段，以此来保证所有的字段都符合我们的预期：</p>
+
+<pre><code class="language-ruby">def perform_validations(options = {})
+  options[:validate] == false || valid?(options[:context])
+end
+</code></pre>
+
+<p>在这个方法中我们可以看到如果在调用 <code>save!</code> 方法时，传入了 <code>validate: false</code> 所有的验证就都会被跳过，我们通过 <code>#valid?</code> 来判断当前的模型是否合法，而这个方法的执行过程其实也包含两个过程：</p>
+
+<pre><code class="language-ruby">module ActiveRecord
+  module Validations
+    def valid?(context = nil)
+      context ||= default_validation_context
+      output = super(context)
+      errors.empty? &amp;&amp; output
+    end
+  end
+end
+
+module ActiveModel
+  module Validations
+    def valid?(context = nil)
+      current_context, self.validation_context = validation_context, context
+      errors.clear
+      run_validations!
+    ensure
+      self.validation_context = current_context
+    end
+  end
+end
+</code></pre>
+
+<p>由于 <code>ActiveModel::Validations</code> 是 <code>ActiveRecord::Validations</code> 的『父类』，所以在 <code>ActiveRecord::Validations</code> 执行 <code>#valid?</code> 方法时，最终会执行父类 <code>#run_validations</code> 运行全部的验证回调。</p>
+
+<pre><code class="language-ruby">module ActiveModel
+  module Validations
+    def run_validations!
+      _run_validate_callbacks
+      errors.empty?
+    end
+  end
+end
+</code></pre>
+
+<p>通过上述方法的实现，我们可以发现验证是否成功其实并不是通过我们在 <code>validate</code> 中传入一个返回 <code>true/false</code> 的方法决定的，而是要向当前模型的 <code>errors</code> 中添加更多的错误：</p>
+
+<pre><code class="language-ruby">class Invoice &lt; ApplicationRecord
+  validate :active_customer
+ 
+  def active_customer
+    errors.add(:customer_id, "is not active") unless customer.active?
+  end
+end
+</code></pre>
+
+<p>在这个过程中执行的另一个方法 <code>#_run_validate_callbacks</code> 其实是通过 <code>ActiveSupport::Callbacks</code> 提供的 <code>#define_callbacks</code> 方法动态生成的，所以我们没有办法在工程中搜索到：</p>
+
+<pre><code class="language-ruby">def define_callbacks(*names)
+  options = names.extract_options!
+
+  names.each do |name|
+    name = name.to_sym
+    set_callbacks name, CallbackChain.new(name, options)
+    module_eval &lt;&lt;-RUBY, __FILE__, __LINE__ + 1
+      def _run_#{name}_callbacks(&amp;block)
+        run_callbacks #{name.inspect}, &amp;block
+      end
+
+      def self._#{name}_callbacks
+        get_callbacks(#{name.inspect})
+      end
+
+      def self._#{name}_callbacks=(value)
+        set_callbacks(#{name.inspect}, value)
+      end
+
+      def _#{name}_callbacks
+        __callbacks[#{name.inspect}]
+      end
+    RUBY
+  end
+end
+</code></pre>
+
+<p>在这篇文章中，我们只需要知道该 <code>#save!</code> 在合适的时机运行了正确的回调就可以了，在后面的文章（可能）中会详细介绍整个 callbacks 的具体执行流程。</p>
+
+<h4 id="数据的持久化">数据的持久化</h4>
+
+<p><code>#save!</code> 的调用栈最顶端就是 <code>ActiveRecord::Persistence#save!</code> 方法：</p>
+
+<pre><code class="language-ruby">def save!(*args, &amp;block)
+  create_or_update(*args, &amp;block) || raise(RecordNotSaved.new("Failed to save the record", self))
+end
+
+def create_or_update(*args, &amp;block)
+  _raise_readonly_record_error if readonly?
+  result = new_record? ? _create_record(&amp;block) : _update_record(*args, &amp;block)
+  result != false
+end
+</code></pre>
+
+<p>在这个方法中，我们执行了 <code>#create_or_update</code> 以及 <code>#_create_record</code> 两个方法来创建模型：</p>
+
+<pre><code class="language-ruby">def _create_record(attribute_names = self.attribute_names)
+  attributes_values = arel_attributes_with_values_for_create(attribute_names)
+  new_id = self.class.unscoped.insert attributes_values
+  self.id ||= new_id if self.class.primary_key
+  @new_record = false
+  yield(self) if block_given?
+  id
+end
+</code></pre>
+
+<p>在这个私有方法中开始执行数据的插入操作了，首先是通过 <code>ActiveRecord::AttributeMethods#arel_attributes_with_values_for_create</code> 方法获取一个用于插入数据的字典，其中包括了数据库中的表字段和对应的待插入值。</p>
+
+<p><img src="https://img.nju520.me/2017-10-21-database-statement-insert.png" alt="database-statement-insert" /></p>
+
+<p>而下面的 <code>.insert</code> 方法就会将这个字典转换成 SQL 语句，经过上图所示的调用栈最终到不同的数据库中执行语句并返回最新的主键。</p>
+
+<h3 id="小结">小结</h3>
+
+<p>从整个模型的创建过程中，我们可以看到 ActiveRecord 对于不同功能的组织非常优雅，每一个方法都非常简短并且易于阅读，通过对应的方法名和模块名我们就能够明确的知道这个东西是干什么的，对于同一个方法的不同执行逻辑也分散了不同的模块中，最终使用 module 加上 include 的方式组织起来，如果要对某个方法添加一些新的逻辑也可以通过增加更多的 module 达到目的。</p>
+
+<p>通过对源代码的阅读，我们可以看到对于 ActiveRecord 来说，<code>#create</code> 和 <code>#save!</code> 方法的执行路径其实是差不多的，只是在细节上有一些不同之处。</p>
+
+<p><img src="https://img.nju520.me/2017-10-21-actual-callstack-for-activerecord-base-save.png" alt="actual-callstack-for-activerecord-base-save" /></p>
+
+<p>虽然模型或者说数据行的创建过程最终会从子类一路执行到父类的 <code>#save!</code> 方法，但是逻辑的<strong>处理顺序</strong>并不是按照从子类到父类执行的，我们可以通过上图了解不同模块的真正执行过程。</p>
+
+<h2 id="scope-和查询的实现">Scope 和查询的实现</h2>
+
+<p>除了模型的插入、创建和迁移模块，ActiveRecord 中还有另一个非常重要的模块，也就是 Scope 和查询；为什么同时介绍这两个看起来毫不相干的内容呢？这是因为 Scope 和查询是完全分不开的一个整体，在 ActiveRecord 的实现中，两者有着非常紧密的联系。</p>
+
+<h3 id="activerecordrelation">ActiveRecord::Relation</h3>
+
+<p>对 ActiveRecord 稍有了解的人都知道，在使用 ActiveRecord 进行查询时，所有的查询方法其实都会返回一个 <code>#{Model}::ActiveRecord_Relation</code> 类的对象，比如 <code>User.all</code>：</p>
+
+<pre><code class="language-ruby">pry(main)&gt; User.all.class
+=&gt; User::ActiveRecord_Relation
+</code></pre>
+
+<p>在这里使用 pry 来可以帮助我们快速理解整个过程到底都发生了什么事情：</p>
+
+<pre><code class="language-ruby">pry(main)&gt; $ User.all
+
+From: lib/active_record/scoping/named.rb @ line 24:
+Owner: ActiveRecord::Scoping::Named::ClassMethods
+
+def all
+  if current_scope
+    current_scope.clone
+  else
+    default_scoped
+  end
+end
+</code></pre>
+
+<p><code>#all</code> 方法中的注释中也写着它会返回一个 <code>ActiveRecord::Relation</code> 对象，它其实可以理解为 ActiveRecord 查询体系中的单位元，它的调用并不改变当前查询；而如果我们使用 pry 去看其他的方法例如 <code>User.where</code> 的时候：</p>
+
+<pre><code class="language-ruby">pry(main)&gt; $ User.where
+
+From: lib/active_record/querying.rb @ line 10:
+Owner: ActiveRecord::Querying
+
+delegate :select, :group, :order, :except, :reorder, :limit, :offset, :joins, :left_joins, :left_outer_joins, :or,
+         :where, :rewhere, :preload, :eager_load, :includes, :from, :lock, :readonly, :extending,
+         :having, :create_with, :distinct, :references, :none, :unscope, :merge, to: :all
+</code></pre>
+
+<p>从这里我们可以看出，真正实现为 <code>User</code> 类方法的只有 <code>.all</code>，其他的方法都会代理给 <code>all</code> 方法，在 <code>.all</code> 方法返回的对象上执行：</p>
+
+<p><img src="https://img.nju520.me/2017-10-21-active-record-relation-delegation.png" alt="active-record-relation-delegation" /></p>
+
+<p>所有直接在类上调用的方法都会先执行 <code>#all</code>，也就是说下面的几种写法是完全相同的：</p>
+
+<pre><code class="language-ruby">User    .where(name: 'draven')
+User.all.where(name: 'draven')
+User.all.where(name: 'draven').all
+</code></pre>
+
+<p>当我们了解了 <code>.where == .all + #where</code> 就可以再一次使用 pry 来查找真正被 ActiveRecord 实现的 <code>#where</code> 方法：</p>
+
+<pre><code class="language-ruby">pry(main)&gt; $ User.all.where
+
+From: lib/active_record/relation/query_methods.rb @ line 599:
+Owner: ActiveRecord::QueryMethods
+
+def where(opts = :chain, *rest)
+  if :chain == opts
+    WhereChain.new(spawn)
+  elsif opts.blank?
+    self
+  else
+    spawn.where!(opts, *rest)
+  end
+end
+</code></pre>
+
+<p>在分析查询的过程中，我们会选择几个常见的方法作为入口，尽可能得覆盖较多的查询相关的代码，增加我们对 ActiveRecord 的理解和认识。</p>
+
+<h3 id="从-userall-开始">从 User.all 开始</h3>
+
+<p>再来看一下上面看到的 <code>ActiveRecord::Relation.all</code> 方法，无论是 <code>#current_scope</code> 还是 <code>#default_scoped</code> 其实返回的都是当前的 <code>ActiveRecord</code> 对象：</p>
+
+<pre><code class="language-ruby">def all
+  if current_scope
+    current_scope.clone
+  else
+    default_scoped
+  end
+end
+</code></pre>
+
+<h4 id="current_scope-和-default_scope">current_scope 和 default_scope</h4>
+
+<p>如果当前没有 <code>#current_scope</code> 那么，就会调用 <code>#default_scoped</code> 返回响应的结果，否则就会 clone 当前对象并返回，可以简单举一个例子证明这里的猜测：</p>
+
+<pre><code class="language-ruby">pry(main)&gt; User.current_scope
+=&gt; nil
+pry(main)&gt; User.all.current_scope
+  User Load (0.1ms)  SELECT "users".* FROM "users"
+=&gt; []
+pry(main)&gt; User.all.current_scope.class
+=&gt; User::ActiveRecord_Relation
+</code></pre>
+
+<p><code>.current_scope</code> 是存储在位于线程变量的 <code>ScopeRegistry</code> 中，它其实就是当前的查询语句的上下文，存储着这一次链式调用造成的全部副作用：</p>
+
+<pre><code class="language-ruby">def current_scope(skip_inherited_scope = false)
+  ScopeRegistry.value_for(:current_scope, self, skip_inherited_scope)
+end
+</code></pre>
+
+<p>而 <code>.default_scoped</code> 就是在当前查询链刚开始时执行的第一个方法，因为在执行第一个查询方法之前 <code>.current_scope</code> 一定为空：</p>
+
+<pre><code class="language-ruby">def default_scoped(scope = relation)
+  build_default_scope(scope) || scope
+end
+
+def build_default_scope(base_rel = nil)
+  return if abstract_class?
+
+  if default_scopes.any?
+    base_rel ||= relation
+    evaluate_default_scope do
+      default_scopes.inject(base_rel) do |default_scope, scope|
+        scope = scope.respond_to?(:to_proc) ? scope : scope.method(:call)
+        default_scope.merge(base_rel.instance_exec(&amp;scope))
+      end
+    end
+  end
+end
+</code></pre>
+
+<p>当我们在 Rails 的模型层中使用 <code>.default_scope</code> 定义一些默认的上下文时，所有的 block 都换被转换成 <code>Proc</code> 对象最终添加到 <code>default_scopes</code> 数组中：</p>
+
+<pre><code class="language-ruby">def default_scope(scope = nil) # :doc:
+  scope = Proc.new if block_given?
+  # ...
+  self.default_scopes += [scope]
+end
+</code></pre>
+
+<p>上面提到的 <code>.build_default_scope</code> 方法其实只是在 <code>default_scopes</code> 数组不为空时，将当前的 <code>Relation</code> 对象和数组中的全部 scope 一一 <code>#merge</code> 并返回一个新的 <code>Relation</code> 对象。</p>
+
+<h4 id="activerecordrelation-对象">ActiveRecord::Relation 对象</h4>
+
+<p><code>.default_scoped</code> 方法的参数 <code>scope</code> 其实就有一个默认值 <code>#relation</code>，这个默认值其实就是一个 <code>Relation</code> 类的实例：</p>
+
+<pre><code class="language-ruby">def relation
+  relation = Relation.create(self, arel_table, predicate_builder)
+
+  if finder_needs_type_condition? &amp;&amp; !ignore_default_scope?
+    relation.where(type_condition).create_with(inheritance_column.to_s =&gt; sti_name)
+  else
+    relation
+  end
+end
+</code></pre>
+
+<p><code>Relation.create</code> 对象的创建过程其实比较复杂，我们只需要知道经过 ActiveRecord 一系列的疯狂操作，最终会将几个参数传入 <code>.new</code> 方法初始化一个 <code>ActiveRecord::Relation</code> 实例：</p>
+
+<pre><code class="language-ruby">class Relation
+  def initialize(klass, table, predicate_builder, values = {})
+    @klass  = klass
+    @table  = table
+    @values = values
+    @offsets = {}
+    @loaded = false
+    @predicate_builder = predicate_builder
+  end
+end
+</code></pre>
+
+<p>当执行的是 <code>#all</code>、<code>.all</code> 或者绝大多数查询方法时，都会直接将这个初始化的对象返回来接受随后的链式调用。</p>
+
+<h3 id="where-方法">where 方法</h3>
+
+<p>相比于 <code>#all</code>、<code>#where</code> 查询的实现就复杂多了，不像 <code>#all</code> 会返回一个默认的 <code>Relation</code> 对象，<code>#where</code> 由 <code>WhereClause</code> 以及 <code>WhereClauseFactory</code> 等类共同处理；在 <code>#where</code> 的最正常的执行路径中，它会执行 <code>#where!</code> 方法：</p>
+
+<pre><code class="language-ruby">def where(opts = :chain, *rest)
+  if :chain == opts
+    WhereChain.new(spawn)
+  elsif opts.blank?
+    self
+  else
+    spawn.where!(opts, *rest)
+  end
+end
+
+def where!(opts, *rest)
+  opts = sanitize_forbidden_attributes(opts)
+  references!(PredicateBuilder.references(opts)) if Hash === opts
+  self.where_clause += where_clause_factory.build(opts, rest)
+  self
+end
+</code></pre>
+
+<blockquote>
+  <p><code>#spawn</code> 其实就是对当前的 <code>Relation</code> 对象进行 <code>#clone</code>。</p>
+</blockquote>
+
+<p>查询方法 <code>#where!</code> 中的四行代码只有一行代码是我们需要关注的，该方法调用 <code>WhereClauseFactory#build</code> 生成一条 where 查询并存储到当前对象的 <code>where_clause</code> 中，在这个过程中并不会生成 SQL，而是会生成一个 <code>WhereClause</code> 对象，其中存储着 SQL 节点树：</p>
+
+<pre><code class="language-ruby">pry(main)&gt; User.where(name: 'draven').where_clause
+=&gt; #&lt;ActiveRecord::Relation::WhereClause:0x007fe5a10bf2c8
+ @binds=
+  [#&lt;ActiveRecord::Relation::QueryAttribute:0x007fe5a10bf4f8
+    @name="name",
+    @original_attribute=nil,
+    @type=#&lt;ActiveModel::Type::String:0x007fe59d33f2e0 @limit=nil, @precision=nil, @scale=nil&gt;,
+    @value_before_type_cast="draven"&gt;],
+ @predicates=
+  [#&lt;Arel::Nodes::Equality:0x007fe5a10bf368
+    @left=
+     #&lt;struct Arel::Attributes::Attribute
+      relation=
+       #&lt;Arel::Table:0x007fe59cc87830
+        @name="users",
+        @table_alias=nil,
+        @type_caster=
+         #&lt;ActiveRecord::TypeCaster::Map:0x007fe59cc87bf0
+          @types=
+           User(id: integer, avatar: string, nickname: string, wechat: string, name: string, gender: integer, school: string, grade: string, major: string, completed: boolean, created_at: datetime, updated_at: datetime, mobile: string, admin: boolean)&gt;&gt;,
+      name="name"&gt;,
+    @right=#&lt;Arel::Nodes::BindParam:0x007fe5a10bf520&gt;&gt;]&gt;
+</code></pre>
+
+<blockquote>
+  <p><a href="https://github.com/rails/arel">Arel</a> 是一个 Ruby 的 SQL 抽象语法树的管理器，ActiveRecord 查询的过程都是惰性的，在真正进入数据库查询之前，查询条件都是以语法树的形式存储的。</p>
+</blockquote>
+
+<p>在这里不像展开介绍 SQL 语法树的生成过程，因为过程比较复杂，详细分析也没有太大的意义。</p>
+
+<h3 id="order-方法">order 方法</h3>
+
+<p>除了 <code>#where</code> 方法之外，在这里还想简单介绍一下另外一个常用的方法 <code>#order</code>：</p>
+
+<pre><code class="language-ruby">def order(*args)
+  check_if_method_has_arguments!(:order, args)
+  spawn.order!(*args)
+end
+
+def order!(*args)
+  preprocess_order_args(args)
+  self.order_values += args
+  self
+end
+</code></pre>
+
+<p>该方法的调用栈与 <code>#where</code> 非常相似，在调用栈中都会执行另一个带有 <code>!</code> 的方法，也都会向自己持有的某个『属性』追加一些参数，参数的处理也有点复杂，在这里简单看一看就好：</p>
+
+<pre><code class="language-ruby">def preprocess_order_args(order_args)
+  order_args.map! do |arg|
+    klass.send(:sanitize_sql_for_order, arg)
+  end
+  order_args.flatten!
+  validate_order_args(order_args)
+
+  references = order_args.grep(String)
+  references.map! { |arg| arg =~ /^([a-zA-Z]\w*)\.(\w+)/ &amp;&amp; $1 }.compact!
+  references!(references) if references.any?
+
+  # if a symbol is given we prepend the quoted table name
+  order_args.map! do |arg|
+    case arg
+    when Symbol
+      arel_attribute(arg).asc
+    when Hash
+      arg.map { |field, dir|
+        case field
+        when Arel::Nodes::SqlLiteral
+          field.send(dir.downcase)
+        else
+          arel_attribute(field).send(dir.downcase)
+        end
+      }
+    else
+      arg
+    end
+  end.flatten!
+end
+</code></pre>
+
+<p>同样的，<code>#order</code> 方法的使用也会向 <code>order_values</code> 数组中添加对应的语法元素：</p>
+
+<pre><code class="language-ruby">pry(main)&gt; User.order(name: :desc).order_values
+=&gt; [#&lt;Arel::Nodes::Descending:0x007fe59ce4f190
+  @expr=
+   #&lt;struct Arel::Attributes::Attribute
+    relation=
+     #&lt;Arel::Table:0x007fe59cc87830
+      @name="users",
+      @table_alias=nil,
+      @type_caster=
+       #&lt;ActiveRecord::TypeCaster::Map:0x007fe59cc87bf0
+        @types=
+         User(id: integer, avatar: string, nickname: string, wechat: string, name: string, gender: integer, school: string, grade: string, major: string, completed: boolean, created_at: datetime, updated_at: datetime, mobile: string, admin: boolean)&gt;&gt;,
+    name=:name&gt;&gt;]
+</code></pre>
+
+<p>在这个方法的返回值中，我们也能看到与 Arel 相关的各种节点，可以大致理解上述语法树的作用。</p>
+
+<h3 id="语法树的存储">语法树的存储</h3>
+
+<p>无论是 <code>#where</code> 还是 <code>#order</code> 方法，它们其实都会向当前的 <code>Relation</code> 对象中追加相应的语法树节点，而除了上述的两个方法之外 <code>#from</code>、<code>#distinct</code>、<code>#lock</code>、<code>#limit</code> 等等，几乎所有的查询方法都会改变 <code>Relation</code> 中的某个值，然而所有的值其实都是通过 <code>@values</code> 这个实例变量存储的：</p>
+
+<p><img src="https://img.nju520.me/2017-10-21-activerecord-relation-value-methods.png" alt="activerecord-relation-value-methods" /></p>
+
+<p><code>@values</code> 中存储的值分为三类，<code>SINGLE_VALUE</code>、<code>MULTI_VALUE</code> 和 <code>CLAUSE</code>，这三类属性会按照下面的规则存储在 <code>@values</code> 中：</p>
+
+<pre><code class="language-ruby">Relation::VALUE_METHODS.each do |name|
+  method_name = \
+    case name
+    when *Relation::MULTI_VALUE_METHODS then "#{name}_values"
+    when *Relation::SINGLE_VALUE_METHODS then "#{name}_value"
+    when *Relation::CLAUSE_METHODS then "#{name}_clause"
+    end
+  class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
+    def #{method_name}                   # def includes_values
+      get_value(#{name.inspect})         #   get_value(:includes)
+    end                                  # end
+
+    def #{method_name}=(value)           # def includes_values=(value)
+      set_value(#{name.inspect}, value)  #   set_value(:includes, value)
+    end                                  # end
+  CODE
+end
+</code></pre>
+
+<p>各种不同的值在最后都会按照一定的命名规则，存储在这个 <code>@values</code> 字典中：</p>
+
+<pre><code class="language-ruby">def get_value(name)
+  @values[name] || default_value_for(name)
+end
+
+def set_value(name, value)
+  assert_mutability!
+  @values[name] = value
+end
+</code></pre>
+
+<p>如果我们直接在一个查询链中访问 <code>#values</code> 方法可以获得其中存储的所有查询条件：</p>
+
+<pre><code class="language-ruby">pry(main)&gt; User.where(name: 'draven').order(name: :desc).values
+=&gt; {:references=&gt;[],
+ :where=&gt;
+  #&lt;ActiveRecord::Relation::WhereClause:0x007fe59d14d860&gt;,
+ :order=&gt;
+  [#&lt;Arel::Nodes::Descending:0x007fe59d14cd98&gt;]}
+</code></pre>
+
+<p>很多 ActiveRecord 的使用者其实在使用的过程中都感觉在各种链式方法调用时没有改变任何事情，所有的方法都可以任意组合进行链式调用，其实每一个方法的调用都会对 <code>@values</code> 中存储的信息进行了修改，只是 ActiveRecord 很好地将它隐藏了幕后，让我们没有感知到它的存在。</p>
+
+<h3 id="scope-方法">scope 方法</h3>
+
+<p>相比于 <code>.default_scope</code> 这个类方法只是改变了当前模型中的 <code>default_scopes</code> 数组，另一个方法 <code>.scope</code> 会为当前类定义一个新的类方法：</p>
+
+<pre><code class="language-ruby">From: lib/active_record/scoping/named.rb @ line 155:
+Owner: ActiveRecord::Scoping::Named::ClassMethods
+
+def scope(name, body, &amp;block)
+  extension = Module.new(&amp;block) if block
+
+  if body.respond_to?(:to_proc)
+    singleton_class.send(:define_method, name) do |*args|
+      scope = all.scoping { instance_exec(*args, &amp;body) }
+      scope = scope.extending(extension) if extension
+      scope || all
+    end
+  else
+    singleton_class.send(:define_method, name) do |*args|
+      scope = all.scoping { body.call(*args) }
+      scope = scope.extending(extension) if extension
+      scope || all
+    end
+  end
+end
+</code></pre>
+
+<p>上述方法会直接在当前类的单类上通过 <code>define_methods</code> 为当前类定义类方法，定义的方法会在上面提到的 <code>.all</code> 的返回结果上执行 <code>#scoping</code>，存储当前执行的上下文，执行传入的 block，再恢复 <code>current_scope</code>：</p>
+
+<pre><code class="language-ruby">def scoping
+  previous, klass.current_scope = klass.current_scope(true), self
+  yield
+ensure
+  klass.current_scope = previous
+end
+</code></pre>
+
+<p>在这里其实有一个可能很多人从来没用过的特性，就是在 <code>.scope</code> 方法中传入一个 block：</p>
+
+<pre><code class="language-ruby">class User
+  scope :male, -&gt; { where gender: :male } do
+    def twenty
+      where age: 20
+    end
+  end
+end
+
+pry(main)&gt; User.male.twenty
+#=&gt; &lt;#User:0x007f98f3d61c38&gt;
+pry(main)&gt; User.twenty
+#=&gt; NoMethodError: undefined method `twenty' for #&lt;Class:0x007f98f5c7b2b8&gt;
+pry(main)&gt; User.female.twenty
+#=&gt; NoMethodError: undefined method `twenty' for #&lt;User::ActiveRecord_Relation:0x007f98f5d950e0&gt;
+</code></pre>
+
+<p>这个传入的 block 只会在当前 <code>Relation</code> 对象的单类上添加方法，如果我们想定义一些不想在其他作用域使用的方法就可以使用这种方式：</p>
+
+<pre><code class="language-ruby">def extending(*modules, &amp;block)
+  if modules.any? || block
+    spawn.extending!(*modules, &amp;block)
+  else
+    self
+  end
+end
+
+def extending!(*modules, &amp;block)
+  modules &lt;&lt; Module.new(&amp;block) if block
+  modules.flatten!
+  self.extending_values += modules
+  extend(*extending_values) if extending_values.any?
+  self
+end
+</code></pre>
+
+<p>而 <code>extending</code> 方法的实现确实与我们预期的一样，创建了新的 <code>Module</code> 对象之后，直接使用 <code>#extend</code> 将其中的方法挂载当前对象的单类上。</p>
+
+<h3 id="小结-1">小结</h3>
+
+<p>到这里为止，我们对 ActiveRecord 中查询的分析就已经比较全面了，从最终要的 <code>Relation</code> 对象，到常见的 <code>#all</code>、<code>#where</code> 和 <code>#order</code> 方法，到 ActiveRecord 对语法树的存储，如何与 Arel 进行协作，在最后我们也介绍了 <code>.scope</code> 方法的工作原理，对于其它方法或者功能的实现其实也都大同小异，在这里就不展开细谈了。</p>
+
+<h2 id="模型的关系">模型的关系</h2>
+
+<p>作为一个关系型数据库的 ORM，ActiveRecord 一定要提供对模型之间关系的支持，它为模型之间的关系建立提供了四个类方法 <code>has_many</code>、<code>has_one</code>、<code>belongs_to</code> 和 <code>has_and_belongs_to_many</code>，在文章的这一部分，我们会从上面几个方法中选择一部分介绍 ActiveRecord 是如何建立模型之间的关系的。</p>
+
+<p><img src="https://img.nju520.me/2017-10-21-activerecord-associations.png" alt="activerecord-associations" /></p>
+
+<h3 id="association-和继承链">Association 和继承链</h3>
+
+<p>首先来看 <code>.has_many</code> 方法是如何实现的，我们可以通过 pry 直接找到该方法的源代码：</p>
+
+<pre><code class="language-ruby">pry(main)&gt; $ User.has_many
+
+From: lib/active_record/associations.rb @ line 1401:
+Owner: ActiveRecord::Associations::ClassMethods
+
+def has_many(name, scope = nil, options = {}, &amp;extension)
+  reflection = Builder::HasMany.build(self, name, scope, options, &amp;extension)
+  Reflection.add_reflection self, name, reflection
+end
+</code></pre>
+
+<p>整个 <code>.has_many</code> 方法的实现也只有两行代码，总共涉及两个类 <code>Builder::HasMany</code> 和 <code>Reflection</code>，其中前者用于创建新的 <code>HasMany</code> 关系，后者负责将关系添加到当前类中。</p>
+
+<p><code>HasMany</code> 类的实现其实非常简单，但是它从父类和整个继承链中继承了很多方法：</p>
+
+<p><img src="https://img.nju520.me/2017-10-21-activerecord-hasmany-ancestors.png" alt="activerecord-hasmany-ancestors" /></p>
+
+<p>我们暂时先忘记 <code>.has_many</code> 方法的实现，先来看一下这里涉及的两个非常重要的类都是如何工作的，首先是 <code>Association</code> 以及它的子类；在 ActiveRecord 的实现中，我们其实能够找到四种关系的 Builder，它们有着非常清晰简单的继承关系：</p>
+
+<p><img src="https://img.nju520.me/2017-10-21-activerecord-ancestor-builders.png" alt="activerecord-ancestor-builders" /></p>
+
+<p>在这里定义的 <code>.build</code> 方法其实实现也很清晰，它通过调用当前抽象类 <code>Association</code> 或者子类的响应方法完成一些建立关系必要的工作：</p>
+
+<pre><code class="language-ruby">def self.build(model, name, scope, options, &amp;block)
+  extension = define_extensions model, name, &amp;block
+  reflection = create_reflection model, name, scope, options, extension
+  define_accessors model, reflection
+  define_callbacks model, reflection
+  define_validations model, reflection
+  reflection
+end
+</code></pre>
+
+<p>其中包括创建用于操作、查询和管理当前关系扩展 Module 的 <code>.define_extensions</code> 方法，同时也会使用 <code>.create_reflection</code> 创建一个用于检查 ActiveRecord 类的关系的 <code>Reflection</code> 对象，我们会在下一节中展开介绍，在创建了 <code>Reflection</code> 后，我们会根据传入的模型和 <code>Reflection</code> 对象为当前的类，例如 <code>User</code> 定义属性存取方法、回调以及验证:</p>
+
+<pre><code class="language-ruby">def self.define_accessors(model, reflection)
+  mixin = model.generated_association_methods
+  name = reflection.name
+  define_readers(mixin, name)
+  define_writers(mixin, name)
+end
+
+def self.define_readers(mixin, name)
+  mixin.class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
+    def #{name}(*args)
+      association(:#{name}).reader(*args)
+    end
+  CODE
+end
+
+def self.define_writers(mixin, name)
+  mixin.class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
+    def #{name}=(value)
+      association(:#{name}).writer(value)
+    end
+  CODE
+end
+</code></pre>
+
+<p>存取方法还是通过 Ruby 的元编程能力定义的，在这里通过 <code>.class_eval</code> 方法非常轻松地就能在当前的模型中定义方法，关于回调和验证的定义在这里就不在展开介绍了。</p>
+
+<h3 id="reflection-和继承链">Reflection 和继承链</h3>
+
+<p><code>Reflection</code> 启用了检查 ActiveRecord 类和对象的关系和聚合的功能，它能够在 Builder 中使用为 ActiveRecord 中的类创建对应属性和方法。</p>
+
+<p>与 <code>Association</code> 一样，ActiveRecord 中的不同关系也有不同的 <code>Reflection</code>，根据不同的关系和不同的配置，ActiveRecord 中建立了一套 Reflection 的继承体系与数据库中的不同关系一一对应：</p>
+
+<p><img src="https://img.nju520.me/2017-10-21-activerecord-reflections.png" alt="activerecord-reflections" /></p>
+
+<p>当我们在上面使用 <code>.has_many</code> 方法时，会通过 <code>.create_reflection</code> 创建一个 <code>HasManyReflection</code> 对象：</p>
+
+<pre><code class="language-ruby">def self.create_reflection(model, name, scope, options, extension = nil)
+  if scope.is_a?(Hash)
+    options = scope
+    scope   = nil
+  end
+
+  validate_options(options)
+  scope = build_scope(scope, extension)
+  ActiveRecord::Reflection.create(macro, name, scope, options, model)
+end
+</code></pre>
+
+<p><code>Reflection#create</code> 方法是一个工厂方法，它会根据传入的 <code>macro</code> 和 <code>options</code> 中的值选择合适的类实例化：</p>
+
+<pre><code class="language-ruby">def self.create(macro, name, scope, options, ar)
+  klass = \
+    case macro
+    when :composed_of
+      AggregateReflection
+    when :has_many
+      HasManyReflection
+    when :has_one
+      HasOneReflection
+    when :belongs_to
+      BelongsToReflection
+    else
+      raise "Unsupported Macro: #{macro}"
+    end
+
+  reflection = klass.new(name, scope, options, ar)
+  options[:through] ? ThroughReflection.new(reflection) : reflection
+end
+</code></pre>
+
+<p>这个创建的 <code>Reflection</code> 在很多时候都有非常重要的作用，在创建存储方法、回调和验证时，都需要将这个对象作为参数传入提供一定的支持，起到了数据源和提供 Helper 方法的作用。</p>
+
+<p>在整个定义方法、属性以及回调的工作完成之后，会将当前的对象以 <code>name</code> 作为键存储到自己持有的一个 <code>_reflections</code> 字典中：</p>
+
+<pre><code class="language-ruby"># class_attribute :_reflections, instance_writer: false
+
+def self.add_reflection(ar, name, reflection)
+  ar.clear_reflections_cache
+  ar._reflections = ar._reflections.merge(name.to_s =&gt; reflection)
+end
+</code></pre>
+
+<p>这个字典中存储着所有在当前类中使用 <code>has_many</code>、<code>has_one</code>、<code>belongs_to</code> 等方法定义的关系对应的映射。</p>
+
+<h3 id="一对多关系">一对多关系</h3>
+
+<p>一对多关系的这一节会分别介绍两个极其重要的方法 <code>.has_many</code> 和 <code>.belongs_to</code> 的实现；在这里，会先通过 <code>.has_many</code> 关系了解它是如何通过覆写父类方法定制自己的特性的，之后会通过 <code>.belongs_to</code> 研究 getter/setter 方法的调用栈。</p>
+
+<p><img src="https://img.nju520.me/2017-10-21-one-to-many-association.png" alt="one-to-many-association" /></p>
+
+<p>一对多关系在数据库的模型之间非常常见，而这两个方法在 ActiveRecord 也经常成对出现。</p>
+
+<h4 id="has_many">has_many</h4>
+
+<p>当我们对构建关系模块的两大支柱都已经有所了解之后，再来看这几个常用的方法就没有太多的难度了，首先来看一下一对多关系中的『多』是怎么实现的：</p>
+
+<pre><code class="language-ruby">def has_many(name, scope = nil, options = {}, &amp;extension)
+  reflection = Builder::HasMany.build(self, name, scope, options, &amp;extension)
+  Reflection.add_reflection self, name, reflection
+end
+</code></pre>
+
+<p>由于已经对 <code>Reflection.add_reflection</code> 方法的实现有所了解，所以这里直接看 <code>.has_many</code> 调用的 <code>Builder::HasMany.build</code> 方法的实现就可以知道这个类方法究竟做了什么，：</p>
+
+<pre><code class="language-ruby">def self.build(model, name, scope, options, &amp;block)
+  extension = define_extensions model, name, &amp;block
+  reflection = create_reflection model, name, scope, options, extension
+  define_accessors model, reflection
+  define_callbacks model, reflection
+  define_validations model, reflection
+  reflection
+end
+</code></pre>
+
+<p>在这里执行的 <code>.build</code> 方法与抽象类中的方法实现完全相同，子类并没有覆盖父类实现的方法，我们来找一下 <code>.define_accessors</code>、<code>.define_callbacks</code> 和 <code>.define_validations</code> 三个方法在 has_many 关系中都做了什么。</p>
+
+<p><code>HasMany</code> 作为 has_many 关系的 Builder 类，其本身并没有实现太多的方法，只是对一些关系选项有一些自己独有的声明：</p>
+
+<pre><code class="language-ruby">module ActiveRecord::Associations::Builder
+  class HasMany &lt; CollectionAssociation
+    def self.macro
+      :has_many
+    end
+
+    def self.valid_options(options)
+      super + [:primary_key, :dependent, :as, :through, :source, :source_type, :inverse_of, :counter_cache, :join_table, :foreign_type, :index_errors]
+    end
+
+    def self.valid_dependent_options
+      [:destroy, :delete_all, :nullify, :restrict_with_error, :restrict_with_exception]
+    end
+  end
+end
+</code></pre>
+
+<p>由于本身 has_many 关系中的读写方法都是对集合的操作，所以首先覆写了 <code>.define_writers</code> 和 <code>.define_readers</code> 两个方法生成了另外一组操作 id 的 getter/setter 方法：</p>
+
+<pre><code class="language-ruby">def self.define_readers(mixin, name)
+  super
+
+  mixin.class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
+    def #{name.to_s.singularize}_ids
+      association(:#{name}).ids_reader
+    end
+  CODE
+end
+
+def self.define_writers(mixin, name)
+  super
+
+  mixin.class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
+    def #{name.to_s.singularize}_ids=(ids)
+      association(:#{name}).ids_writer(ids)
+    end
+  CODE
+end
+</code></pre>
+
+<p>has_many 关系在 <code>CollectionAssociation</code> 和 <code>HasManyAssociation</code> 中实现的几个方法 <code>#reader</code>、<code>#writer</code>、<code>#ids_reader</code> 和 <code>#ids_writer</code> 其实还是比较复杂的，在这里就跳过不谈了。</p>
+
+<p>而 <code>.define_callbacks</code> 和 <code>.define_extensions</code> 其实都大同小异，在作者看来没有什么值得讲的，has_many 中最重要的部分还是读写方法的实现过程，不过由于篇幅所限这里就不多说了。</p>
+
+<h4 id="belongs_to">belongs_to</h4>
+
+<p>在一对多关系中，经常与 has_many 对应的关系 belongs_to 其实实现和调用栈也几乎完全相同：</p>
+
+<pre><code class="language-ruby">def belongs_to(name, scope = nil, options = {})
+  reflection = Builder::BelongsTo.build(self, name, scope, options)
+  Reflection.add_reflection self, name, reflection
+end
+</code></pre>
+
+<p>但是与 has_many 比较大的不同是 <code>Builder::BelongsTo</code> 通过继承的父类定义了很多用于创建新关系的方法：</p>
+
+<pre><code class="language-ruby">def self.define_accessors(model, reflection)
+  super
+  mixin = model.generated_association_methods
+  name = reflection.name
+  define_constructors(mixin, name) if reflection.constructable?
+  mixin.class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
+    def reload_#{name}
+      association(:#{name}).force_reload_reader
+    end
+  CODE
+end
+
+def self.define_constructors(mixin, name)
+  mixin.class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
+    def build_#{name}(*args, &amp;block)
+      association(:#{name}).build(*args, &amp;block)
+    end
+    def create_#{name}(*args, &amp;block)
+      association(:#{name}).create(*args, &amp;block)
+    end
+    def create_#{name}!(*args, &amp;block)
+      association(:#{name}).create!(*args, &amp;block)
+    end
+  CODE
+end
+</code></pre>
+
+<p>其他的部分虽然实现上也与 has_many 有着非常大的不同，但是原理基本上完全一致，不过在这里我们可以来看一下 belongs_to 关系创建的两个方法 <code>association</code> 和 <code>association=</code> 究竟是如何对数据库进行操作的。</p>
+
+<pre><code class="language-ruby">class Topic &lt; ActiveRecord::Base
+  has_many :subtopics
+end
+
+class Subtopic &lt; ActiveRecord::Base
+  belongs_to :topic
+end
+</code></pre>
+
+<p>假设我们有着如上所示的两个模型，它们之间是一对多关系，我们以这对模型为例先来看一下 <code>association</code> 这个读方法的调用栈。</p>
+
+<p><img src="https://img.nju520.me/2017-10-21-callstack-for-belongs-to-association-getter.png" alt="callstack-for-belongs-to-association-gette" /></p>
+
+<p>通过我们对源代码和调用栈的阅读，我们可以发现其实如下的所有方法调用在大多数情况下是完全等价的，假设我们已经持有了一个 <code>Subtopic</code> 对象：</p>
+
+<pre><code class="language-ruby">subtopic = Subtopic.first #=&gt; #&lt;Subtopic:0x007ff513f67768&gt;
+
+subtopic.topic
+subtopic.association(:topic).reader
+subtopic.association(:topic).target
+subtopic.association(:topic).load_target
+subtopic.association(:topic).send(:find_target)
+</code></pre>
+
+<p>上述的五种方式都可以获得当前 <code>Subtopic</code> 对象的 belongs_to 关系对应的 <code>Topic</code> 数据行，而最后一个方法 <code>#find_target</code> 其实也就是真正创建、绑定到最后执行查询 SQL 的方法：</p>
+
+<pre><code class="language-ruby">pry(main)&gt; $ subtopic.association(:topic).find_target
+
+From: lib/active_record/associations/singular_association.rb @ line 38:
+Owner: ActiveRecord::Associations::SingularAssociation
+
+def find_target
+  return scope.take if skip_statement_cache?
+
+  conn = klass.connection
+  sc = reflection.association_scope_cache(conn, owner) do
+    StatementCache.create(conn) { |params|
+      as = AssociationScope.create { params.bind }
+      target_scope.merge(as.scope(self, conn)).limit(1)
+    }
+  end
+
+  binds = AssociationScope.get_bind_values(owner, reflection.chain)
+  sc.execute(binds, klass, conn) do |record|
+    set_inverse_instance record
+  end.first
+rescue ::RangeError
+  nil
+end
+</code></pre>
+
+<p>我们已经对 <code>association</code> 方法的实现有了非常清楚的认知了，下面再来过一下 <code>association=</code> 方法的实现，首先还是来看一下 setter 方法的调用栈：</p>
+
+<p><img src="https://img.nju520.me/2017-10-21-callstack-for-belongs-to-association-setter.png" alt="callstack-for-belongs-to-association-sette" /></p>
+
+<p>相比于 getter 的调用栈，setter 方法的调用栈都复杂了很多，在研究 setter 方法实现的过程中我们一定要记住这个方法并不会改变数据库中对应的数据行，只会改变当前对应的某个属性，经过对调用栈和源代码的分析，我们可以有以下的结论：假设现在有一个 <code>Subtopic</code> 对象和一个新的 <code>Topic</code> 实例，那么下面的一系列操作其实是完全相同的：</p>
+
+<pre><code class="language-ruby">subtopic = Subtopic.first #=&gt; #&lt;Subtopic:0x007ff513f67768&gt;
+new_topic = Topic.first   #=&gt; #&lt;Topic:0x007ff514b24cb8&gt;
+
+subtopic.topic = new_topic
+subtopic.topic_id = new_topic.id
+subtopic.association(:topic).writer(new_topic)
+subtopic.association(:topic).replace(new_topic)
+subtopic.association(:topic).replace_keys(new_topic)
+subtopic.association(:topic).owner[:topic_id] = new_topic.id
+subtopic[:topic_id] = new_topic.id
+subtopic.write_attribute(:topic_id, new_topic.id)
+</code></pre>
+
+<p>虽然这些方法最后返回的结果可能有所不同，但是它们最终都会将 <code>subtopic</code> 对象的 <code>topic_id</code> 属性更新成 <code>topic.id</code>，上面的方法中有简单的，也有复杂的，不过都能达到相同的目的；我相信如果读者亲手创建上述的关系并使用 pry 查看源代码一定会对 getter 和 setter 的执行过程有着非常清楚的认识。</p>
+
+<h3 id="多对多关系-habtm">多对多关系 habtm</h3>
+
+<p>无论是 has_many 还是 belongs_to 其实都是一个 ORM 原生需要支持的关系，但是 habtm(has_and_belongs_to_many) 却是 ActiveRecord 为我们提供的一个非常方便的语法糖，哪怕是并没有 <code>.has_and_belongs_to_many</code> 这个方法，我们也能通过 <code>.has_many</code> 实现多对多关系，得到与前者完全等价的效果，只是实现的过程稍微麻烦一些。</p>
+
+<p>在这一小节中，我们想要了解 habtm 这个语法糖是如何工作的，它是如何将现有的关系组成更复杂的 habtm 的多对多关系的；想要了解它的工作原理，我们自然要分析它的源代码：</p>
+
+<pre><code class="language-ruby">def has_and_belongs_to_many(name, scope = nil, **options, &amp;extension)
+  builder = Builder::HasAndBelongsToMany.new name, self, options
+  join_model = ActiveSupport::Deprecation.silence { builder.through_model }
+  const_set join_model.name, join_model
+  private_constant join_model.name
+
+  habtm_reflection = ActiveRecord::Reflection::HasAndBelongsToManyReflection.new(name, scope, options, self)
+  middle_reflection = builder.middle_reflection join_model
+  Builder::HasMany.define_callbacks self, middle_reflection
+  Reflection.add_reflection self, middle_reflection.name, middle_reflection
+  middle_reflection.parent_reflection = habtm_reflection
+
+  # ...
+
+  hm_options = {}
+  hm_options[:through] = middle_reflection.name
+  hm_options[:source] = join_model.right_reflection.name
+
+  # ...
+
+  ActiveSupport::Deprecation.silence { has_many name, scope, hm_options, &amp;extension }
+  _reflections[name.to_s].parent_reflection = habtm_reflection
+end
+</code></pre>
+
+<blockquote>
+  <p>在这里，我们对该方法的源代码重新进行组织和排序，方法的作用与 v5.1.4 中的完全相同。</p>
+</blockquote>
+
+<p>上述方法在最开始先创建了一个 <code>HasAndBelongsToMany</code> 的 Builder 实例，然后在 block 中执行了这个 Builder 的 <code>#through_model</code> 方法：</p>
+
+<pre><code class="language-ruby">def through_model
+  habtm = JoinTableResolver.build lhs_model, association_name, options
+
+  join_model = Class.new(ActiveRecord::Base) {
+    class &lt;&lt; self;
+      attr_accessor :left_model
+      attr_accessor :name
+      attr_accessor :table_name_resolver
+      attr_accessor :left_reflection
+      attr_accessor :right_reflection
+    end
+
+    # ...
+  }
+
+  join_model.name                = "HABTM_#{association_name.to_s.camelize}"
+  join_model.table_name_resolver = habtm
+  join_model.left_model          = lhs_model
+  join_model.add_left_association :left_side, anonymous_class: lhs_model
+  join_model.add_right_association association_name, belongs_to_options(options)
+  join_model
+end
+</code></pre>
+
+<p><code>#through_model</code> 方法会返回一个新的继承自 <code>ActiveRecord::Base</code> 的类，我们通过一下的例子来说明一下这里究竟做了什么，假设在我们的工程中定义了如下的两个类：</p>
+
+<pre><code class="language-ruby">class Post &lt; ActiveRecord::Base
+  has_and_belongs_to_many :tags
+end
+
+class Tag &lt; ActiveRecord::Base
+  has_and_belongs_to_many :posts
+end
+</code></pre>
+
+<p>它们每个类都通过 <code>.has_and_belongs_to_many</code> 创建了一个 <code>join_model</code> 类，这两个类都是在当前类的命名空间下的：</p>
+
+<pre><code class="language-ruby">class Post::HABTM_Posts &lt; ActiveRecord::Base; end
+class Tags::HABTM_Posts &lt; ActiveRecord::Base; end
+</code></pre>
+
+<p>除了在当前类的命名空间下定义两个新的类之外，<code>#through_model</code> 方法还通过 <code>#add_left_association</code> 和 <code>#add_right_association</code> 为创建的私有类添加了两个 <code>.belongs_to</code> 方法的调用：</p>
+
+<pre><code class="language-ruby">join_model = Class.new(ActiveRecord::Base) {
+  # ...
+
+  def self.add_left_association(name, options)
+    belongs_to name, required: false, **options
+    self.left_reflection = _reflect_on_association(name)
+  end
+
+  def self.add_right_association(name, options)
+    rhs_name = name.to_s.singularize.to_sym
+    belongs_to rhs_name, required: false, **options
+    self.right_reflection = _reflect_on_association(rhs_name)
+  end
+}
+</code></pre>
+
+<p>所以在这里，每一个 HABTM 类中都通过 <code>.belongs_to</code> 增加了两个对数据库表中对应列的映射：</p>
+
+<pre><code class="language-ruby">class Post::HABTM_Posts &lt; ActiveRecord::Base
+  belongs_to :post_id, required: false
+  belongs_to :tag_id, required: false
+end
+
+class Tags::HABTM_Posts &lt; ActiveRecord::Base
+  belongs_to :tag_id, required: false
+  belongs_to :post_id, required: false
+end
+</code></pre>
+
+<p>看到这里，你可能会认为既然有两个模型，那么应该会有两张表分别对应这两个模型，但是实际情况却不是这样。</p>
+
+<p><img src="https://img.nju520.me/2017-10-21-habtm-association-table-name.png" alt="habtm-association-table-name" /></p>
+
+<p>ActiveRecord 通过覆写这两个类的 <code>.table_name</code> 方法，使用一个 <code>JoinTableResolver</code> 来解决不同的模型拥有相同的数据库表的问题：</p>
+
+<pre><code class="language-ruby">class Migration
+  module JoinTable
+    def join_table_name(table_1, table_2)
+      ModelSchema.derive_join_table_name(table_1, table_2).to_sym
+    end
+  end
+end
+
+module ModelSchema
+  def self.derive_join_table_name(first_table, second_table) 
+    [first_table.to_s, second_table.to_s].sort.join("\0").gsub(/^(.*_)(.+)\0\1(.+)/, '\1\2_\3').tr("\0", "_")
+  end
+end
+</code></pre>
+
+<p>在默认的 <code>join_table</code> 规则中，两张表会按照字母顺序排序，最后通过 <code>_</code> 连接到一起，但是如果两张表有着完全相同的前缀，比如 music_artists 和 music_records 两张表，它们连接的结果就是 music_artists_records，公共的前缀会被删除，这种情况经常发生在包含命名空间的模型中，例如：<code>Music::Artist</code>。</p>
+
+<p>当我们已经通过多对多关系的 Builder 创建了一个中间模型之后，就会建立两个 <code>Reflection</code> 对象：</p>
+
+<pre><code class="language-ruby">habtm_reflection = ActiveRecord::Reflection::HasAndBelongsToManyReflection.new(name, scope, options, self)
+middle_reflection = builder.middle_reflection join_model
+Builder::HasMany.define_callbacks self, middle_reflection
+Reflection.add_reflection self, middle_reflection.name, middle_reflection
+middle_reflection.parent_reflection = habtm_reflection
+</code></pre>
+
+<p>其中一个对象是 <code>HasAndBelongsToManyReflection</code> 实例，表示当前的多对多关系，另一个对象是 <code>#middle_reflection</code> 方法返回的 <code>HasMany</code>，表示当前的类与 <code>join_model</code> 之间有一个一对多关系，这个关系是隐式的，不过我们可以通过下面的代码来『理解』它：</p>
+
+<pre><code class="language-ruby">class Post &lt; ActiveRecord::Base
+  # has_and_belongs_to_many :posts
+  # =
+  has_many :posts_tag
+  # + 
+  # ...
+end
+</code></pre>
+
+<p>上述的代码构成了整个多对多关系的一部分，而另一部分由下面的代码来处理，当模型持有了一个跟中间模型相关的一对多关系之后，就会创建另一个以中间模型为桥梁 has_many 关系：</p>
+
+<pre><code class="language-ruby">hm_options = {}
+hm_options[:through] = middle_reflection.name
+hm_options[:source] = join_model.right_reflection.name
+
+ActiveSupport::Deprecation.silence { has_many name, scope, hm_options, &amp;extension }
+</code></pre>
+
+<p>这里还是使用 <code>Post</code> 和 <code>Tag</code> 这两个模型之间的关系举例子，通过上述代码，我们会在两个类中分别建立如下的关系：</p>
+
+<pre><code class="language-ruby">class Post &lt; ActiveRecord::Base
+  # has_many :posts_tag
+  has_many :tags, through: :posts_tag, source: :tag
+end
+
+class Tag &lt; ActiveRecord::Base
+  # has_many :tags_post
+  has_many :post, through: :tags_post, source: :post
+end
+</code></pre>
+
+<p>通过两个隐式的 has_many 关系，两个显示的 has_many 就能够通过 <code>through</code> 和 <code>source</code> 间接找到自己对应的多个数据行，而从开发者的角度来看，整个工程中只使用了一行代码 <code>has_and_belongs_to_many :models</code>，其他的工作完全都是隐式的。</p>
+
+<p><img src="https://img.nju520.me/2017-10-21-many-to-many-associations.png" alt="many-to-many-associations" /></p>
+
+<p>由于关系型数据库其实并没有物理上的多对多关系，只有在逻辑上才能实现多对多，所以对于每一个模型来说，它实现的都是一对多关系；只有从整体来看，通过 <code>PostsTags</code> 第三张表的引入，我们实现的才是从 <code>Post</code> 到 <code>Tag</code> 之间的多对多关系。</p>
+
+<h3 id="小结-2">小结</h3>
+
+<p>ActiveRecord 对关系的支持其实非常全面，从最常见的一对一、一对多关系，再到多对多关系，都有着非常优雅、简洁的实现，虽然这一小节中没能全面的介绍所有关系的实现，但是对整个模块中重要类和整体架构的介绍已经非常具体了；不得不感叹 ActiveRecord 对多对多关系方法 <code>has_and_belongs_to_many</code> 的实现非常整洁，我们在分析其实现时也非常顺畅。</p>
+
+<h2 id="migrations-任务和执行过程">Migrations 任务和执行过程</h2>
+
+<p>Migrations（迁移）是 ActiveRecord 提供的一种用于更改数据库 Schema 的方式，它提供了可以直接操作数据库的 DSL，这样我们就不需要自己去手写所有的 SQL 来更新数据库中的表结构了。</p>
+
+<p><img src="https://img.nju520.me/2017-10-21-activerecord-migrations.png" alt="activerecord-migrations" /></p>
+
+<p>每一个 Migration 都具有一个唯一的时间戳，每次进行迁移时都会在现有的数据库中执行当前 Migration 文件的 DSL 更新数据库 Schema 得到新的数据库版本。而想要理解 Migrations 是如何工作的，就需要知道 <code>#create_table</code>、<code>#add_column</code> 等 DSL 是怎么实现的。</p>
+
+<h3 id="migration51">Migration[5.1]</h3>
+
+<p>我在使用 ActiveRecord 提供的数据库迁移的时候一直都特别好奇 <code>Migration[5.1]</code> 后面跟着的这个 <code>[5.1]</code> 是个什么工作原理，看了源代码之后我才知道：</p>
+
+<pre><code class="language-ruby">class Migration
+  def self.[](version)
+    Compatibility.find(version)
+  end
+end
+</code></pre>
+
+<p><code>.[]</code> 是 <code>ActiveRecord::Migration</code> 的类方法，它通过执行 <code>Compatibility.find</code> 来判断当前的代码中使用的数据库迁移版本是否与 gem 中的版本兼容：</p>
+
+<pre><code class="language-ruby">class Current &lt; Migration
+end
+</code></pre>
+
+<p><code>compatibility.rb</code> 在兼容性方面做了很多事情，保证 ActiveRecord 中的迁移都是可以向前兼容的，在这里也就不准备介绍太多了。</p>
+
+<h3 id="从-rake-dbmigrate-开始">从 rake db:migrate 开始</h3>
+
+<p>作者在阅读迁移部分的源代码时最开始以 <code>Migration</code> 类作为入口，结果发现这并不是一个好的选择，最终也没能找到定义 DSL 的位置，所以重新选择了 <code>rake db:migrate</code> 作为入口分析迁移的实现；通过对工程目录的分析，很快就能发现 ActiveRecord 中所有的 rake 命令都位于 <code>lib/railties/database.rake</code> 文件中，在文件中也能找到 <code>db:migrate</code> 对应的 rake 任务：</p>
+
+<pre><code class="language-ruby">db_namespace = namespace :db do
+  desc "Migrate the database (options: VERSION=x, VERBOSE=false, SCOPE=blog)."
+  task migrate: [:environment, :load_config] do
+    ActiveRecord::Tasks::DatabaseTasks.migrate
+    db_namespace["_dump"].invoke
+  end
+end
+</code></pre>
+
+<p>上述代码中的 <code>DatabaseTasks</code> 类就包含在 <code>lib/active_record/tasks</code> 目录中的 <code>database_tasks.rb</code> 文件里：</p>
+
+<pre><code class="language-ruby">lib/active_record/tasks/
+├── database_tasks.rb
+├── mysql_database_tasks.rb
+├── postgresql_database_tasks.rb
+└── sqlite_database_tasks.rb
+</code></pre>
+
+<p><code>#migrate</code> 方法就是 <code>DatabaseTasks</code> 的一个实例方法，同时 ActiveRecord 通过 <code>extend self</code> 将 <code>#migrate</code> 方法添加到了当前类的单类上，成为了当前类的类方法：</p>
+
+<pre><code class="language-ruby">module Tasks
+  module DatabaseTasks
+    extend self
+    
+    def migrate
+      raise "Empty VERSION provided" if ENV["VERSION"] &amp;&amp; ENV["VERSION"].empty?
+
+      version = ENV["VERSION"] ? ENV["VERSION"].to_i : nil
+      scope = ENV["SCOPE"]
+      Migrator.migrate(migrations_paths, version) do |migration|
+        scope.blank? || scope == migration.scope
+      end
+      ActiveRecord::Base.clear_cache!
+    end
+  end
+end
+</code></pre>
+
+<h4 id="迁移器migrator">『迁移器』Migrator</h4>
+
+<p>迁移任务中主要使用了 <code>Migrator.migrate</code> 方法，通过传入迁移文件的路径和期望的迁移版本对数据库进行迁移：</p>
+
+<pre><code class="language-ruby">class Migrator#:nodoc:
+  class &lt;&lt; self
+    def migrate(migrations_paths, target_version = nil, &amp;block)
+      case
+      when target_version.nil?
+        up(migrations_paths, target_version, &amp;block)
+      when current_version == 0 &amp;&amp; target_version == 0
+        []
+      when current_version &gt; target_version
+        down(migrations_paths, target_version, &amp;block)
+      else
+        up(migrations_paths, target_version, &amp;block)
+      end
+    end
+  end
+end
+</code></pre>
+
+<p>在默认情况下，显然我们是不会传入目标的数据库版本的，也就是 <code>target_version.nil? == true</code>，这时会执行 <code>.up</code> 方法，对数据库向『上』迁移：</p>
+
+<pre><code class="language-ruby">def up(migrations_paths, target_version = nil)
+  migrations = migrations(migrations_paths)
+  migrations.select! { |m| yield m } if block_given?
+
+  new(:up, migrations, target_version).migrate
+end
+</code></pre>
+
+<h4 id="方法调用栈">方法调用栈</h4>
+
+<p>通过 <code>.new</code> 方法 ActiveRecord 初始化了一个新的 <code>Migrator</code> 实例，然后执行了 <code>Migrator#migrate</code>，在整个迁移执行的过程中，我们有以下的方法调用栈：</p>
+
+<p><img src="https://img.nju520.me/2017-10-21-rake-db-migrate.png" alt="rake-db-migrate" /></p>
+
+<p>在整个迁移过程的调用栈中，我们会关注以下的四个部分，首先是 <code>Migrator#migrate_without_lock</code> 方法：</p>
+
+<pre><code class="language-ruby">def migrate_without_lock
+  if invalid_target?
+    raise UnknownMigrationVersionError.new(@target_version)
+  end
+
+  result = runnable.each do |migration|
+    execute_migration_in_transaction(migration, @direction)
+  end
+
+  record_environment
+  result
+end
+</code></pre>
+
+<p>这个方法其实并没有那么重要，但是这里调用了 <code>Migrator#runnable</code> 方法，这个无参的方法返回了所有需要运行的 <code>Migration</code> 文件，<code>Migrator#runnable</code> 是如何选择需要迁移的文件是作者比较想要了解的，也是作者认为比较重要的地方：</p>
+
+<pre><code class="language-ruby">def runnable
+  runnable = migrations[start..finish]
+  if up?
+    runnable.reject { |m| ran?(m) }
+  else
+    runnable.pop if target
+    runnable.find_all { |m| ran?(m) }
+  end
+end
+
+def ran?(migration)
+  migrated.include?(migration.version.to_i)
+end
+</code></pre>
+
+<p>通过对这个方法的阅读的分析，我们可以看到，如果迁移模式是 <code>:up</code>，那么就会选择所有未迁移的文件，也就是说在这时<strong>迁移文件的选择与创建的顺序是无关的</strong>。</p>
+
+<h4 id="迁移的执行">迁移的执行</h4>
+
+<p>当我们通过 <code>#runnable</code> 获得了整个待运行的迁移文件数组之后，就可以遍历所有的文件一次执行 <code>Migrator#execute_migrate_in_transaction</code> 方法了，在调用栈的最后会执行 <code>Migration#exec_migration</code>：</p>
+
+<pre><code class="language-ruby">def exec_migration(conn, direction)
+  @connection = conn
+  if respond_to?(:change)
+    if direction == :down
+      revert { change }
+    else
+      change
+    end
+  else
+    send(direction)
+  end
+ensure
+  @connection = nil
+end
+</code></pre>
+
+<p>到这里就能与我们平时在 <code>Migration</code> 中实现的 <code>#change</code>、<code>#up</code> 和 <code>#down</code> 连到一起，逻辑也走通了；上述代码的逻辑还是很清晰的，如果当前的 <code>Migratoin</code> 实现了 <code>#change</code> 方法就会根据 <code>direction</code> 选择执行 <code>#change</code> 还是 <code>#revert + #change</code>，否则就会按照迁移的方向执行对应的方法。</p>
+
+<h3 id="migrations-的-dsl">Migrations 的 DSL</h3>
+
+<p>在数据迁移的模块执行的 Migration 文件中包含的都是 ActiveRecord 提供的 DSL 语法，这部分语法包含两部分，一部分是 Schema 相关的 DSL <code>schema_statements.rb</code>，其中包括表格的创建和删除以及一些用于辅助 Schema 创建的 <code>#column_exists?</code> 等方法，另一部分是表定义相关的 DSL <code>schema_definitions.rb</code>，其中包括处理表结构的 <code>TableDefinition</code> 类和抽象代表一张数据库中表的 <code>Table</code> 类。</p>
+
+<h4 id="抽象适配器">抽象适配器</h4>
+
+<p>在整个 <code>connection_adapters</code> 的子模块中，绝大多数模块在三大 SQL 数据库，MySQL、PostgreSQL 和 sqlite3 中都有着各自的实现：</p>
+
+<pre><code class="language-ruby">lib/active_record/connection_adapters
+├── abstract
+│   ├── connection_pool.rb
+│   ├── database_limits.rb
+│   ├── database_statements.rb
+│   ├── query_cache.rb
+│   ├── quoting.rb
+│   ├── savepoints.rb
+│   ├── schema_creation.rb
+│   ├── schema_definitions.rb
+│   ├── schema_dumper.rb
+│   ├── schema_statements.rb
+│   └── transaction.rb
+├── mysql
+│   ├── column.rb
+│   ├── database_statements.rb
+│   ├── explain_pretty_printer.rb
+│   ├── quoting.rb
+│   ├── schema_creation.rb
+│   ├── schema_definitions.rb
+│   ├── schema_dumper.rb
+│   ├── schema_statements.rb
+│   └── type_metadata.rb
+├── postgresql
+│   └── ...
+├── sqlite3
+│   └── ...
+├── abstract_adapter.rb
+├── ...
+└── sqlite3_adapter.rb
+</code></pre>
+
+<p>不过这三个数据库的所有子模块都继承自 <code>AbstractAdapter</code> 下面对应的子模块，以获得一些三者共用的能力，包括数据库、Schema 的声明与管理等功能。</p>
+
+<p><img src="https://img.nju520.me/2017-10-21-abstract-adapter-and-much-more.png" alt="abstract-adapter-and-much-more" /></p>
+
+<p>通过 <code>AbstractAdapter</code> 抽离出的公用功能，我们可以通过新的适配器随时适配其他的 SQL 数据库。</p>
+
+<h4 id="schema-dsl">Schema DSL</h4>
+
+<p>数据库的 Schema DSL 部分就包含我们经常使用的 <code>#create_table</code>、<code>#rename_table</code> 以及 <code>#add_column</code> 这些需要表名才能执行的方法，在这里以最常见的 <code>#create_table</code> 为例，简单分析一下这部分代码的实现：</p>
+
+<pre><code class="language-ruby">def create_table(table_name, comment: nil, **options)
+  td = create_table_definition table_name, options[:temporary], options[:options], options[:as], comment: comment
+
+  yield td if block_given?
+
+  execute schema_creation.accept td
+end
+</code></pre>
+
+<p>首先，在创建表时先通过 <code>#create_table_definition</code> 方法创建一个新的 <code>TableDefinition</code> 实例，然后将这个实例作为参数传入 block：</p>
+
+<pre><code class="language-ruby">create_table :users do |t|
+end
+</code></pre>
+
+<p>在 block 对这个 <code>TableDefinition</code> 对象一顿操作后，会通过 <code>SchemaCreation#accept</code> 方法获得一个用于在数据库中，能够创建表的 SQL 语句：</p>
+
+<pre><code class="language-ruby">def accept(o)
+  m = @cache[o.class] ||= "visit_#{o.class.name.split('::').last}"
+  send m, o
+end
+
+def visit_TableDefinition(o)
+  create_sql = "CREATE#{' TEMPORARY' if o.temporary} TABLE #{quote_table_name(o.name)} "
+
+  statements = o.columns.map { |c| accept c }
+  statements &lt;&lt; accept(o.primary_keys) if o.primary_keys
+
+  create_sql &lt;&lt; "(#{statements.join(', ')})" if statements.present?
+  add_table_options!(create_sql, table_options(o))
+  create_sql &lt;&lt; " AS #{@conn.to_sql(o.as)}" if o.as
+  create_sql
+end
+</code></pre>
+
+<p><code>SchemaCreation</code> 类就是一个接受各种各样的 <code>TableDefinition</code>、<code>PrimaryKeyDefinition</code> 对象返回 SQL 的一个工具，可以将 <code>SchemaCreation</code> 理解为一个表结构的解释器；最后的 <code>#execute</code> 会在数据库中执行 SQL 改变数据库中的表结构。</p>
+
+<p>在 <code>SchemaStatements</code> 中定义的其它方法的实现也都是大同小异，比如 <code>#drop_table</code> 其实都是删除数据库中的某张表：</p>
+
+<pre><code class="language-ruby">def drop_table(table_name, options = {})
+  execute "DROP TABLE#{' IF EXISTS' if options[:if_exists]} #{quote_table_name(table_name)}"
+end
+</code></pre>
+
+<h4 id="表定义-dsl">表定义 DSL</h4>
+
+<p><code>SchemaStatements</code> 中定义的方法，参数大都包含 <code>table_name</code>，而另一个类 <code>TableDefinitions</code> 就包含了直接对表操作的 DSL：</p>
+
+<pre><code class="language-ruby">create_table :foo do |t|
+  puts t.class  # =&gt; "ActiveRecord::ConnectionAdapters::TableDefinition"
+end
+</code></pre>
+
+<p>当我们在 <code>#create_table</code> 中使用例如 <code>#string</code>、<code>#integer</code> 等方法时，所有的方法都会通过元编程的魔法最终执行 <code>TableDefinition#column</code> 改变表的定义：</p>
+
+<pre><code class="language-ruby">module ColumnMethods
+  [
+    :bigint,
+    # ...
+    :integer,
+    :string,
+    :text,
+    :time,
+    :timestamp,
+    :virtual,
+  ].each do |column_type|
+    module_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
+      def #{column_type}(*args, **options)
+        args.each { |name| column(name, :#{column_type}, options) }
+      end
+    CODE
+  end
+  alias_method :numeric, :decimal
+end
+</code></pre>
+
+<p><code>#column</code> 方法非常神奇，它从各处收集有关当前表的定义，最终为表中的每一个字段创建一个 <code>ColumnDefinition</code> 实例，并存储到自己持有的 <code>@columns_hash</code> 中：</p>
+
+<pre><code class="language-ruby">def column(name, type, options = {})
+  name = name.to_s
+  type = type.to_sym if type
+  options = options.dup
+
+  index_options = options.delete(:index)
+  index(name, index_options.is_a?(Hash) ? index_options : {}) if index_options
+  @columns_hash[name] = new_column_definition(name, type, options)
+  self
+end
+
+def new_column_definition(name, type, **options)
+  type = aliased_types(type.to_s, type)
+  options[:primary_key] ||= type == :primary_key
+  options[:null] = false if options[:primary_key]
+  create_column_definition(name, type, options)
+end
+
+def create_column_definition(name, type, options)
+  ColumnDefinition.new(name, type, options)
+end
+</code></pre>
+
+<p>除了 <code>ColumnDefinition</code> 之外，在 ActiveRecord 中还存在 <code>PrimaryKeyDefinition</code>、<code>IndexDefinition</code> 等等类和结构体用于表示数据库中的某一种元素。</p>
+
+<p>表结构在最后会被 <code>SchemaCreation</code> 类的 <code>#accept</code> 方法展开，最后在数据库中执行。</p>
+
+<h3 id="小结-3">小结</h3>
+
+<p>到这里整个 Migrations 部分的实现就已经阅读分析完了，整个『模块』包含两个部分，一部分是 rake 任务执行 DSL 代码的过程，另一部分是 DSL 的实现，两部分的结合最终构成了整个 Migrations 模块的全部内容。</p>
+
+<p>ActiveRecord 对于 Migration 迁移机制的设计确实很好的解决数据库中的表结构不断变更的问题，同时因为所有的 Migration 文件都在版本控制中管理，我们也能够随时还原数据库中的表结构。</p>
+
+<h2 id="总结">总结</h2>
+
+<p>文章对 ActiveRecord 中涉及的很多问题都进行了分析和介绍，包括模型的创建、查询以及关系，还包括数据库表迁移的实现，本来想将文中的几个部分分开进行介绍，但是写着写着就懒得分开了，如果对文章的内容有疑问，请在博客下面的评论系统中留言。</p>
+
+<blockquote>
+
+</blockquote>
+
+
+  ]]></description>
+</item>
+
+<item>
+  <title>如何从 MongoDB 迁移到 MySQL</title>
+  <link>//mongodb-to-mysql</link>
+  <author>nju520</author>
+  <pubDate>2017-10-10T00:00:00+08:00</pubDate>
+  <guid>//mongodb-to-mysql</guid>
+  <description><![CDATA[
+  <p>最近的一个多月时间其实都在做数据库的迁移工作，我目前在开发的项目其实在上古时代是使用 MySQL 作为主要数据库的，后来由于一些业务上的原因从 MySQL 迁移到了 MongoDB，使用了几个月的时间后，由于数据库服务非常不稳定，再加上无人看管，同时 MongoDB 本身就是无 Schema 的数据库，最后导致数据库的脏数据问题非常严重。目前团队的成员没有较为丰富的 Rails 开发经验，所以还是希望使用 ActiveRecord 加上 Migration 的方式对数据进行一些强限制，保证数据库中数据的合法。</p>
+
+<p><img src="https://img.nju520.me/2017-10-10-mysql-and-mongodb.png" alt="mysql-and-mongodb" /></p>
+
+<p>文中会介绍作者在迁移数据库的过程中遇到的一些问题，并为各位读者提供需要<strong>停机</strong>迁移数据库的可行方案，如果需要不停机迁移数据库还是需要别的方案来解决，在这里提供的方案用于百万数据量的 MongoDB，预计的停机时间在两小时左右，如果数据量在千万级别以上，过长的停机时间可能是无法接受的，应该设计不停机的迁移方案；无论如何，作者希望这篇文章能够给想要做数据库迁移的开发者带来一些思路，少走一些坑。</p>
+
+<h2 id="从关系到文档">从关系到文档</h2>
+
+<p>虽然这篇文章的重点是从 MongoDB 迁移到 MySQL，但是作者还是想简单提一下从 MySQL 到 MongoDB 的迁移，如果我们仅仅是将 MySQL 中的全部数据导入到 MongoDB 中其实是一间比较简单的事情，其中最重要的原因就是 <strong>MySQL 支持的数据类型是 MongoDB 的子集</strong>：</p>
+
+<p><img src="https://img.nju520.me/2017-10-10-mongodb-mysql-datatype-relation.png" alt="mongodb-mysql-datatype-relation" /></p>
+
+<p>在迁移的过程中可以将 MySQL 中的全部数据以 csv 的格式导出，然后再将所有 csv 格式的数据使用 <code>mongoimport</code> 全部导入到 MongoDB 中：</p>
+
+<pre><code class="language-shell">$ mysqldump -u&lt;username&gt; -p&lt;password&gt; \
+    -T &lt;output_directory&gt; \
+    --fields-terminated-by ',' \
+    --fields-enclosed-by '\"' \
+    --fields-escaped-by '\' \
+    --no-create-info &lt;database_name&gt;
+
+$ mongoimport --db &lt;database_name&gt; --collection &lt;collection_name&gt; \
+    --type csv \
+    --file &lt;data.csv&gt; \
+    --headerline
+</code></pre>
+
+<p>虽然整个过程看起来只需要两个命令非常简单，但是等到你真要去做的时候你会遇到非常多的问题，作者没有过从 MySQL 或者其他关系型数据库迁移到 MongoDB 的经验，但是 Google 上相关的资料特别多，所以这总是一个有无数前人踩过坑的问题，而前人的经验也能够帮助我们节省很多时间。</p>
+
+<p><img src="https://img.nju520.me/2017-10-24-mysql-to-mongodb.png" alt="mysql-to-mongodb" /></p>
+
+<blockquote>
+  <p>使用 csv 的方式导出数据在绝大多数的情况都不会出现问题，但是如果数据库中的某些文档中存储的是富文本，那么虽然在导出数据时不会出现问题，最终导入时可能出现一些比较奇怪的错误。</p>
+</blockquote>
+
+<h2 id="从文档到关系">从文档到关系</h2>
+
+<p>相比于从 MySQL 到 MongoDB 的迁移，反向的迁移就麻烦了不止一倍，这主要是因为 MongoDB 中的很多数据类型和集合之间的关系在 MySQL 中都并不存在，比如嵌入式的数据结构、数组和哈希等集合类型、多对多关系的实现，很多的问题都不是仅仅能通过数据上的迁移解决的，我们需要在对数据进行迁移之前先对部分数据结构进行重构，本文中的后半部分会介绍需要处理的数据结构和逻辑。</p>
+
+<p><img src="https://img.nju520.me/2017-10-10-mongodb-mysql-problems-to-be-solved.png" alt="mongodb-mysql-problems-to-be-solved" /></p>
+
+<p>当我们准备将数据库彻底迁移到 MySQL 之前，需要做一些准备工作，将最后迁移所需要的工作尽可能地减少，保证停机的时间不会太长，准备工作的目标就是尽量消灭工程中复杂的数据结构。</p>
+
+<h3 id="数据的预处理">数据的预处理</h3>
+
+<p>在进行迁移之前要做很多准备工作，第一件事情是要把所有嵌入的数据结构改成非嵌入式的数据结构：</p>
+
+<p><img src="https://img.nju520.me/2017-10-10-embedded-reference-documents.png" alt="embedded-reference-documents" /></p>
+
+<p>也就是把所有 <code>embeds_many</code> 和 <code>embeds_one</code> 的关系都改成 <code>has_many</code> 和 <code>has_one</code>，同时将 <code>embedded_in</code> 都替换成 <code>belongs_to</code>，同时我们需要将工程中对应的测试都改成这种引用的关系，然而只改变代码中的关系并没有真正改变 MongoDB 中的数据。</p>
+
+<pre><code class="language-ruby">def embeds_many_to_has_many(parent, child)
+  child_key_name = child.to_s.underscore.pluralize
+  parent.collection.find({}).each do |parent_document|
+    next unless parent_document[child_key_name]
+    parent_document[child_key_name].each do |child_document|
+      new_child = child_document.merge "#{parent.to_s.underscore}_id": parent_document['_id']
+      child.collection.insert_one new_child
+    end
+  end
+  parent.all.unset(child_key_name.to_sym)
+end
+
+embeds_many_to_has_many(Person, Address)
+</code></pre>
+
+<p>我们可以使用上述的代码将关系为嵌入的模型都转换成引用，拍平所有复杂的数据关系，这段代码的运行时间与嵌入关系中的两个模型的数量有关，需要注意的是，MongoDB 中嵌入模型的数据可能因为某些原因出现相同的 <code>_id</code> 在插入时会发生冲突导致崩溃，你可以对 <code>insert_one</code> 使用 <code>resuce</code> 来保证这段代码的运行不会因为上述原因而停止。</p>
+
+<p><img src="https://img.nju520.me/2017-10-10-embedded-to-reference.png" alt="embedded-to-reference" /></p>
+
+<p>通过这段代码我们就可以轻松将原有的嵌入关系全部展开变成引用的关系，将嵌入的关系变成引用除了做这两个改变之外，不需要做其他的事情，无论是数据的查询还是模型的创建都不需要改变代码的实现，不过记得为子模型中父模型的外键<strong>添加索引</strong>，否则会导致父模型在获取自己持有的全部子模型时造成<strong>全表扫描</strong>：</p>
+
+<pre><code class="language-ruby">class Comment
+  include Mongoid::Document
+  index post_id: 1
+  belongs_to :post
+end
+</code></pre>
+
+<p>在处理了 MongoDB 中独有的嵌入式关系之后，我们就需要解决一些复杂的集合类型了，比如数组和哈希，如果我们使用 MySQL5.7 或者 PostgreSQL 的话，其实并不需要对他们进行处理，因为最新版本的 MySQL 和 PostgreSQL 已经提供了对 JSON 的支持，不过作者还是将项目中的数组和哈希都变成了常见的数据结构。</p>
+
+<p>在这个可选的过程中，其实并没有什么标准答案，我们可以根据需要将不同的数据转换成不同的数据结构：</p>
+
+<p><img src="https://img.nju520.me/2017-10-10-array-to-string-or-relation.png" alt="array-to-string-or-relation" /></p>
+
+<p>比如，将数组变成字符串或者一对多关系，将哈希变成当前文档的键值对等等，如何处理这些集合数据其实都要看我们的业务逻辑，在改变这些字段的同时尽量为上层提供一个与原来直接 <code>.tags</code> 或者 <code>.categories</code> 结果相同的 API：</p>
+
+<pre><code class="language-ruby">class Post
+  ...
+  def tag_titles
+    tags.map(&amp;:title)
+  end
+  
+  def split_categories
+    categories.split(',')
+  end
+end
+</code></pre>
+
+<p>这一步其实也是可选的，上述代码只是为了减少其他地方的修改负担，当然如果你想使用 MySQL5.7 或者 PostgreSQL 数据库对 JSON 的支持也没有什么太大的问题，只是在查询集合字段时有一些不方便。</p>
+
+<h3 id="mongoid-的小兄弟们">Mongoid 的『小兄弟』们</h3>
+
+<p>在使用 Mongoid 进行开发期间难免会用到一些相关插件，比如 <a href="https://github.com/thetron/mongoid-enum">mongoid-enum</a>、<a href="https://github.com/mongoid/mongoid-slug">mongoid-slug</a> 和 <a href="https://github.com/mongoid/mongoid-history">mongoid-history</a> 等，这些插件的实现与 ActiveRecord 中具有相同功能的插件在实现上有很大的不同。</p>
+
+<p>对于有些插件，比如 mongoid-slug 只是在引入插件的模型的文档中插入了 <code>_slugs</code> 字段，我们只需要在进行数据迁移忽略这些添加的字段并将所有的 <code>#slug</code> 方法改成 <code>#id</code>，不需要在预处理的过程中做其它的改变。而枚举的实现在 Mongoid 的插件和 ActiveRecord 中就截然不同了：</p>
+
+<p><img src="https://img.nju520.me/2017-10-10-mongodb-mysql-enum.png" alt="mongodb-mysql-enu" /></p>
+
+<p>mongoid-enum 使用字符串和 <code>_status</code> 来保存枚举类型的字段，而 ActiveRecord 使用整数和 <code>status</code> 表示枚举类型，两者在底层数据结构的存储上有一些不同，我们会在之后的迁移脚本中解决这个问题。</p>
+
+<p><img src="https://img.nju520.me/2017-10-10-mongoid-activerecord-enum.png" alt="mongoid-activerecord-enum" /></p>
+
+<p>如果在项目中使用了很多 Mongoid 的插件，由于其实现不同，我们也只能根据不同的插件的具体实现来决定如何对其进行迁移，如果使用了一些支持特殊功能的插件可能很难在 ActiveRecord 中找到对应的支持，在迁移时可以考虑暂时将部分不重要的功能移除。</p>
+
+<h3 id="主键与-uuid">主键与 UUID</h3>
+
+<p>我们希望从 MongoDB 迁移到 MySQL 的另一个重要原因就是 MongoDB 每一个文档的主键实在是太过冗长，一个 32 字节的 <code>_id</code> 无法给我们提供特别多的信息，只能增加我们的阅读障碍，再加上项目中并没有部署 MongoDB 集群，所以没能享受到用默认的 UUID 生成机制带来的好处。</p>
+
+<p><img src="https://img.nju520.me/2017-10-10-mongodb-mysql-id.png" alt="mongodb-mysql-id" /></p>
+
+<p>我们不仅没有享受到 UUID 带来的优点，它还在迁移 MySQL 的过程中为我们带来了很大的麻烦，一方面是因为 ActiveRecord 的默认主键是整数，不支持 32 字节长度的 UUID，如果我们想要不改变 MongoDB 的 UUID，直接迁移到 MySQL 中使用其实也没有什么问题，只是我们要将默认的整数类型的主键变成字符串类型，同时要使用一个 UUID 生成器来保证所有的主键都是根据时间递增的并且不会冲突。</p>
+
+<p>如果准备使用 UUID 加生成器的方式，其实会省去很多迁移的时间，不过看起来确实不是特别的优雅，如何选择还是要权衡和评估，但是如果我们选择了使用 <code>integer</code> 类型的自增主键时，就需要做很多额外的工作了，首先是为所有的表添加 <code>uuid</code> 字段，同时为所有的外键例如 <code>post_id</code> 创建对应的 <code>post_uuid</code> 字段，通过 <code>uuid</code> 将两者关联起来：</p>
+
+<p><img src="https://img.nju520.me/2017-10-10-mysql-before-migrations.png" alt="mysql-before-migrations" /></p>
+
+<p>在数据的迁移过程中，我们会将原有的 <code>_id</code> 映射到 <code>uuid</code> 中，<code>post_id</code> 映射到 <code>post_uuid</code> 上，我们通过保持 <code>uuid</code> 和 <code>post_uuid</code> 之间的关系保证模型之间的关系没有丢失，在迁移数据的过程中 <code>id</code> 和 <code>post_id</code> 是完全不存在任何联系的。</p>
+
+<p>当我们按照 <code>_id</code> 的顺序遍历整个文档，将文档中的数据被插入到表中时，MySQL 会为所有的数据行自动生成的递增的主键 <code>id</code>，而 <code>post_id</code> 在这时都为空。</p>
+
+<p><img src="https://img.nju520.me/2017-10-10-mysql-after-migrations.png" alt="mysql-after-migrations" /></p>
+
+<p>在全部的数据都被插入到 MySQL 之后，我们通过 <code>#find_by_uuid</code> 查询的方式将 <code>uuid</code> 和 <code>post_uuid</code> 中的关系迁移到 <code>id</code> 和 <code>post_id</code> 中，并将与 <code>uuid</code> 相关的字段全部删除，这样我们能够保证模型之间的关系不会消失，并且数据行的相对位置与迁移前完全一致。</p>
+
+<h3 id="代码的迁移">代码的迁移</h3>
+
+<p>Mongoid 在使用时都是通过 <code>include</code> 将相关方法加载到当前模型中的，而 ActiveRecord 是通过继承 <code>ActiveRecord::Base</code> 的方式使用的，完成了对数据的预处理，我们就可以对现有模型层的代码进行修改了。</p>
+
+<p>首先当然是更改模型的『父类』，把所有的 <code>Mongoid::Document</code> 都改成 <code>ActiveRecord::Base</code>，然后创建类对应的 Migration 迁移文件：</p>
+
+<pre><code class="language-ruby"># app/models/post.rb
+class Post &lt; ActiveRecord::Base
+  validate_presence_of :title, :content
+end
+
+# db/migrate/20170908075625_create_posts.rb
+class CreatePosts &lt; ActiveRecord::Migration[5.1]
+  def change
+    create_table :posts do |t|
+      t.string :title, null: false
+      t.text :content, null: false
+      t.string :uuid, null: false
+
+      t.timestamps null: false
+    end
+    
+    add_index :posts, :uuid, unique: true
+  end
+end
+</code></pre>
+
+<blockquote>
+  <p>注意：要为每一张表添加类型为字符串的 <code>uuid</code> 字段，同时为 <code>uuid</code> 建立唯一索引，以加快通过 <code>uuid</code> 建立不同数据模型之间关系的速度。</p>
+</blockquote>
+
+<p>除了建立数据库的迁移文件并修改基类，我们还需要修改一些 <code>include</code> 的模块和 Mongoid 中独有的查询，比如使用 <code>gte</code> 或者 <code>lte</code> 的日期查询和使用正则进行模式匹配的查询，这些查询在 ActiveRecord 中的使用方式与 Mongoid 中完全不同，我们需要通过手写 SQL 来解决这些问题。</p>
+
+<p><img src="https://img.nju520.me/2017-10-10-mongoid-to-activerecord-model-and-query.png" alt="mongoid-to-activerecord-model-and-query" /></p>
+
+<p>除此之外，我们也需要处理一些复杂的模型关系，比如 Mongoid 中的 <code>inverse_of</code> 在 ActiveRecord 中叫做  <code>foreign_key</code> 等等，这些修改其实都并不复杂，只是如果想要将这部分的代码全部处理掉，就需要对业务逻辑进行详细地测试以保证不会有遗留的问题，这也就对我们项目的测试覆盖率有着比较高的要求了，不过我相信绝大多数的 Rails 工程都有着非常好的测试覆盖率，能够保证这一部分代码和逻辑能够顺利迁移，但是如果项目中完全没有测试或者测试覆盖率很低，就只能人肉进行测试或者自求多福了，或者<strong>就别做迁移了，多写点测试再考虑这些重构的事情吧</strong>。</p>
+
+<h3 id="数据的迁移">数据的迁移</h3>
+
+<p>为每一个模型创建对应的迁移文件并建表其实一个不得不做的体力活，虽然有一些工作我们没法省略，但是我们可以考虑使用自动化的方式为所有的模型添加 <code>uuid</code> 字段和索引，同时也为类似 <code>post_id</code> 的字段添加相应的 <code>post_uuid</code> 列：</p>
+
+<pre><code class="language-ruby">class AddUuidColumns &lt; ActiveRecord::Migration[5.1]
+  def change
+    Rails.application.eager_load!
+    ActiveRecord::Base.descendants.map do |klass|
+      # add `uuid` column and create unique index on `uuid`.
+      add_column klass.table_name, :uuid, :string, unique: true
+      add_index klass.table_name, unique: true
+      
+      # add `xxx_uuid` columns, ex: `post_uuid`, `comment_uuid` and etc.
+      uuids = klass.attribute_names
+        .select { |attr| attr.include? '_id' }
+        .map    { |attr| attr.gsub '_id', '_uuid' }
+      next unless uuids.present?
+      uuids.each do |uuid|
+        add_column klass.table_name, uuid, :string
+      end
+    end
+  end
+end
+</code></pre>
+
+<p>在添加 <code>uuid</code> 列并建立好索引之后，我们就可以开始对数据库进行迁移了，如果我们决定在迁移的过程中改变原有数据的主键，那么我们会将迁移分成两个步骤，数据的迁移和关系的重建，前者仅指将 MongoDB 中的所有数据全部迁移到 MySQL 中对应的表中，并将所有的 <code>_id</code> 转换成 <code>uuid</code>、<code>xx_id</code> 转换成 <code>xx_uuid</code>，而后者就是前面提到的：通过 <code>uuid</code> 和 <code>xx_uuid</code> 的关联重新建立模型之间的关系并在最后删除所有的 <code>uuid</code> 字段。</p>
+
+<p>我们可以使用如下的代码对数据进行迁移，这段代码从 MongoDB 中遍历某个集合 Collection 中的全部数据，然后将文档作为参数传入 block，然后再分别通过 <code>DatabaseTransformer#delete_obsolete_columns</code> 和 <code>DatabaseTransformer#update_rename_columns</code> 方法删除部分已有的列、更新一些数据列最后将所有的 <code>id</code> 列都变成 <code>uuid</code>：</p>
+
+<pre><code class="language-ruby">module DatabaseTransformer
+  def import(collection_name, *obsolete_columns, **rename_columns)
+    collection = Mongoid::Clients.default.collections.select do |c|
+      c.namespace == "#{database}.#{collection_name.to_s.pluralize}"
+    end.first
+
+    unless collection.present?
+      STDOUT.puts "#{collection_name.to_s.yellow}: skipped"
+      STDOUT.puts
+      return
+    end
+
+    constant = collection_name.to_s.singularize.camelcase.constantize
+    reset_callbacks constant
+
+    DatabaseTransformer.profiling do
+      collection_count = collection.find.count
+      collection.find.each_with_index do |document, index|
+        document = yield document if block_given?
+        delete_obsolete_columns document, obsolete_columns
+        update_rename_columns document, rename_columns
+        update_id_columns document
+
+        insert_record constant, document
+        STDOUT.puts "#{index}/#{collection_count}\n" if (index % 1000).zero?
+      end
+    end
+  end
+end
+</code></pre>
+
+<p>当完成了对文档的各种操作之后，该方法会直接调用 <code>DatabaseTransformer#insert_record</code> 将数据插入 MySQL 对应的表中；我们可以直接使用如下的代码将某个 Collection 中的全部文档迁移到 MySQL 中：</p>
+
+<pre><code class="language-ruby">transformer = DatabaseTransformer.new 'draven_production'
+transformer.import :post, :_slugs, name: :title, _status: :status
+</code></pre>
+
+<p>上述代码会在迁移时将集合每一个文档的 <code>_slugs</code> 字段全部忽略，同时将 <code>name</code> 重命名成 <code>title</code>、<code>_status</code> 重命名成 <code>status</code>，虽然作为枚举类型的字段 mongoid-enum 和 ActiveRecord 的枚举类型完全不同，但是在这里可以直接插入也没有什么问题，ActiveRecord 的模型在创建时会自己处理字符串和整数之间的转换：</p>
+
+<pre><code class="language-ruby">def insert_record(constant, params)
+  model = constant.new params
+  model.save! validate: false
+rescue Exception =&gt; exception
+  STDERR.puts "Import Error: #{exception}"
+  raise exception
+end
+</code></pre>
+
+<p>为了加快数据的插入速度，同时避免所有由于插入操作带来的副作用，我们会在数据迁移期间重置所有的回调：</p>
+
+<pre><code class="language-ruby">def reset_callbacks(constant)
+  %i(create save update).each do |callback|
+    constant.reset_callbacks callback
+  end
+end
+</code></pre>
+
+<p>这段代码的作用仅在这个脚本运行的过程中才会生效，不会对工程中的其他地方造成任何的影响；同时，该脚本会在每 1000 个模型插入成功后向标准输出打印当前进度，帮助我们快速发现问题和预估迁移的时间。</p>
+
+<blockquote>
+  <p>你可以在 <a href="https://gist.github.com/nju520/10476fe67a10128a37ba27a4c6967d07">database_transformer.rb</a> 找到完整的数据迁移代码。</p>
+</blockquote>
+
+<p>将所有的数据全部插入到 MySQL 的表之后，模型之间还没有任何显式的关系，我们还需要将通过 <code>uuid</code> 连接的模型转换成使用 <code>id</code> 的方式，对象之间的关系才能通过点语法直接访问，关系的建立其实非常简单，我们获得当前类所有结尾为 <code>_uuid</code> 的属性，然后遍历所有的数据行，根据 <code>uuid</code> 的值和 <code>post_uuid</code> 属性中的 “post” 部分获取到表名，最终得到对应的关联模型，在这里我们也处理了类似多态的特殊情况：</p>
+
+<pre><code class="language-ruby">module RelationBuilder
+  def build_relations(class_name, polymorphic_associations = [], rename_associations = {})
+    uuids = class_name.attribute_names.select { |name| name.end_with? '_uuid' }
+
+    unless uuids.present?
+      STDOUT.puts "#{class_name.to_s.yellow}: skipped"
+      STDOUT.puts
+      return
+    end
+
+    reset_callbacks class_name
+
+    RelationBuilder.profiling do
+      models_count = class_name.count
+      class_name.unscoped.all.each_with_index do |model, index|
+        update_params = uuids.map do |uuid|
+          original_association_name = uuid[0...-5]
+
+          association_model = association_model(
+            original_association_name,
+            model[uuid],
+            polymorphic_associations,
+            rename_associations
+          )
+
+          [original_association_name.to_s, association_model]
+        end.compact
+
+        begin
+          Hash[update_params].each do |key, value|
+            model.send "#{key}=", value
+          end
+          model.save! validate: false
+        rescue Exception =&gt; e
+          STDERR.puts e
+          raise e
+        end
+
+        STDOUT.puts "#{index}/#{models_count}\n" if (counter % 1000).zero?
+      end
+    end
+  end
+end
+</code></pre>
+
+<p>在查找到对应的数据行之后就非常简单了，我们调用对应的 <code>post=</code> 等方法更新外键最后直接将外键的值保存到数据库中，与数据的迁移过程一样，我们在这段代码的执行过程中也会打印出当前的进度。</p>
+
+<p>在初始化 <code>RelationBuilder</code> 时，如果我们传入了 <code>constants</code>，那么在调用 <code>RelationBuilder#build!</code> 时就会重建其中的全部关系，但是如果没有传入就会默认加载 ActiveRecord 中所有的子类，并去掉其中包含 <code>::</code> 的模型，也就是 ActiveRecord 中使用 <code>has_and_belongs_to_many</code> 创建的中间类，我们会在下一节中介绍如何单独处理多对多关系：</p>
+
+<pre><code class="language-ruby">def initialize(constants = [])
+  if constants.present?
+    @constants = constants
+  else
+    Rails.application.eager_load!
+    @constants = ActiveRecord::Base.descendants
+        .reject { |constant| constant.to_s.include?('::') }
+  end
+end
+</code></pre>
+
+<blockquote>
+  <p>跟关系重建相关的代码可以在 <a href="https://gist.github.com/nju520/c0798fb1272f483a176fa67741a3f1ee">relation_builder.rb</a> 找到完整的用于关系迁移的代码。</p>
+</blockquote>
+
+<pre><code class="language-ruby">builder = RelationBuilder.new([Post, Comment])
+builder.build!
+</code></pre>
+
+<p>通过这数据迁移和关系重建两个步骤就已经可以解决绝大部分的数据迁移问题了，但是由于 MongoDB 和 ActiveRecord 中对于多对多关系的处理比较特殊，所以我们需要单独进行解决，如果所有的迁移问题到这里都已经解决了，那么我们就可以使用下面的迁移文件将数据库中与 <code>uuid</code> 有关的全部列都删除了：</p>
+
+<pre><code class="language-ruby">class RemoveAllUuidColumns &lt; ActiveRecord::Migration[5.1]
+  def change
+    Rails.application.eager_load!
+    ActiveRecord::Base.descendants.map do |klass|
+      attrs = klass.attribute_names.select { |n| n.include? 'uuid' }
+      next unless attrs.present?
+      remove_columns klass.table_name, *attrs
+    end
+  end
+end
+</code></pre>
+
+<p>到这里位置整个迁移的过程就基本完成了，接下来就是跟整个迁移过程中有关的其他事项，例如：对多对关系、测试的重要性等话题。</p>
+
+<h3 id="多对多关系的处理">多对多关系的处理</h3>
+
+<p>多对多关系在数据的迁移过程中其实稍微有一些复杂，在 Mongoid 中使用 <code>has_and_belongs_to_many</code> 会在相关的文档下添加一个 <code>tag_ids</code> 或者 <code>post_ids</code> 数组：</p>
+
+<pre><code class="language-ruby"># The post document.
+{
+  "_id" : ObjectId("4d3ed089fb60ab534684b7e9"),
+  "tag_ids" : [
+    ObjectId("4d3ed089fb60ab534684b7f2"), 
+    ObjectId("4d3ed089fb60ab53468831f1")
+  ],
+  "title": "xxx",
+  "content": "xxx"
+}
+</code></pre>
+
+<p>而 ActiveRecord 中会建立一张单独的表，表的名称是两张表名按照字母表顺序的拼接，如果是 <code>Post</code> 和 <code>Tag</code>，对应的多对多表就是 <code>posts_tags</code>，除了创建多对多表，<code>has_and_belongs_to_many</code> 还会创建两个 <code>ActiveRecord::Base</code> 的子类 <code>Tag::HABTM_Posts</code> 和 <code>Post::HABTM_Tags</code>，我们可以使用下面的代码简单实验一下：</p>
+
+<pre><code class="language-ruby">require 'active_record'
+
+class Tag &lt; ActiveRecord::Base; end
+class Post &lt; ActiveRecord::Base
+  has_and_belongs_to_many :tags
+end
+class Tag &lt; ActiveRecord::Base
+  has_and_belongs_to_many :posts
+end
+puts ActiveRecord::Base.descendants
+# =&gt; [Tag, Post, Post::HABTM_Tags, Tag::HABTM_Posts]
+</code></pre>
+
+<p>上述代码打印出了两个 <code>has_and_belongs_to_many</code> 生成的类 <code>Tag::HABTM_Posts</code> 和 <code>Post::HABTM_Tags</code>，它们有着完全相同的表 <code>posts_tags</code>，处理多对多关系时，我们只需要在使用 <code>DatabaseTransformer</code> 导入表中的所有的数据之后，再通过遍历 <code>posts_tags</code> 表中的数据更新多对多的关系表就可以了：</p>
+
+<pre><code class="language-ruby">class PostsTag &lt; ActiveRecord::Base; end
+
+# migrate data from mongodb to mysql.
+transformer = DatabaseTransformer.new 'draven_production'
+transformer.import :posts_tags
+
+# establish association between posts and tags.
+PostsTag.unscoped.all.each do |model|
+  post = Post.find_by_uuid model.post_uuid
+  tag = Tag.find_by_uuid model.tag_uuid
+  next unless post.present? &amp;&amp; tag.present?
+  model.update_columns post_id: post.id, tag_id: tag.id
+end
+</code></pre>
+
+<p>所有使用 <code>has_and_belongs_to_many</code> 的多对多关系都需要通过上述代码进行迁移，这一步需要在删除数据库中的所有 <code>uuid</code> 字段之前完成。</p>
+
+<h3 id="测试的重要性">测试的重要性</h3>
+
+<p>在真正对线上的服务进行停机迁移之前，我们其实需要对数据库已有的数据进行部分和全量测试，在部分测试阶段，我们可以在本地准备一个数据量为生产环境数据量 1/10 或者 1/100 的 MongoDB 数据库，通过在本地模拟 MongoDB 和 MySQL 的环境进行预迁移，确保我们能够尽快地发现迁移脚本中的错误。</p>
+
+<p><img src="https://img.nju520.me/2017-10-10-mongodb-pre-migration.png" alt="mongodb-pre-migration" /></p>
+
+<p>准备测试数据库的办法是通过关系删除一些主要模型的数据行，在删除时可以通过 MongoDB 中的 <code>dependent: :destroy</code> 删除相关的模型，这样可以尽可能的保证数据的一致性和完整性，但是在对线上数据库进行迁移之前，我们依然需要对 MongoDB 中的全部数据进行全量的迁移测试，这样可以发现一些更加隐蔽的问题，保证真正上线时可以出现更少的状况。</p>
+
+<p>数据库的迁移其实也属于重构，在进行 MongoDB 的数据库迁移之前一定要保证项目有着完善的测试体系和测试用例，这样才能让我们在项目重构之后，确定不会出现我们难以预料的问题，整个项目才是可控的，如果工程中没有足够的测试甚至没有测试，那么就不要再说重构这件事情了 – <strong>单元测试是重构的基础</strong>。</p>
+
+<h2 id="总结">总结</h2>
+
+<p>如何从 MongoDB 迁移到 MySQL 其实是一个工程问题，我们需要在整个过程中不断寻找可能出错的问题，将一个比较复杂的任务进行拆分，在真正做迁移之前尽可能地减少迁移对服务可用性以及稳定性带来的影响。</p>
+
+<p><img src="https://img.nju520.me/2017-10-10-mysql-and-mongodb-work-together.png" alt="mysql-and-mongodb-work-together" /></p>
+
+<p>除此之外，MongoDB 和 MySQL 之间的选择也不一定是非此即彼，我们将项目中的大部分数据都迁移到了 MySQL 中，但是将一部分用于计算和分析的数据留在了 MongoDB，这样就可以保证 MongoDB 宕机之后仍然不会影响项目的主要任务，同时，MySQL 的备份和恢复速度也会因为数据库变小而非常迅速。</p>
+
+<p>最后一点，测试真的很重要，如果没有测试，没有人能够做到在<strong>修改大量的业务代码的过程中不丢失任何的业务逻辑</strong>，甚至如果没有测试，很多业务逻辑可能在开发的那一天就已经丢失了。</p>
+
+<p>如果对文章的内容有疑问或者有 MongoDB 迁移相关的问题，可以在评论中留言。</p>
+
+<h2 id="reference">Reference</h2>
+
+<ul>
+  <li><a href="https://www.quora.com/How-do-I-migrate-data-from-a-MongoDB-to-MySQL-database-Can-it-be-done-in-a-real-time-scenario-What-are-the-pros-and-cons-for-each-migration-Which-one-do-you-advice-What-is-your-experience-Any-reference-DB-expert-who-can-do-it">How do I migrate data from a MongoDB to MySQL database? · Quora</a></li>
+</ul>
+
+  ]]></description>
+</item>
+
+<item>
+  <title>Sidekiq 如何处理异步任务</title>
+  <link>//sidekiq</link>
+  <author>nju520</author>
+  <pubDate>2017-08-28T00:00:00+08:00</pubDate>
+  <guid>//sidekiq</guid>
+  <description><![CDATA[
+  <p><a href="https://github.com/mperham/sidekiq">Sidekiq</a> 是 Ruby 和 Rails 项目中常用的后台任务处理系统，其本身提供的 API 十分简洁，源代码也非常易于阅读，是一个轻量级的异步处理组件；虽然其本身没有提供太多复杂的功能，但是它的使用和部署非常简单。在这篇文章中，我们将对 Sidekiq 的实现原理进行介绍和分析。</p>
+
+<p><img src="https://img.nju520.me/2017-08-28-Sidekiq-Cover.jpg-1000width" alt="Sidekiq-Cover" /></p>
+
+<p>文章中并不会详细介绍 Sidekiq 的使用，也并不是一篇 Sidekiq 的教程，在这里我们会介绍任务的入队过程、Sidekiq 任务在 Redis 中的存储方式和消费者对任务的处理过程，除此之外，文章将介绍 Sidekiq 中间件的实现以及任务重试的原理。</p>
+
+<h2 id="概述">概述</h2>
+
+<p>在具体分析介绍 Sidekiq 的实现原理之前，我们需要对整个组件的使用过程进行概述，保证我们对 Sidekiq 的结构有一个总体上的了解。</p>
+
+<pre><code class="language-ruby">class HardWorker
+  include Sidekiq::Worker
+  def perform(name, count)
+    # do something
+  end
+end
+
+HardWorker.perform_async('bob', 5)
+</code></pre>
+
+<p>在这里，我们直接照搬 Sidekiq Wiki 中 <a href="https://github.com/mperham/sidekiq/wiki/Getting-Started">Getting Started</a> 部分的代码简单展示下它是如何使用的，当我们执行 <code>HardWorker.perform_async</code> 方法时，Sidekiq 的 Worker 会将一个异步任务以 JSON 的形式将相关的信息加入 Redis 中并等待消费者对任务的拉取和处理。</p>
+
+<p><img src="https://img.nju520.me/2017-08-28-Sidekiq-Arch.jpg-1000width" alt="Sidekiq-Arch" /></p>
+
+<p>Sidekiq 的消费者有三个部分组成，分别是 <code>Manager</code>、<code>Processor</code> 和 <code>Poller</code>；他们三者会相互协作共同完成对 Redis 中任务消费的过程。</p>
+
+<blockquote>
+  <p>需要注意的是，Sidekiq 中的 <code>Sidekiq::Worker</code> 并不是真正用于处理任务的 Worker，负责执行执行任务的类型其实是 <code>Sidekiq::Processor</code>；在文章中，当我们提到 Sidekiq Worker 时，其实说的是 <code>Sidekiq::Processor</code>，当我们使用了形如 <code>Sidekiq::Worker</code> 或者 <code>Worker</code> 的形式时，我们说的就是对应的类。</p>
+</blockquote>
+
+<h2 id="异步任务的入队">异步任务的入队</h2>
+
+<p>当我们对需要异步执行的任务调用类似 <code>Worker.perform_async</code> 的方法时，Sidekiq 其实并不会真正去创建一个 <code>HardWorker</code> 等 <code>Worker</code> 的对象，它实际上会调用 <code>Worker.client_push</code> 方法并将当前的 <code>class</code> 和 <code>args</code> 参数传进去，也就是需要异步执行的类和参数：</p>
+
+<pre><code class="language-ruby">def perform_async(*args)
+  client_push('class'.freeze =&gt; self, 'args'.freeze =&gt; args)
+end
+</code></pre>
+
+<p>除了 <code>Worker.perform_async</code> 之外，<code>Worker</code> 还提供了另外一对用于<strong>在一段时间之后或者某个时间点</strong>执行相应任务的方法 <code>Worker.perform_at</code> 和 <code>Worker.perform_in</code>：</p>
+
+<pre><code class="language-ruby">def perform_in(interval, *args)
+  int = interval.to_f
+  now = Time.now.to_f
+  ts = (int &lt; 1_000_000_000 ? now + int : int)
+  item = { 'class'.freeze =&gt; self, 'args'.freeze =&gt; args, 'at'.freeze =&gt; ts }
+  item.delete('at'.freeze) if ts &lt;= now
+  client_push(item)
+end
+alias_method :perform_at, :perform_in
+</code></pre>
+
+<p>为了使用同一个接口支持两种不同的安排方式（时间点和多久之后），方法内部对传入的 <code>internal</code> 进行了判断，当 <code>interval.to_f &lt; 1_000_000_000</code> 时就会在一段时间之后执行任务，否则就会以时间点的方式执行任务，虽然 <code>Worker.perform_at</code> 和 <code>Worker.perform_in</code> 是完全相同的方法，不过我们在使用时还是尽量遵循方法的语义选择两者中更符合逻辑的方法。</p>
+
+<p><img src="https://img.nju520.me/2017-08-28-Client-Push-Item.jpg-1000width" alt="Client-Push-Item" /></p>
+
+<p>两种创建异步任务的方式，最终都执行了 <code>Worker.client_push</code> 方法并传入了一个哈希，其中可能包含以上三个部分的内容；在方法的实现中，它获取了上下文中的 Redis 池并将传入的 <code>item</code> 对象传入 Redis 中：</p>
+
+<pre><code class="language-ruby">def client_push(item)
+  pool = Thread.current[:sidekiq_via_pool] || get_sidekiq_options['pool'.freeze] || Sidekiq.redis_pool
+  item.keys.each do |key|
+    item[key.to_s] = item.delete(key)
+  end
+  Sidekiq::Client.new(pool).push(item)
+end
+</code></pre>
+
+<p>简单整理一下，从 <code>Worker.perform_async</code> 方法到 <code>Client#push</code> 方法整个过程都在对即将加入到 Redis 中队列的哈希进行操作，从添加 <code>at</code> 字段到字符串化、再到 <code>Client#normalize_item</code> 方法中添加 <code>jid</code> 和 <code>created_at</code> 字段。</p>
+
+<pre><code class="language-ruby">def push(item)
+  normed = normalize_item(item)
+  payload = process_single(item['class'.freeze], normed)
+
+  if payload
+    raw_push([payload])
+    payload['jid'.freeze]
+  end
+end
+</code></pre>
+
+<p>所有添加异步任务的方法最终都调用了私有方法 <code>Client#raw_push</code> 以及 <code>Client#atomic_push</code> 向 Redis 中添加数据，在这时会有两种不同的情况发生，当异步任务需要在未来的某一时间点进行安排时，它会加入 Redis 的一个有序集合：</p>
+
+<pre><code class="language-ruby">def atomc_push(conn, payloads)
+  if payloads.first['at'.freeze]
+    conn.zadd('schedule'.freeze, payloads.map do |hash|
+                at = hash.delete('at'.freeze).to_s
+                [at, Sidekiq.dump_json(hash)]
+              end)
+  else
+    # ...
+  end
+end
+</code></pre>
+
+<p>在这个有序集合中，Sidekiq 理所应当地将 <code>schedule</code> 作为权重，而其他的全部字段都以 JSON 的格式作为负载传入；但是当 Sidekiq 遇到需要立即执行的异步任务时，实现就有一些不同了：</p>
+
+<pre><code class="language-ruby">def atomc_push(conn, payloads)
+  if payloads.first['at'.freeze]
+  # ...
+  else
+    q = payloads.first['queue'.freeze]
+    now = Time.now.to_f
+    to_push = payloads.map do |entry|
+      entry['enqueued_at'.freeze] = now
+      Sidekiq.dump_json(entry)
+    end
+    conn.sadd('queues'.freeze, q)
+    conn.lpush("queue:#{q}", to_push)
+  end
+end
+</code></pre>
+
+<p>除了设置当前任务的入队时间 <code>enqueued_at</code> 之外，Sidekiq 将队列加入到一个大队列 <code>queues</code> 的集合中，并且将负载直接推到 <code>"queue:#{q}"</code> 数组中等待消费者的拉取，我们稍微梳理一下两种安排异步队列方法的调用过程：</p>
+
+<p><img src="https://img.nju520.me/2017-08-28-Async-Schedule.jpg-1000width" alt="Async-Schedule" /></p>
+
+<h3 id="redis-中的存储">Redis 中的存储</h3>
+
+<p>无论是立即执行还是需要安排的异步任务都会进入 Redis 的队列中，但是它们之间还是有一些区别的，<code>Worker.perform_in/at</code> 会将任务以 <code>[at, args]</code> 的形式加入到 <code>schedules</code> 有序集中，而
+<code>Worker.perform_async</code> 将负载加入到指定的队列，并向整个 Sidekiq 的队列集合 <code>queues</code> 中添加该队列。</p>
+
+<p><img src="https://img.nju520.me/2017-08-28-Perform-async-in-Redis.jpg-1000width" alt="Perform-async-in-Redis" /></p>
+
+<p>所有的 <code>payload</code> 中都包含了一个异步任务需要执行的全部信息，包括该任务的执行的队列 <code>queue</code>、异步队列的类 <code>class</code>、参数 <code>args</code> 以及 <code>sidekiq_options</code> 中的全部参数。</p>
+
+<p><img src="https://img.nju520.me/2017-08-28-Job-in-Redis.jpg-1000width" alt="Job-in-Redis" /></p>
+
+<p>除了上述参数，一个异步任务还包含诸如 <code>created_at</code>、<code>enqueued_at</code> 等信息，也有一个通过 <code>SecureRandom.hex(12)</code> 生成的任务唯一标识符 <code>jid</code>。</p>
+
+<h2 id="sidekiq-的启动过程">Sidekiq 的启动过程</h2>
+
+<p>作者对于 Sidekiq 印象最深刻的就是它在命令行启动的时候输出的一个字符画，我们能在 <code>cli.rb</code> 的 <code>Cli.banner</code> 方法中找到这个字符画：</p>
+
+<pre><code>         m,
+         `$b
+    .ss,  $$:         .,d$
+    `$$P,d$P'    .,md$P"'
+     ,$$$$$bmmd$$$P^'
+   .d$$$$$$$$$$P'
+   $$^' `"^$$$'       ____  _     _      _    _
+   $:     ,$$:       / ___|(_) __| | ___| | _(_) __ _
+   `b     :$$        \___ \| |/ _` |/ _ \ |/ / |/ _` |
+          $$:         ___) | | (_| |  __/   &lt;| | (_| |
+          $$         |____/|_|\__,_|\___|_|\_\_|\__, |
+        .d$$                                       |_|
+</code></pre>
+
+<p>这一节也将介绍 Sidekiq 的启动过程，在 <code>bin</code> 文件夹中的 sidekiq 文件包含的内容就是在命令行执行 <code>sidekiq</code> 时执行的代码：</p>
+
+<pre><code class="language-ruby">begin
+  cli = Sidekiq::CLI.instance
+  cli.parse
+  cli.run
+rescue =&gt; e
+  # ...
+end
+</code></pre>
+
+<p>这里的代码就是创建了一个 <code>CLI</code> 对象，执行 <code>CLI#parse</code> 方法对参数进行解析，最后调用 <code>CLI#run</code> 方法：</p>
+
+<pre><code class="language-ruby">def run
+  print_banner
+
+  self_read, self_write = IO.pipe
+  # ...
+
+  launcher = Sidekiq::Launcher.new(options)
+  begin
+    launcher.run
+    while readable_io = IO.select([self_read])
+      signal = readable_io.first[0].gets.strip
+      handle_signal(signal)
+    end
+  rescue Interrupt
+    launcher.stop
+  end
+end
+</code></pre>
+
+<h3 id="从-launcher-到-manager">从 Launcher 到 Manager</h3>
+
+<p><code>CLI#run</code> 在执行最开始就会打印 banner，也就是我们在每次启动 Sidekiq 时看到的字符画，而在之后会执行 <code>Launcher#run</code> 运行用于处理异步任务的 <code>Processor</code> 等对象。</p>
+
+<p><img src="https://img.nju520.me/2017-08-28-Launcher-Poller-Manager-Processors.jpg-1000width" alt="Launcher-Poller-Manager-Processors" /></p>
+
+<p>每一个 <code>Launcher</code> 都会启动一个 <code>Manager</code> 对象和一个 <code>Poller</code>，其中 <code>Manager</code> 同时管理了多个 <code>Processor</code> 对象，这些不同的类之间有着如上图所示的关系。</p>
+
+<pre><code class="language-ruby">def run
+  @thread = safe_thread("heartbeat", &amp;method(:start_heartbeat))
+  @poller.start
+  @manager.start
+end
+</code></pre>
+
+<p><code>Manager</code> 会在初始化时根据传入的 <code>concurrency</code> 的值创建对应数量的 <code>Processor</code>，默认的并行数量为 25；当执行 <code>Manager#start</code> 时，就会启动对应数量的<strong>线程</strong>和处理器开始对任务进行处理：</p>
+
+<pre><code class="language-ruby">class Manager
+  def start
+    @workers.each do |x|
+      x.start
+    end
+  end
+end
+
+class Processor
+  def start
+    @thread ||= safe_thread("processor", &amp;method(:run))
+  end
+end
+</code></pre>
+
+<p>从 <code>Launcher</code> 的启动到现在只是一个调用 <code>initialize</code> 和 <code>start</code> 方法的过程，再加上 Sidekiq 源代码非常简单，所以阅读起没有丝毫的难度，也就不做太多的解释了。</p>
+
+<h3 id="并行模型">并行模型</h3>
+
+<p>当处理器开始执行 <code>Processor#run</code> 方法时，就开始对所有的任务进行处理了；从总体来看，Sidekiq 使用了多线程的模型对任务进行处理，每一个 <code>Processor</code> 都是使用了 <code>safe_thread</code> 方法在一个新的线程里面运行的：</p>
+
+<pre><code class="language-ruby">def safe_thread(name, &amp;block)
+  Thread.new do
+    Thread.current['sidekiq_label'.freeze] = name
+    watchdog(name, &amp;block)
+  end
+end
+</code></pre>
+
+<p>在使用 Sidekiq 时，我们也会在不同的机器上开启多个 Sidekiq Worker，也就是说 Sidekiq 可以以多进程、多线程的方式运行，同时处理大量的异步任务。</p>
+
+<p><img src="https://img.nju520.me/2017-08-28-Sidekiq-Multi-Processes.jpg-1000width" alt="Sidekiq-Multi-Processes" /></p>
+
+<p>到目前为止，我们已经分析了异步任务的入队以及 Sidekiq Worker 的启动过程了，接下来即将分析 Sidekiq 对异步任务的处理过程。</p>
+
+<h3 id="主题的订阅">『主题』的订阅</h3>
+
+<p>作为一个 Sidekiq Worker 进程，它在启动时就会决定选择订阅哪些『主题』去执行，比如当我们使用下面的命令时：</p>
+
+<pre><code class="language-sh">&gt; sidekiq -q critical,2 -q default
+</code></pre>
+
+<p><code>CLI#parse</code> 方法会对传入的 <code>-q</code> 参数进行解析，但是当执行 <code>sidekiq</code> 命令却没有传入队列参数时，Sidekiq 只会订阅 <code>default</code> 队列中的任务：</p>
+
+<pre><code class="language-ruby">def parse(args=ARGV)
+  # ...
+  validate!
+  # ...
+end
+
+def validate!
+  options[:queues] &lt;&lt; 'default' if options[:queues].empty?
+end
+</code></pre>
+
+<p>同时，默认情况下的队列的优先级都为 <code>1</code>，高优先级的队列在当前的任务中可以得到更多的执行机会，实现的方法是通过增加同一个 <code>queues</code> 集合中高优先级队列的数量，我们可以在 <code>CLI#parse_queue</code> 中找到实现这一功能的代码：</p>
+
+<pre><code class="language-ruby">def parse_queue(opts, q, weight=nil)
+  [weight.to_i, 1].max.times do
+    (opts[:queues] ||= []) &lt;&lt; q
+  end
+  opts[:strict] = false if weight.to_i &gt; 0
+end
+</code></pre>
+
+<p>到这里，其实我们就完成了设置过程中 Sidekiq Worker 『主题』订阅的功能了，我们将在后面 <a href="#执行任务">执行任务</a> 的部分具体介绍 Sidekiq 是如何使用这些参数的。</p>
+
+<h2 id="异步任务的处理">异步任务的处理</h2>
+
+<p>从异步任务的入队一节中，我们可以清楚地看到使用 <code>#perform_async</code> 和 <code>#perform_in</code> 两种方法创建的数据结构 <code>payload</code> 最终以不同的方式进入了 Redis 中，所以在这里我们将异步任务的处理分为定时任务和『立即』任务两个部分，分别对它们不同的处理方式进行分析。</p>
+
+<h3 id="定时任务">定时任务</h3>
+
+<p>Sidekiq 使用 <code>Scheduled::Poller</code> 对 Redis 中 <code>schedules</code> 有序集合中的负载进行处理，其中包括 <code>retry</code> 和 <code>schedule</code> 两个有序集合中的内容。</p>
+
+<p><img src="https://img.nju520.me/2017-08-28-Redis-Sorted-Set.jpg-1000width" alt="Redis-Sorted-Set" /></p>
+
+<p>在 <code>Poller</code> 被 <code>Scheduled::Poller</code> 启动时会调用 <code>#start</code> 方法开始对上述两个有序集合轮训，<code>retry</code> 中包含了所有重试的任务，而 <code>schedule</code> 就是被安排到指定时间执行的定时任务了：</p>
+
+<pre><code class="language-ruby">def start
+  @thread ||= safe_thread("scheduler") do
+    initial_wait
+    while !@done
+      enqueue
+      wait
+    end
+  end
+end
+</code></pre>
+
+<p><code>Scheduled::Poller#start</code> 方法内部执行了一个 <code>while</code> 循环，在循环内部也只包含入队和等待两个操作，用于入队的方法最终调用了 <code>Scheduled::Poll::Enq#enqueue_jobs</code> 方法：</p>
+
+<pre><code class="language-ruby">def enqueue_jobs(now=Time.now.to_f.to_s, sorted_sets=SETS)
+  Sidekiq.redis do |conn|
+    sorted_sets.each do |sorted_set|
+      while job = conn.zrangebyscore(sorted_set, '-inf'.freeze, now, :limit =&gt; [0, 1]).first do
+        if conn.zrem(sorted_set, job)
+          Sidekiq::Client.push(Sidekiq.load_json(job))
+        end
+      end
+    end
+  end
+end
+</code></pre>
+
+<p>传入的 <code>SETS</code> 其实就是 <code>retry</code> 和 <code>schedule</code> 构成的数组，在上述方法中，Sidekiq 通过一个 <code>Redis#zrangebyscore</code> 和 <code>Redis#zrem</code> 将集合中小于当前时间的任务全部加到立即任务中，最终调用是在前面已经提到过的 <code>Client#push</code> 方法将任务推到指定的队列中。</p>
+
+<p><img src="https://img.nju520.me/2017-08-28-Redis-Sidekiq-Poller.jpg-1000width" alt="Redis-Sidekiq-Poller" /></p>
+
+<p>由于 <code>Scheduled::Poller</code> 并不是不停地对 Redis 中的数据进行处理的，因为当前进程一直都在执行 <code>Poller#enqueue</code> 其实是一个非常低效的方式，所以 Sidekiq 会在每次执行 <code>Poller#enqueue</code> 之后，执行 <code>Poller#wait</code> 方法，随机等待一段时间：</p>
+
+<pre><code class="language-ruby">def wait
+  @sleeper.pop(random_poll_interval)
+  # ...
+end
+
+def random_poll_interval
+  poll_interval_average * rand + poll_interval_average.to_f / 2
+end
+</code></pre>
+
+<p>随机等待时间的范围在 <code>[0.5 * poll_interval_average, 1.5 * poll_interval_average]</code> 之间；通过随机的方式，Sidekiq 可以避免在多个线程处理任务时，短时间内 Redis 接受大量的请求发生延迟等问题，能够保证从长期来看 Redis 接受的请求数是平均的；同时因为 <code>Scheduled::Poller</code> 使用了 <code>#enqueue</code> 加 <code>#wait</code> 对 Redis 中的数据进行消费，所以没有办法保证任务会在指定的时间点执行，<strong>执行的时间一定比安排的时间要晚</strong>，这也是我们在使用 Sidekiq 时需要注意的。</p>
+
+<blockquote>
+  <p>随机等待的时间其实不止与 <code>poll_interval_average</code> 有关，在默认情况下，它是当前进程数的 15 倍，在有 30 个 Sidekiq 线程时，每个线程会每隔 225 ~ 675s 的时间请求一次。</p>
+</blockquote>
+
+<h3 id="执行任务">执行任务</h3>
+
+<p>定时任务是由 <code>Scheduled::Poller</code> 进行处理的，将其中需要执行的异步任务加入到指定的队列中，而这些任务最终都会在 <code>Processor#run</code> 真正被执行：</p>
+
+<pre><code class="language-ruby">def run
+  begin
+    while !@done
+      process_one
+    end
+    @mgr.processor_stopped(self)
+  rescue Exception =&gt; ex
+    # ...
+  end
+end
+</code></pre>
+
+<p>当处理结束或者发生异常时会调用 <code>Manager#processor_stopped</code> 或者 <code>Manager#processor_died</code> 方法对 <code>Processor</code> 进行处理；在处理任务时其实也分为两个部分，也就是 <code>#fetch</code> 和 <code>#process</code> 两个方法：</p>
+
+<pre><code class="language-ruby">def process_one
+  @job = fetch
+  process(@job) if @job
+  @job = nil
+end
+</code></pre>
+
+<p>我们先来看一下整个方法的调用栈，任务的获取从 <code>Processor#process_one</code> 一路调用下来，直到 <code>BasicFetch#retrive_work</code> 返回了 <code>UnitOfWork</code> 对象，返回的对象会经过分发最后执行对应类的 <code>#perform</code> 传入参数真正运行该任务：</p>
+
+<pre><code>Processor#process_one
+├── Processor#fetch
+│   └── Processor#get_one
+│       └── BasicFetch#retrive_work
+│           ├── Redis#brpop
+│           └── UnitOfWork#new
+└── Processor#process
+    ├── Processor#dispatch
+    ├── Processor#execute_job
+    └── Worker#perform
+</code></pre>
+
+<p>对于任务的获取，我们需要关注的就是 <code>BasicFetch#retrive_work</code> 方法，他会从 Redis 中相应队列的有序数组中 <code>Redis#brpop</code> 出一个任务，然后封装成 <code>UnitOfWork</code> 对象后返回。</p>
+
+<pre><code class="language-ruby">def retrieve_work
+  work = Sidekiq.redis { |conn| conn.brpop(*queues_cmd) }
+  UnitOfWork.new(*work) if work
+end
+</code></pre>
+
+<p><code>#queues_cmd</code> 这个实例方法其实就用到了在主题的订阅一节中的 <code>queues</code> 参数，该参数会在 <code>Processor</code> 初始化是创建一个 <code>BasicFetch</code> 策略对象，最终在 <code>BasicFetch#queues_cmd</code> 方法调用时返回一个类似下面的数组：</p>
+
+<pre><code class="language-ruby">queue:high
+queue:high
+queue:high
+queue:low
+queue:low
+queue:default
+</code></pre>
+
+<p>这样就可以实现了队列的优先级这一个功能了，返回的 <code>UnitOfWork</code> 其实是一个通过 <code>Struct.new</code> 创建的结构体，它会在 <code>Processor#process</code> 方法中作为资源被处理：</p>
+
+<pre><code class="language-ruby">def process(work)
+  jobstr = work.job
+  queue = work.queue_name
+
+  begin
+    # ...
+
+    job_hash = Sidekiq.load_json(jobstr)
+    dispatch(job_hash, queue) do |worker|
+      Sidekiq.server_middleware.invoke(worker, job_hash, queue) do
+        execute_job(worker, cloned(job_hash['args'.freeze]))
+      end
+    end
+  rescue Exception =&gt; ex
+    # ...
+  end
+end
+</code></pre>
+
+<p>该方法对任务的执行其实总共有四个步骤：</p>
+
+<ol>
+  <li>将 Redis 中存储的字符串加载为 JSON；</li>
+  <li>执行 <code>Processor#dispatch</code> 方法并在内部提供方法重试等功能，同时也实例化一个 <code>Sidekiq::Worker</code> 对象；</li>
+  <li>依次执行服务端的中间件，可能会对参数进行更新；</li>
+  <li>调用 <code>Processor#execute_job</code> 方法执行任务；</li>
+</ol>
+
+<p>而最后调用的时用于执行任务的方法 <code>Processor#execute_job</code>，它的实现也是到目前为止最为简单的方法之一了：</p>
+
+<pre><code class="language-ruby">def execute_job(worker, cloned_args)
+  worker.perform(*cloned_args)
+end
+</code></pre>
+
+<p>该方法在<strong>线程</strong>中执行了客户端创建的 <code>Worker</code> 类的实例方法 <code>#perform</code> 并传入了经过两侧中间件处理后的参数。</p>
+
+<h3 id="小结">小结</h3>
+
+<p>到目前为止，Sidekiq Worker 对任务的消费过程就是圆满的了，从客户端创建一个拥有 <code>#perform</code> 方法的 <code>Worker</code> 到消费者去执行该方法形成了一个闭环，完成了对任务的调度。</p>
+
+<p><img src="https://img.nju520.me/2017-08-28-Client-Redis-Sidekiq-Worker.jpg-1000width" alt="Client-Redis-Sidekiq-Worker" /></p>
+
+<p>Sidekiq 是一个非常轻量级的任务调度系统，它使用 Redis 作为整个系统的消息队列，在两侧分别建立了生产者和消费者的模块，不过除了这几个比较重要的模块，Sidekiq 中还有一些功能是我们无法忽略的，比如中间件、兼容 ActiveJob 甚至是测试的实现，都是我们需要去了解的；接下来，我们将介绍和分析主干之外的『分叉』功能。</p>
+
+<h2 id="中间件">中间件</h2>
+
+<p>中间件模块是 Sidekiq 为我们在整个任务的处理流程提供的两个钩子，一个是在客户端的钩子，另一个在 Sidekiq Worker 中。</p>
+
+<p><img src="https://img.nju520.me/2017-08-28-Middlewares-Client-Redis-Sidekiq-Worker.jpg-1000width" alt="Middlewares-Client-Redis-Sidekiq-Worker" /></p>
+
+<p>中间件的使用其实非常简单，我们默认所有的中间件都会拥有一个实例方法 <code>#call</code> 并接受 <code>worker</code>、<code>job</code> 和 <code>queue</code> 三个参数，在使用时也只需要直接调用 <code>Chain#add</code> 方法将其加入数组就可以了：</p>
+
+<pre><code class="language-ruby">class AcmeCo::MyMiddleware
+  def call(worker, job, queue)
+    # ...
+  end
+end
+
+# config/initializers/sidekiq.rb
+Sidekiq.configure_server do |config|
+  config.server_middleware do |chain|
+    chain.add AcmeCo::MyMiddleware
+  end
+end
+</code></pre>
+
+<p>Sidekiq 将中间件分为了客户端和服务端两个部分，这两个部分的中间件其实并不是严格意义上的在执行之前，由于执行时间点的不同，导致它们有不同的功能：</p>
+
+<ul>
+  <li>服务端中间件是『包围』了任务执行过程的，我们可以在中间件中使用 <code>begin</code>、<code>rescue</code> 语句，这样当任务出现问题时，我们就可以拿到异常了；</li>
+  <li>客户端中间件在任务即将被推入 Redis 之前运行，它能够阻止任务进入 Redis 并且允许我们在任务入队前对其进行修改和停止；</li>
+</ul>
+
+<p>当我们对 Sidekiq 中间的使用都有一定的了解时，就可以开始分析中间件的实现了。</p>
+
+<h3 id="实现">实现</h3>
+
+<p>无论是异步任务真正进入队列之前，还是在客户端处理，跟任务有关的信息都会先通过一个预处理流程，客户端和服务端两个中间件的链式调用都使用 <code>Middleware::Chain</code> 中的类进行处理的：</p>
+
+<pre><code class="language-ruby">class Chain
+  include Enumerable
+  attr_reader :entries
+
+  def initialize
+    @entries = []
+    yield self if block_given?
+  end
+
+  def remove(klass); end
+  def add(klass, *args); end
+  def prepend(klass, *args); end
+  def insert_before(oldklass, newklass, *args); end
+  def insert_after(oldklass, newklass, *args); end
+end
+</code></pre>
+
+<p>每一个 <code>Middleware::Chain</code> 中都包含一系列的 <code>Entry</code>，其中存储了中间件的相关信息，无论是客户端还是服务端都会在执行之前对每一个异步任务的参数执行 <code>invoke</code> 方法调用 <code>Middleware::Chain</code> 对象中的所有中间件：</p>
+
+<pre><code class="language-ruby">def invoke(*args)
+  chain = retrieve.dup
+  traverse_chain = lambda do
+    if chain.empty?
+      yield
+    else
+      chain.shift.call(*args, &amp;traverse_chain)
+    end
+  end
+  traverse_chain.call
+end
+
+</code></pre>
+
+<p><code>Chain#invoke</code> 会对其持有的每一个中间件都执行 <code>#call</code> 方法，中间件都可以对异步任务的参数进行改变或者进行一些记录日志等操作，最后执行传入的 block 并返回结果。</p>
+
+<p><img src="https://img.nju520.me/2017-08-28-Sidekiq-Middlewares.jpg-1000width" alt="Sidekiq-Middlewares" /></p>
+
+<p>当异步队列入队时，就会执行 <code>Client#process_single</code> 方法调用 Sidekiq 载入中的全部中间件最后返回新的 <code>item</code> 对象：</p>
+
+<pre><code class="language-ruby">def process_single(worker_class, item)
+  queue = item['queue'.freeze]
+  middleware.invoke(worker_class, item, queue, @redis_pool) do
+    item
+  end
+end
+</code></pre>
+
+<p>每一个 Sidekiq Worker 在处理中间件时也基本遵循相同的逻辑，如 <code>#process</code> 方法先先执行各种中间件，最后再运行 block 中的内容。</p>
+
+<pre><code class="language-ruby">def process(work)
+  jobstr = work.job
+  queue = work.queue_name
+
+  begin
+    # ...
+
+    job_hash = Sidekiq.load_json(jobstr)
+    Sidekiq.server_middleware.invoke(worker, job_hash, queue) do
+      execute_job(worker, cloned(job_hash['args'.freeze]))
+    end
+  rescue Exception =&gt; ex
+    # ...
+  end
+end
+</code></pre>
+
+<p>在 <code>#execute_job</code> 方法执行期间，由于异步任务可能抛出异常，在这时，我们注册的中间件就可以根据情况对异常进行捕获并选择是否对异常进行处理或者抛给上层了。</p>
+
+<h2 id="任务的重试">任务的重试</h2>
+
+<p>Sidekiq 中任务的重试是由 <code>JobRetry</code> 负责的，<code>Prcessor</code> 中的 <code>#dispatch</code> 方法中调用了 <code>JobRetry#global</code> 方法捕获在异步任务执行过程中发生的错误：</p>
+
+<pre><code class="language-ruby">def dispatch(job_hash, queue)
+  pristine = cloned(job_hash)
+
+  # ...
+  @retrier.global(pristine, queue) do
+    klass  = constantize(job_hash['class'.freeze])
+    worker = klass.new
+    worker.jid = job_hash['jid'.freeze]
+    @retrier.local(worker, pristine, queue) do
+      yield worker
+    end
+  end
+end
+</code></pre>
+
+<p>任务的执行过程分别调用了两个 <code>JobRetry</code> 的方法 <code>#global</code> 和 <code>#local</code>，这两个方法在实现上差不多，都将执行异步任务的 block 包在了一个 <code>begin</code>、<code>rescue</code> 中，选择在合适的时间重试：</p>
+
+<pre><code class="language-ruby">def local(worker, msg, queue)
+  yield
+# ...
+rescue Exception =&gt; e
+  raise Sidekiq::Shutdown if exception_caused_by_shutdown?(e)
+
+  if msg['retry'] == nil
+    msg['retry'] = worker.class.get_sidekiq_options['retry']
+  end
+
+  raise e unless msg['retry']
+  attempt_retry(worker, msg, queue, e)
+  raise Skip
+end
+</code></pre>
+
+<p>如果我们在定义 <code>Worker</code> 时就禁用了重试，那么在这里就会直接抛出上层的异常，否则就会进入 <code>#attempt_retry</code> 方法安排任务进行重试：</p>
+
+<pre><code class="language-ruby">def attempt_retry(worker, msg, queue, exception)
+  max_retry_attempts = retry_attempts_from(msg['retry'], @max_retries)
+
+  msg['queue'] = if msg['retry_queue']
+                   msg['retry_queue']
+                 else
+                   queue
+                 end
+
+  count = if msg['retry_count']
+            msg['retried_at'] = Time.now.to_f
+            msg['retry_count'] += 1
+          else
+            msg['failed_at'] = Time.now.to_f
+            msg['retry_count'] = 0
+          end
+
+  if count &lt; max_retry_attempts
+    delay = delay_for(worker, count, exception)
+    retry_at = Time.now.to_f + delay
+    payload = Sidekiq.dump_json(msg)
+    Sidekiq.redis do |conn|
+      conn.zadd('retry', retry_at.to_s, payload)
+    end
+  else
+    retries_exhausted(worker, msg, exception)
+  end
+end
+</code></pre>
+
+<p>在上面其实我们提到过，<code>Poller</code> 每次会从两个有序集合 <code>retry</code> 和 <code>schedule</code> 中查找到时的任务加入到对应的队列中，在 <code>#attempt_retry</code> 方法中，就可以找到看到 <code>retry</code> 队列中的元素是如何加入的了。</p>
+
+<p>当任务的重试次数超过了限定的重试次数之后，就会执行 <code>#retries_exhausted</code> 以及 <code># send_to_morgue</code> 这一方法，将任务的负载加入 <code>DeadSet</code> 对象中：</p>
+
+<pre><code class="language-ruby">def send_to_morgue(msg)
+  payload = Sidekiq.dump_json(msg)
+  DeadSet.new.kill(payload)
+end
+</code></pre>
+
+<p>这样整个任务的重试过程就结束了，Sidekiq 使用 <code>begin</code>、<code>rescue</code> 捕获整个流程中出现的异常，并根据传入的 <code>retry_count</code> 参数进行重试，调度过程还是非常简洁也非常容易理解的。</p>
+
+<h2 id="总结">总结</h2>
+
+<p>作为一个 Ruby 社区中广泛被使用的异步任务处理的依赖，它的实现是很简单的并且其源代码非常易于阅读，整体的架构也非常清晰。</p>
+
+<p><img src="https://img.nju520.me/2017-08-28-Middlewares-Client-Redis-Sidekiq-Worker.jpg-1000width" alt="Middlewares-Client-Redis-Sidekiq-Worker" /></p>
+
+<p>使用键值的内存数据库 Redis 作为客户端和 Worker 之间的桥梁，Redis 的使用简化了 Sidekiq 的很多逻辑，同时对中间件的支持也使其有着良好的扩展性，不过正其实现简单，所以例如任务取消以及定时任务这种比较常见的功能其本身都没有实现，有的是 Sidekiq 本身设计问题导致的，有的需要另外的插件，不过在绝大多数情况下，Sidekiq 都能完全满足我们的需要，解决绝大多数的问题。</p>
+
+<h2 id="references">References</h2>
+
+<ul>
+  <li><a href="https://github.com/mperham/sidekiq">Sidekiq</a></li>
+  <li><a href="https://ruby-china.org/topics/31470">Sidekiq 任务调度流程分析</a></li>
+</ul>
+
+  ]]></description>
+</item>
+
+
+  </channel>
+</rss>

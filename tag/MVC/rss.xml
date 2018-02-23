@@ -1,0 +1,2102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    
+    <title>nju520.me</title>
+    
+    <link>http://localhost:4000</link>
+    <description>nju520's Blog</description>
+    <language>en-uk</language>
+    <managingEditor> nju520</managingEditor>
+    <atom:link href="rss" rel="self" type="application/rss+xml" />
+    
+<item>
+  <title>浅谈 MVC、MVP 和 MVVM 架构模式</title>
+  <link>//mvx</link>
+  <author>nju520</author>
+  <pubDate>2017-07-12T09:00:00+08:00</pubDate>
+  <guid>//mvx</guid>
+  <description><![CDATA[
+  <ul>
+  <li><a href="http://nju520.me/mvx-model.html">谈谈 MVX 中的 Model</a></li>
+  <li><a href="http://nju520.me/mvx-view.html">谈谈 MVX 中的 View</a></li>
+  <li><a href="http://nju520.me/mvx-controller.html">谈谈 MVX 中的 Controller</a></li>
+  <li><a href="http://nju520.me/mvx.html">浅谈 MVC、MVP 和 MVVM 架构模式</a></li>
+</ul>
+
+<p>这是 MVX 系列的第四篇文章，在前面的文章中，我们先后介绍了 MVC 架构模式中的 Model、View 和 Controller 的现状，对比了其他平台中的设计，最后给出了作者理想中的结构。</p>
+
+<p>而在这一篇文章中，作者会依次介绍 MVC、MVP 以及 MVVM 架构模式以及不同平台对它们的使用；虽然参考了诸多资料，不过文中观点难免掺入作者的主观意见，作者也希望文中的错误与不足之处能被各位读者指出。</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/MVC-MVVM-MVP.jpg" alt="MVC-MVVM-MVP" /></p>
+
+<p>前面的几篇文章中重点都是介绍 iOS 平台上的 Model、View 和 Controller 如何设计，而这篇文章会对目前 GUI 应用中的 MVC、MVP 和 MVVM 架构模式进行详细地介绍。</p>
+
+<h2 id="mvc">MVC</h2>
+
+<p>在整个 GUI 编程领域，MVC 已经拥有将近 50 年的历史了。早在几十年前，Smalltalk-76 就对 MVC 架构模式进行了实现，在随后的几十年历史中，MVC 产生了很多的变种，例如：HMVC、MVA、MVP、MVVM 和其它将 MVC 运用于其它不同领域的模式。</p>
+
+<h3 id="早期的-mvc">早期的 MVC</h3>
+
+<p>而本文的内容就是从 MVC 开始的，作为最出名并且应用最广泛的架构模式，MVC 并没有一个<strong>明确的</strong>定义，网上流传的 MVC 架构图也是形态各异，作者查阅了很多资料也没有办法确定到底什么样的架构图才是<strong>标准的</strong> MVC 实现。</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/MVC-1979.jpg" alt="MVC-1979" /></p>
+
+<p>设计 MVC 的重要目的就是在人的心智模型与计算机的模型之间建立一个桥梁，而 MVC 能够解决这一问题并<strong>为用户提供直接看到信息和操作信息的功能</strong>。</p>
+
+<blockquote>
+  <p>更早的概念类似 Model-View-Editor（MVE）这里就不再提及了，感兴趣的读者可以阅读这篇论文 <a href="http://heim.ifi.uio.no/~trygver/1979/mvc-1/1979-05-MVC.pdf">Thing-Model-View-Editor</a> 了解更多的信息。</p>
+</blockquote>
+
+<h3 id="混乱的-mvc-架构">混乱的 MVC 架构</h3>
+
+<p>作者相信，稍有编程经验的开发者就对 MVC 有所了解，至少也是听过 MVC 的名字。作者也一直都认为绝大多数人对于 MVC 理解的概念都一样，很多人对于 MVVM 的实现有很大争论，说遵循什么什么架构的是 MVVM，MVVM 有什么组件、没有什么组件，而对于 MVC 仿佛没有那么大的疑问，这其实却不然。</p>
+
+<h4 id="aspnet-mvc">ASP.NET MVC</h4>
+
+<p>在最近的几个月，作者发现不同人对于 MVC 的理解有巨大的差异，这是 <a href="https://msdn.microsoft.com/en-us/library/dd381412(v=vs.108).aspx">ASP.NET MVC Overview</a> 一文中对于 MVC 模式描述的示意图。</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/MVC-with-ASP.NET.jpg" alt="MVC-with-ASP.NET" /></p>
+
+<p>图片中并没有对 Model、View 和 Controller 三者之间如何交互进行说明，有的也只是几个箭头。我们应该可以这么简单地理解：</p>
+
+<ol>
+  <li>控制器负责管理视图和模型；</li>
+  <li>视图负责展示模型中的内容；</li>
+</ol>
+
+<blockquote>
+  <p>由于文章没有明确对这三个箭头的含义进行解释，所以在这里也仅作推断，无法确认原作者的意思。</p>
+</blockquote>
+
+<h4 id="spring-mvc">Spring MVC</h4>
+
+<p>与 ASP.NET 不同，Spring MVC 对于 MVC 架构模式的实现就更加复杂了，增加了一个用于分发请求、管理视图的 DispatchServlet：</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/MVC-with-Spring.jpg" alt="MVC-with-Spring" /></p>
+
+<p>在这里不再介绍 Spring MVC 对于 HTTP 请求的处理流程，我们对其中 Model、View 和 Controller 之间的关系进行简单的分析：</p>
+
+<ol>
+  <li>通过 DispatchServlet 将控制器层和视图层完全解耦；</li>
+  <li>视图层和模型层之间没有直接关系，只有间接关系，通过控制器对模型进行查询、返回给 DispatchServlet 后再传递至视图层；</li>
+</ol>
+
+<p>虽然 Spring MVC 也声称自己遵循 MVC 架构模式，但是这里的 MVC 架构模式和 ASP.NET 中却有很大的不同。</p>
+
+<h4 id="ios-mvc">iOS MVC</h4>
+
+<p>iOS 客户端中的 Cocoa Touch 自古以来就遵循 MVC 架构模式，不过 Cocoa Touch 中的 MVC 与 ASP.NET 和 Spring 中的 MVC 截然不同。</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/MVC-with-iOS.jpg" alt="MVC-with-iOS" /></p>
+
+<p>在 iOS 中，由于 <code>UIViewController</code> 类持有一个根视图 <code>UIView</code>，所以视图层与控制器层是紧密耦合在一起的，这也是 iOS 项目经常遇到视图控制器非常臃肿的重要原因之一。</p>
+
+<h4 id="rails-mvc">Rails MVC</h4>
+
+<p>Rails 作为著名的 MVC 框架，视图层和模型层没有直接的耦合，而是通过控制器作为中间人对信息进行传递：</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/MVC-with-Rails.jpg" alt="MVC-with-Rails" /></p>
+
+<p>这种 MVC 的设计分离了视图层和模型层之间的耦合，作为承担数据存储功能的模型层，可以通过控制器同时为多种不同的视图提供数据：</p>
+
+<p><img src="https://github.com/nju520/analyze/raw/master/contents/architecture/images/mvx/MVC-%05in-Rails-with-different-view.jpg" alt="MVC-in-Rails-with-different-view" /></p>
+
+<p>控制器根据用户发出的 HTTP 请求，从模型中取出相同的数据，然后传给不同的视图以渲染出不同的结果。Rails 中的 MVC 架构模式能够很好地将用于展示的视图和用于存储数据的数据库进行分离，两者之间通过控制器解耦，能够实现同一数据库对应多种视图的架构。</p>
+
+<h4 id="维基百科中的-mvc">维基百科中的 MVC</h4>
+
+<p>除了上述框架中的 MVC 架构模式，还有一些其它的书籍或者资料对于 MVC 也有着不同的解释，比如维基百科的 <a href="https://en.wikipedia.org/wiki/Model–view–controller">Model-view-controller</a> 条目，该条目是我们在 Google 搜索 <a href="https://www.google.com/search?q=MVC">MVC</a> 时能够出现的前几个条目，这也是维基百科中的架构图能够出现在这篇文章中的原因 —— 有着广泛的受众。</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/MVC-in-Wikipedia.jpg" alt="MVC-in-Wikipedia" /></p>
+
+<p>维基百科中对于 MVC 架构模式交互图的描述其实相比上面的图片还都是比较清晰的，这主要是因为它对架构图中的箭头进行了详细的说明，指出了这个关系到底表示什么。</p>
+
+<ol>
+  <li>视图被用户看到；</li>
+  <li>用户使用控制器；</li>
+  <li>控制器操作模型；</li>
+  <li>模型更新视图；</li>
+</ol>
+
+<p>虽然说整个架构图的逻辑是可以说的通的，不过相比于前面的架构图总是感觉有一些奇怪，而在这幅图片中，视图和控制器之间是毫无关系的，这与前面见到的所有 MVC 架构模式都完全不同，作者也不清楚这幅图来源是什么、为什么这么画，放在这里也仅作参考。</p>
+
+<h3 id="标准的-mvc">『标准』的 MVC</h3>
+
+<p>到底什么才是标准的 MVC 这个问题，到现在作者也没有一个<strong>确切的</strong>答案；不过多个框架以及书籍对 MVC 的理解有一点是完全相同的，也就是它们都将整个应用分成 Model、View 和 Controller 三个部分，而这些组成部分其实也有着几乎相同的职责。</p>
+
+<ul>
+  <li>视图：管理作为位图展示到屏幕上的图形和文字输出；</li>
+  <li>控制器：翻译用户的输入并依照用户的输入操作模型和视图；</li>
+  <li>模型：管理应用的行为和数据，响应数据请求（经常来自视图）和更新状态的指令（经常来自控制器）；</li>
+</ul>
+
+<blockquote>
+  <p>上述内容出自 <a href="http://www.dgp.toronto.edu/~dwigdor/teaching/csc2524/2012_F/papers/mvc.pdf">Applications Programming in Smalltalk-80: How to use Model-View-Controller (MVC)</a> 一文。</p>
+</blockquote>
+
+<p>作者所理解的真正 MVC 架构模式其实与 ASP.NET 中对于 MVC 的设计完全相同：</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/Standard-MVC.jpg" alt="Standard-MV" /></p>
+
+<p>控制器负责对模型中的数据进行更新，而视图向模型中请求数据；当有用户的行为触发操作时，会有控制器更新模型，并通知视图进行更新，在这时视图向模型请求新的数据，而这就是<strong>作者所理解的</strong>标准 MVC 模式下，Model、View 和 Controller 之间的协作方式。</p>
+
+<h4 id="依赖关系">依赖关系</h4>
+
+<p>虽然我们对 MVC 中的各个模块的交互不是特别了解，但是三者之间的依赖关系却是非常明确的；在 MVC 中，模型层可以单独工作，而视图层和控制器层都依赖与模型层中的数据。</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/Essential-Dependencies-in-MVC.jpg" alt="Essential-Dependencies-in-MVC" /></p>
+
+<blockquote>
+  <p>虽然如上图所示，视图和控制器之间没有相互依赖，不过因为视图和控制器之间的依赖并不常用，所以图中将视图和控制器之间的依赖省略了。</p>
+</blockquote>
+
+<h4 id="分离展示层">分离展示层</h4>
+
+<p>在 Martin Fowler 对于 Model-View-Controller 的描述中，MVC 最重要的概念就是分离展示层 <a href="https://www.martinfowler.com/eaaDev/SeparatedPresentation.html">Separated Presentation</a>，如何在领域对象（Domain Object）和我们在屏幕上看到的 GUI 元素进行划分是 MVC 架构模式中最核心的问题。</p>
+
+<p>GUI 应用程序由于其需要展示内容的特点，分为两个部分：一部分是用于展示内容的展示层（Presentation Layer），另一部分包含领域和数据逻辑的领域层（Domain Layer）。</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/Presentation-Domain.jpg" alt="Presentation-Domain" /></p>
+
+<p>展示层依赖于领域层中存储的数据，而领域层对于展示层一无所知，领域层其实也是 MVC 模式中的模型层，而展示层可以理解为 VC 部分。</p>
+
+<p>MVC 最重要的目的并不是规定各个模块应该如何交互和联系，而是将原有的混乱的应用程序划分出合理的层级，把一团混乱的代码，按照展示层和领域层分成两个部分；在这时，领域层中的领域对象由于其自身特点不需要对展示层有任何了解，可以同时为不同的展示层工作。</p>
+
+<h4 id="观察者同步">观察者同步</h4>
+
+<p>除了分离展示层，MVC 还与观察者同步 <a href="https://www.martinfowler.com/eaaDev/MediatedSynchronization.html">Observer Synchronization</a> 关系紧密。因为在 MVC 模式中，模型可以单独工作，同时它对使用模型中数据的视图和控制器一无所知，为了保持模型的独立性，我们需要一种机制，当模型发生改变时，能够同时更新多个视图和控制器的内容；在这时，就需要以观察者同步的方式解决这个问题。</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/Observer-Synchronization.jpg" alt="Observer-Synchronization" /></p>
+
+<p>我们将所有需要实时更新的组件注册成为模型的观察者，在模型的属性发生变化时，通过观察者模式推送给所有注册的观察者（视图和控制器）。</p>
+
+<p>当多个视图共享相同的数据时，观察者同步是一个非常关键的模式，它能够在对这些视图不知情的前提下，同时通知多个视图；通过观察者模式，我们可以非常容易地创建一个依赖于同一模型的视图。</p>
+
+<p>观察者同步或者说观察者模式的主要缺点就是：由于事件触发的隐式行为可能导致很难查找问题的来源并影响其解决，不过虽然它有着这样的缺点，但是观察者同步这一机制仍然成为 MVC 以及其衍生架构模式中非常重要的一部分。</p>
+
+<h4 id="占主导地位的控制器">占主导地位的控制器</h4>
+
+<p>MVC 架构模式的三个组成部分：Model、View 和 Controller 中最重要的就是控制器，它承担了整个架构中的大部分业务逻辑，同时在用户请求到达或者事件发生时都会首先通知控制器并由它来决定如何响应这次请求或者事件。</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/Main-Controller.jpg" alt="Main-Controlle" /></p>
+
+<p>在 MVC 中，所有的用户请求都会首先交给控制器，再由控制器来决定如何响应用户的输入，无论是更新模型中的信息还是渲染相应的视图，都是通过控制器来决定的；也就是说，在 MVC 中，控制器占据主导地位，它决定用户的输入是如何被处理的。</p>
+
+<h4 id="被动的模型">被动的模型</h4>
+
+<p>在绝大多数的 MVC 架构模式中，模型都不会主动向视图或者控制器推送消息；模型都是被动的，它只存储整个应用中的数据，而信息的获取和更新都是由控制器来驱动的。</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/Passive-Model.jpg" alt="Passive-Mode" /></p>
+
+<p>但是当模型中的数据发生变化时，却需要通过一些方式通知对应的视图进行更新，在这种情况下其实也不需要模型<strong>主动</strong>将数据变化的消息推送给视图；因为所有对于模型层的改变都是<strong>由用户的操作导致的</strong>，而用户的操作都是通过控制器来处理的，所以只需要在控制器改变模型时，将更新的信息发送给视图就可以了；当然，我们也可以通过<strong>观察者模式</strong>向未知的观察者发送通知，以保证状态在不同模块之间能够保持同步。</p>
+
+<p>作为被动的模型层，它对于视图和控制器的存在并不知情，只是向外部提供接口并响应视图和控制器对于数据的请求和更新操作。</p>
+
+<h4 id="mvc--mvc">MVC + MVC</h4>
+
+<p>目前的大多数应用程序都非常复杂并且同时包含客户端和服务端，两者分开部署但同时又都遵循 MVC 或者衍生的架构模式；过去的 Web 应用由于并不复杂，前端和服务端往往都部署在同一台服务器上，比如说使用 erb 模板引擎的 Rails 或者使用 jsp 的 Java 等等；这时的 Web 应用都遵循 MVC 架构模式：</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/MVC-Web-App.jpg" alt="MVC-Web-App" /></p>
+
+<blockquote>
+  <p>上图的 MVC 架构模式的通信方式与标准的 MVC 中不同，上图以 Rails 为例展示其中的 MVC 是如何工作的，其中的 HTML、CSS 和 Javascript 代码就是视图层，控制器负责视图的渲染并且操作模型，模型中包含部分业务逻辑并负责管理数据库。</p>
+</blockquote>
+
+<p>过去的 Web 应用的非常简单，而现在的应用程序都非常复杂，而整个应用程序无论是 Web 还是客户端其实都包含两个部分，也就是前端/客户端和后端；先抛开后端不谈，无论是 Web 前端、iOS 还是 Android 都遵循 MVC 架构模式或者它的变种。</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/MVC-App-Arch.jpg" alt="MVC-App-Arch" /></p>
+
+<p>在实际情况下，单独的 iOS、Android 和 Web 应用往往不能单独工作，这些客户端应用需要与服务端一起工作；当前端/客户端与后端一同工作时，其实分别『部署』了两个不同的应用，这两个应用都遵循 MVC 架构模式：</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/MVC-MVC.jpg" alt="MVC-MV" /></p>
+
+<p>客户端和服务器通过网络进行连接，并组成了一个更大的 MVC 架构；从这个角度来看，服务端的模型层才存储了真正的数据，而客户端的模型层只不过是一个存储在客户端设备中的本地缓存和临时数据的集合；同理，服务端的视图层也不是整个应用的视图层，用于为用户展示数据的视图层位于客户端，也就是整个架构的最顶部；中间的五个部分，也就是从低端的模型层到最上面的视图共同组成了整个应用的控制器，将模型中的数据以合理的方式传递给最上层的视图层用于展示。</p>
+
+<h2 id="mvp">MVP</h2>
+
+<p>MVP 架构模式是 MVC 的一个变种，很多框架都自称遵循 MVC 架构模式，但是它们实际上却实现了 MVP 模式；MVC 与 MVP 之间的区别其实并不明显，作者认为两者之间最大的区别就是 MVP 中使用 Presenter 对视图和模型进行了解耦，它们彼此都对对方一无所知，沟通都通过 Presenter 进行。</p>
+
+<p>MVP 作为一个比较有争议的架构模式，在维基百科的 <a href="https://en.wikipedia.org/wiki/Model–view–presenter">Model-view-presenter</a> 词条中被描述为 MVC 设计模式的变种（derivation），自上个世纪 90 年代出现在 IBM 之后，随着不断的演化，虽然有着很多分支，不过 Martin Fowler 对 MVP 架构模式的定义最终被广泛接受和讨论。</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/Standard-MVP.jpg" alt="Standard-MVP" /></p>
+
+<p>在 MVP 中，Presenter 可以理解为松散的控制器，其中包含了视图的 UI 业务逻辑，所有从视图发出的事件，都会通过代理给 Presenter 进行处理；同时，Presenter 也通过视图暴露的接口与其进行通信。</p>
+
+<p>目前常见的 MVP 架构模式其实都是它的变种：<a href="https://www.martinfowler.com/eaaDev/PassiveScreen.html">Passive View</a> 和 <a href="https://www.martinfowler.com/eaaDev/SupervisingPresenter.html">Supervising Controller</a>，接下来的内容也是围绕这两种变种进行展开的。</p>
+
+<h3 id="被动视图">被动视图</h3>
+
+<p>MVP 的第一个主要变种就是被动视图（Passive View）；顾名思义，在该变种的架构模式中，视图层是被动的，它本身不会改变自己的任何的状态，所有的状态都是通过 Presenter 来间接改变的。</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/PassIve-View.jpg" alt="PassIve-Vie" /></p>
+
+<p>被动的视图层就像前端中的 HTML 和 CSS 代码，只负责展示视图的结构和内容，本身不具有任何的逻辑：</p>
+
+<pre><code class="language-swift">&lt;article class="post"&gt;
+  &lt;header class="post-header"&gt;
+    &lt;h2 class="post-title"&gt;&lt;a href="/mvx-controller.html"&gt;谈谈 MVX 中的 Controller&lt;/a&gt;&lt;/h2&gt;
+  &lt;/header&gt;
+  &lt;section class="post-excerpt"&gt;
+    &lt;p&gt;在前两篇文章中，我们已经对 iOS 中的 Model 层以及 View 层进行了分析，划分出了它们的具体职责，其中 Model 层除了负责数据的持久存储、缓存工作，还要负责所有 HTTP... &lt;a class="read-more" href="/mvx-controller.html"&gt;&amp;raquo;&lt;/a&gt;&lt;/p&gt;
+  &lt;/section&gt;
+  &lt;footer class="post-meta"&gt;
+    &lt;img class="author-thumb" src="/assets/images/draven.png" alt="Author image" nopin="nopin" /&gt;
+    &lt;a href='/author/nju520'&gt;nju520&lt;/a&gt;
+    &lt;time class="post-date" datetime="2017-06-23"&gt;23 Jun 2017&lt;/time&gt;
+  &lt;/footer&gt;
+&lt;/article&gt;
+</code></pre>
+
+<h4 id="依赖关系-1">依赖关系</h4>
+
+<p>视图成为了完全被动的并且不再根据模型来更新视图本身的内容，也就是说，不同于 MVC 中的依赖关系；在被动视图中，视图层对于模型层没有任何的依赖：</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/Essential-Dependencies-in-Passive-View.jpg" alt="Essential-Dependencies-in-Passive-Vie" /></p>
+
+<p>因为视图层不依赖与其他任何层级也就最大化了视图层的可测试性，同时也将视图层和模型层进行了合理的分离，两者不再相互依赖。</p>
+
+<h4 id="通信方式">通信方式</h4>
+
+<p>被动视图的示意图中一共有四条线，用于表示 Model、View 和 Presenter 之间的通信：</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/Passive-View-with-Tags.jpg" alt="Passive-View-with-Tags" /></p>
+
+<ol>
+  <li>当视图接收到来自用户的事件时，会将事件转交给 Presenter 进行处理；</li>
+  <li>被动的视图向外界暴露接口，当需要更新视图时 Presenter 通过视图暴露的接口更新视图的内容；</li>
+  <li>Presenter 负责对模型进行操作和更新，在需要时取出其中存储的信息；</li>
+  <li>当模型层改变时，可以将改变的信息发送给<strong>观察者</strong> Presenter；</li>
+</ol>
+
+<p>在 MVP 的变种被动视图中，模型的操作以及视图的更新都仅通过 Presenter 作为中间人进行。</p>
+
+<h3 id="监督控制器">监督控制器</h3>
+
+<p>与被动视图中状态同步都需要<strong>显式</strong>的操作不同，监督控制器（Supervising Controller）就将部分需要显式同步的操作变成了隐式的：</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/Supervising-Controller.jpg" alt="Supervising-Controller" /></p>
+
+<p>在监督控制器中，视图层接管了一部分视图逻辑，主要内容就是同步<strong>简单的</strong>视图和模型的状态；而监督控制器就需要负责响应用户的输入以及一部分更加复杂的视图、模型状态同步工作。</p>
+
+<p>对于用户输入的处理，监督控制器的做法与标准 MVP 中的 Presenter 完全相同；但是对于视图、模型的同步工作，监督控制器会尽可能地将所有简单的属性<strong>以数据绑定的形式声明在视图层中</strong>，类似于 Vue 中双向绑定的简化版本：</p>
+
+<pre><code class="language-html">&lt;a v-bind:href="url"&gt;&lt;/a&gt;
+</code></pre>
+
+<p>剩下的无法通过上述方式直接绑定的属性就需要通过监督控制器来操作和更新了。</p>
+
+<h4 id="通信方式-1">通信方式</h4>
+
+<p>监督控制器中的视图和模型层之间增加了两者之间的耦合，也就增加了整个架构的复杂性：</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/Supervising-Controller-With-Tag.jpg" alt="Supervising-Controller-With-Tag" /></p>
+
+<p>视图和监督控制器、模型与监督控制器的关系与被动视图中两者与 Presenter 的关系几乎相同，视图和模型之间新增的依赖就是数据绑定的产物；视图通过声明式的语法与模型中的简单属性进行绑定，当模型发生改变时，会通知其观察者视图作出相应的更新。</p>
+
+<p>通过这种方式能够减轻监督控制器的负担，减少其中简单的代码，将一部分逻辑交由视图进行处理；这样也就导致了视图同时可以被 Presenter 和数据绑定两种方式更新，相比于被动视图，监督控制器的方式也降低了视图的可测试性和封装性。</p>
+
+<h3 id="占主导地位的视图">占主导地位的视图</h3>
+
+<p>无论是在被动视图还是监督控制器版本的 MVP 架构模式中，视图层在整个架构中都是占主导地位的：</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/Main-View-in-MVP.jpg" alt="Main-View-in-MVP" /></p>
+
+<p>在 MVC 中，控制器负责<strong>以不同的视图响应客户端请求的不同动作</strong>；然而，不同于 MVC 模式，MVP 中视图将所有的动作交给 Presenter 进行处理；MVC 中的所有的动作都对应着一个控制器的方法调用，Web 应用中的每一个动作都是对某一个 URL 进行的操作，控制器根据访问的路由和方法（GET 等）对数据进行操作，最终选择正确的视图进行返回。</p>
+
+<p>MVC 中控制器返回的视图没有直接绑定到模型上，它仅仅被控制器渲染并且是完全无状态的，其中不包含任何的逻辑，但是 MVP 中的视图<strong>必须要将对应的事件代理给 Presenter 执行</strong>，否则事件就无法被响应。</p>
+
+<p>另一个 MVP 与 MVC 之间的重大区别就是，MVP（Passive View）中的视图和模型是完全解耦的，它们对于对方的存在完全不知情，这也是区分 MVP 和 MVC 的一个比较容易的方法。</p>
+
+<blockquote>
+  <p>上述内容取自 <a href="https://stackoverflow.com/questions/2056/what-are-mvp-and-mvc-and-what-is-the-difference">What are MVP and MVC and what is the difference? · Stack Overflow</a> 中的 Model-View-Controller 部分。</p>
+</blockquote>
+
+<h2 id="mvvm">MVVM</h2>
+
+<p>相较于 MVC 和 MVP 模式，MVVM 在定义上就明确得多，同时，维基百科上对于 <a href="https://en.wikipedia.org/wiki/Model–view–viewmodel">Model-View-ViewModel</a> 的词条也没有歧义；不过，在谈 MVVM 架构模式之前，我们需要先了解它是如何发展和演变的。</p>
+
+<h3 id="mvvm-的演变">MVVM 的演变</h3>
+
+<p>早在 2004 年，Martin Fowler 发表了一篇名为 <a href="https://www.martinfowler.com/eaaDev/PresentationModel.html">Presentation Model</a> （以下简称为 PM 模式）的文章，PM 模式与 MVP 比较相似，它从视图层中分离了行为和状态；PM 模式中创建了一个视图的抽象，叫做 Presentation Model，而视图也成为了这个模型的『渲染』结果。</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/PM-and-MVVM.jpg" alt="PM-and-MVV" /></p>
+
+<p>2005 年，John Gossman 在他的博客上公布了 <a href="https://blogs.msdn.microsoft.com/johngossman/2005/10/08/introduction-to-modelviewviewmodel-pattern-for-building-wpf-apps/">Introduction to Model/View/ViewModel pattern for building WPF apps</a> 一文。MVVM 与 Martin Fowler 所说的 PM 模式其实是完全相同的，Fowler 提出的 PM 模式是一种与平台无关的创建视图抽象的方法，而 Gossman 的 MVVM 是专门用于 WPF 框架来简化用户界面的创建的模式；我们可以认为 <strong>MVVM 是在 WPF 平台上对于 PM 模式的实现</strong>。</p>
+
+<blockquote>
+  <p>有兴趣的读者可以阅读 <a href="https://blogs.msdn.microsoft.com/johngossman/2005/10/08/introduction-to-modelviewviewmodel-pattern-for-building-wpf-apps/ · MSDN">Introduction to Model/View/ViewModel pattern for building WPF apps</a> 获得更多与 MVVM 演化的相关信息。</p>
+</blockquote>
+
+<h3 id="展示模型">展示模型</h3>
+
+<blockquote>
+  <p>本节大部分内容都节选自 Martin Fowler 的 <a href="https://www.martinfowler.com/eaaDev/PresentationModel.html">Presentation Model</a> 一文。</p>
+</blockquote>
+
+<p>既然 MVVM 是展示模型 <a href="https://www.martinfowler.com/eaaDev/PresentationModel.html">Presentation Model</a> 的一个实现，那么在介绍 Model-View-ViewModel 之前，我们就需要了解 PM 模式到底是什么。</p>
+
+<p>在 MVC 一节中曾经有过对展示层和领域层进行分离的讨论，而 PM 模式就与分离展示层 <a href="https://www.martinfowler.com/eaaDev/SeparatedPresentation.html">Separated Presentation</a> 有一定的关系。</p>
+
+<p>作为 Martin Fowler 在 2004 年提出的概念，Presentation Model 到今天其实也是非常先进的，PM 模式将视图中的全部状态和行为放到一个单独的展示模型中，协调领域对象（模型）并且为视图层提供一个接口。</p>
+
+<p>在监督控制器中，视图层与模型层中的一些简单属性进行绑定，在模型属性变化时直接更新视图，而 PM 通过引入展示模型将<strong>模型层中的数据与复杂的业务逻辑封装成属性与简单的数据同时暴露给视图，让视图和展示模型中的属性进行同步</strong>。</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/Presentation-Model.jpg" alt="Presentation-Mode" /></p>
+
+<p>展示模型中包含所有的视图渲染需要的动态信息，包括视图的内容（text、color）、组件是否启用（enable），除此之外还会将一些方法暴露给视图用于某些事件的响应。</p>
+
+<h4 id="状态的同步">状态的同步</h4>
+
+<p>展示模型对于模型层的操作以及为视图层暴露接口都是非常容易的，在整个 PM 模式中，最为麻烦的就是视图和展示模型状态的同步。</p>
+
+<p>因为展示模型是视图的抽象，其中包含了视图的状态（属性）和行为（动作），视图的行为可能很少发生改变，但是视图状态的改变就是非常常见的了，那么同步视图和展示模型的代码应该放哪里就是一个需要考虑的问题了。</p>
+
+<p>到目前为止，我们能够防止状态同步代码的地方其实只有两个，也就是视图和展示模型；如果将同步的代码放在视图中，那么可能会影响视图的测试，不过由于现在的大部分客户端程序完全没有测试，这一点其实也影响不大；如果将代码放在展示模型中，实际上就为展示模型增加了视图的依赖，导致不同层级之间的耦合。</p>
+
+<blockquote>
+  <p>在作者看来这两种选择其实都影响并不大，反正我们的应用中并没有测试嘛。</p>
+</blockquote>
+
+<h4 id="展示模型与其他模块的关系">展示模型与其他模块的关系</h4>
+
+<p>在 PM 模式中，同一个展示模型可以与多个领域对象交互，多个视图可以使用相同的展示模型，但是每一个视图只能持有一个展示模型。</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/PM-View-Domain-Object.jpg" alt="PM-View-Domain-Object" /></p>
+
+<p>PM 模式中不同层级之间的关系还是非常容易理解的，在这里就不做具体解释了。</p>
+
+<h3 id="mvvm-与-wpf">MVVM 与 WPF</h3>
+
+<p>MVVM 架构模式是微软在 2005 年诞生的，从诞生一开始就与 WPF 框架的联系非常紧密，在这一节中，我们将介绍 MVVM 模式是如何遵循 PM 模式实现的，WPF 作为微软用于处理 GUI 软件的框架，提供了一套非常优雅的解决方案。</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/Model-View-ViewModel.jpg" alt="Model-View-ViewModel" /></p>
+
+<p>从 Model-View-ViewModel 这个名字来看，它由三个部分组成，也就是 Model、View 和 ViewModel；其中视图模型（ViewModel）其实就是 PM 模式中的展示模型，在 MVVM 中叫做视图模型。</p>
+
+<p>除了我们非常熟悉的 Model、View 和 ViewModel 这三个部分，在 MVVM 的实现中，还引入了<strong>隐式的</strong>一个 Binder 层，而声明式的数据和命令的绑定在 MVVM 模式中就是通过它完成的。</p>
+
+<p><img src="https://raw.githubusercontent.com/nju520/analyze/master/contents/architecture/images/mvx/Binder-View-ViewModel.jpg" alt="Binder-View-ViewModel" /></p>
+
+<p>在实现 PM 模式时，我们需要处理视图和展示模型之间状态的同步，也就是 MVVM 中的视图和视图模型，我们使用隐式的 Binder 和 XAML 文件来完成视图和视图模型两者之间的双向绑定：</p>
+
+<pre><code class="language-xml">&lt;Window x:Class ="WPFDataBinding.MainWindow" Title="MainWindow" Height="350" Width="604"&gt;
+   &lt;Grid&gt;
+      &lt;Label Name="nameLabel" Margin="2"&gt;_Name:&lt;/Label&gt;
+      &lt;TextBox Name="nameText" Grid.Column="1" Margin="2"
+         Text="{Binding Name}"/&gt;
+      &lt;Label Name="ageLabel" Margin="2" Grid.Row ="1"&gt;_Age:&lt;/Label&gt;
+      &lt;TextBox Name="ageText" Grid.Column="1" Grid.Row ="1" Margin ="2"
+         Text="{Binding Age}"/&gt;
+   &lt;/Grid&gt;
+&lt;/Window&gt;
+</code></pre>
+
+<p>在 WPF 中我们可以使用 Binding 关键字在 XAML 中完成双向绑定，当 <code>TextBox</code> 中的文字更新时，Binder 也会更新 ViewModel 中对应属性 <code>Name</code> 或者 <code>Age</code> 的值。</p>
+
+<p>我们可以说 MVVM 将视图和展示模型之间的同步代码放到了视图层（XAML）中，也可以说通过隐式的方法实现了状态的同步。</p>
+
+<p>无论是 MVVM 还是 Presentation Model，其中最重要的不是如何同步视图和展示模型/视图模型之间的状态，是使用观察者模式、双向绑定还是其它的机制都不是整个模式中最重要的部分，最为关键的是<strong>展示模型/视图模型创建了一个视图的抽象，将视图中的状态和行为抽离出一个新的抽象</strong>，这才是 MVVM 和 PM 中需要注意的。</p>
+
+<h2 id="总结">总结</h2>
+
+<p>从 MVC 架构模式到 MVVM，从分离展示层到展示模型层，经过几十年的发展和演变，MVC 架构模式出现了各种各样的变种，并在不同的平台上有着自己的实现。</p>
+
+<p>在架构模式的选用时，我们往往没有太多的发言权，主要因为平台本身往往对应用层有着自己的设计，我们在开发客户端或者前端应用时，只需要遵循平台固有的设计就可以完成应用的开发；不过，在有些时候，由于工程变得庞大、业务逻辑变得异常复杂，我们也可以考虑在原有的架构之上实现一个新的架构以满足工程上的需要。</p>
+
+<p>各种架构模式的作用就是分离关注，将属于不同模块的功能分散到合适的位置中，同时尽量降低各个模块的相互依赖并且减少需要联系的胶水代码。文中对于 MVC、MVP 和 MVVM 架构模式的描述很难不掺杂作者的主观意见，如果对文章中的内容有疑问，欢迎提出不同的意见进行讨论。</p>
+
+<h2 id="reference">Reference</h2>
+
+<ul>
+  <li><a href="http://heim.ifi.uio.no/~trygver/themes/mvc/mvc-index.html">MVC Index</a></li>
+  <li><a href="http://heim.ifi.uio.no/~trygver/2003/javazone-jaoo/MVC_pattern.pdf">The Model-View-Controller (MVC) Its Past and Present</a></li>
+  <li><a href="http://www.object-arts.com/downloads/papers/TwistingTheTriad.PDF">The evolution of the Dolphin Smalltalk MVP application framework</a></li>
+  <li><a href="http://www.wildcrest.com/Potel/Portfolio/mvp.pdf">MVP: Model-View-Presenter · The Taligent Programming Model for C++ and Java</a></li>
+  <li><a href="https://msdn.microsoft.com/en-us/library/ff798384.aspx">Implementing the Model-View-ViewModel Pattern · MSDN</a></li>
+  <li><a href="https://martinfowler.com/eaaDev/uiArchs.html">GUI Architectures · Martin Fowler</a></li>
+  <li><a href="https://zhuanlan.zhihu.com/p/26799645">GUI 应用程序架构的十年变迁</a></li>
+  <li><a href="https://github.com/evancz/elm-architecture-tutorial/">Elm Architecture Tutorial · GitHub</a></li>
+  <li><a href="https://martinfowler.com/eaaDev/PresentationModel.html">Presentation Model · Martin Fowler</a></li>
+  <li><a href="https://en.wikipedia.org/wiki/Model–view–controller">Model-view-controller · Wikipedia</a></li>
+  <li><a href="https://en.wikipedia.org/wiki/Model–view–presenter">Model-view-presenter · Wikipedia</a></li>
+  <li><a href="https://en.wikipedia.org/wiki/Model–view–viewmodel">Model-view-viewmodel · Wikipedia</a></li>
+  <li><a href="http://heim.ifi.uio.no/~trygver/1979/mvc-1/1979-05-MVC.pdf">Thing-Model-View-Editor</a></li>
+  <li><a href="https://msdn.microsoft.com/en-us/library/dd381412(v=vs.108).aspx">ASP.NET MVC Overview · MSDN</a></li>
+  <li><a href="https://betterexplained.com/articles/intermediate-rails-understanding-models-views-and-controllers/">Intermediate Rails: Understanding Models, Views and Controllers</a></li>
+  <li><a href="https://www.martinfowler.com/eaaDev/PassiveScreen.html">Passive View · Martin Fowler</a></li>
+  <li><a href="https://www.martinfowler.com/eaaDev/SupervisingPresenter.html">Supervising Controller · Martin Fowler</a></li>
+  <li><a href="http://www.dgp.toronto.edu/~dwigdor/teaching/csc2524/2012_F/papers/mvc.pdf">Applications Programming in Smalltalk-80: How to use Model-View-Controller (MVC)</a></li>
+  <li><a href="https://stackoverflow.com/questions/2056/what-are-mvp-and-mvc-and-what-is-the-difference">What are MVP and MVC and what is the difference? · Stack Overflow</a></li>
+  <li><a href="http://webclientguidance.codeplex.com/wikipage?title=ModelViewPresenterPatternDescription&amp;referringTitle=MVPDocumentation">Model-View-Presenter Pattern</a></li>
+  <li><a href="https://msdn.microsoft.com/en-us/magazine/dd419663.aspx">Patterns - WPF Apps With The Model-View-ViewModel Design Pattern · MSDN</a></li>
+  <li><a href="https://blogs.msdn.microsoft.com/johngossman/2005/10/08/introduction-to-modelviewviewmodel-pattern-for-building-wpf-apps/ · MSDN">Introduction to Model/View/ViewModel pattern for building WPF apps</a></li>
+  <li><a href="https://en.wikipedia.org/wiki/Design_Patterns">设计模式</a></li>
+</ul>
+
+  ]]></description>
+</item>
+
+<item>
+  <title>谈谈 MVX 中的 Controller</title>
+  <link>//mvx-controller</link>
+  <author>nju520</author>
+  <pubDate>2017-06-23T02:34:44+08:00</pubDate>
+  <guid>//mvx-controller</guid>
+  <description><![CDATA[
+  <ul>
+  <li><a href="http://nju520.me/mvx-model.html">谈谈 MVX 中的 Model</a></li>
+  <li><a href="http://nju520.me/mvx-view.html">谈谈 MVX 中的 View</a></li>
+  <li><a href="http://nju520.me/mvx-controller.html">谈谈 MVX 中的 Controller</a></li>
+  <li><a href="http://nju520.me/mvx.html">浅谈 MVC、MVP 和 MVVM 架构模式</a></li>
+</ul>
+
+<blockquote>
+  <p>Follow GitHub: <a href="https://github.com/nju520">nju520</a></p>
+</blockquote>
+
+<p>在前两篇文章中，我们已经对 iOS 中的 Model 层以及 View 层进行了分析，划分出了它们的具体职责，其中 Model 层除了负责数据的持久存储、缓存工作，还要负责所有 HTTP 请求的发出等工作；而对于 View 层的职责，我们并没有做出太多的改变，有的只是细分其内部的视图种类，以及分离 <code>UIView</code> 不应该具有的属性和功能。</p>
+
+<blockquote>
+  <p>如果想要具体了解笔者对 Model 层以及 View 层的理解和设计，这是前面两篇文章的链接：<a href="http://nju520.me/mvx-model.html">谈谈 MVX 中的 Model 层</a>、<a href="http://nju520.me/mvx-view.html">谈谈 MVX 中的 View 层</a></p>
+</blockquote>
+
+<p>这是 MVX 系列的第三篇文章，而这篇文章准备介绍整个 MVX 中无法避免的话题，也就是 X 这一部分。</p>
+
+<h2 id="x-是什么">X 是什么</h2>
+
+<p>在进入正题之前，我们首先要知道这里的 X 到底是什么？无论是在 iOS 开发领域还是其它的领域，造出了一堆又一堆的名词，除了我们最常见的 MVC 和 MVVM 以及 Android 中的 MVP 还有一些其他的奇奇怪怪的名词。</p>
+
+<p><img src="https://img.nju520.me/MVC-MVVM-MVP.jpg-1000width" alt="MVC-MVVM-MVP" /></p>
+
+<p>模型层和视图层是整个客户端应用不可分割的一部分，它们的职责非常清楚，一个用于处理本地数据的获取以及存储，另一个用于展示内容、接受用户的操作与事件；在这种情况下，整个应用中的其它功能和逻辑就会被自然而然的扔到 X 层中。</p>
+
+<p>这个 X 在 MVC 中就是 Controller 层、在 MVVM 中就是 ViewModel 层，而在 MVP 中就是 Presenter 层，这篇文章介绍的就是 MVC 中的控制器层 Controller。</p>
+
+<h2 id="臃肿的-controller">臃肿的 Controller</h2>
+
+<p>从 Cocoa Touch 框架使用十年以来，iOS 开发者就一直遵循框架中的设计，使用 Model-View-Controller 的架构模式开发 iOS 应用程序，下面也是对 iOS 中 MVC 的各层交互的最简单的说明。</p>
+
+<p><img src="https://img.nju520.me/Model-View-Controller.jpg-1000width" alt="Model-View-Controlle" /></p>
+
+<p>iOS 中的 Model 层大多为 <code>NSObject</code> 的子类，也就是一个简单的对象；所有的 View 层对象都是 <code>UIView</code> 的子类；而 Controller 层的对象都是 <code>UIViewController</code> 的实例。</p>
+
+<p>我们在这一节中主要是介绍 <code>UIViewController</code> 作为 Controller 层中的最重要的对象，它具有哪些职责，它与 Model 以及 View 层是如何进行交互的。</p>
+
+<p>总体来说，Controller 层要负责以下的问题（包括但不仅限于）：</p>
+
+<ol>
+  <li>管理根视图的生命周期和应用生命周期</li>
+  <li>负责将视图层的 <code>UIView</code> 对象添加到持有的根视图上；</li>
+  <li>负责处理用户行为，比如 <code>UIButton</code> 的点击以及手势的触发；</li>
+  <li>储存当前界面的状态；</li>
+  <li>处理界面之间的跳转；</li>
+  <li>作为 <code>UITableView</code> 以及其它容器视图的代理以及数据源；</li>
+  <li>负责 HTTP 请求的发起；</li>
+</ol>
+
+<p>除了上述职责外，<code>UIViewController</code> 对象还可能需要处理<strong>业务逻辑</strong>以及各种复杂的动画，这也就是为什么在 iOS 应用中的 Controller 层都非常庞大、臃肿的原因了，而 MVVM、MVP 等架构模式的目的之一就是减少单一 Controller 中的代码。</p>
+
+<h3 id="管理生命周期">管理生命周期</h3>
+
+<p>Controller 层作为整个 MVC 架构模式的中枢，承担着非常重要的职责，不仅要与 Model 以及 View 层进行交互，还有通过 AppDelegate 与诸多的应用生命周期打交道。</p>
+
+<pre><code class="language-objectivec">- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(nullable NSDictionary&lt;UIApplicationLaunchOptionsKey, id&gt; *)launchOptions;
+- (void)applicationWillResignActive:(UIApplication *)application;
+- (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler;
+</code></pre>
+
+<p>虽然与应用生命周期沟通的工作并不在单独的 Controller 中，但是 <code>self.window.rootController</code> 作为整个应用程序界面的入口，还是需要在 AppDelegate 中进行设置。</p>
+
+<p>除此之外，由于每一个 <code>UIViewController</code> 都持有一个视图对象，所以每一个 <code>UIViewController</code> 都需要负责这个根视图的加载、布局以及生命周期的管理，包括：</p>
+
+<pre><code class="language-objectivec">- (void)loadView;
+
+- (void)viewWillLayoutSubviews;
+- (void)viewDidLayoutSubviews;
+
+- (void)viewDidLoad;
+- (void)viewWillAppear:(BOOL)animated;
+- (void)viewDidAppear:(BOOL)animated;
+</code></pre>
+
+<p>除了负责应用生命周期和视图生命周期，控制器还要负责展示内容和布局。</p>
+
+<h3 id="负责展示内容和布局">负责展示内容和布局</h3>
+
+<p>由于每一个 <code>UIViewController</code> 都持有一个 <code>UIView</code> 的对象，所以视图层的对象想要出现在屏幕上，必须成为这个根视图的子视图，也就是说视图层完全没有办法脱离 <code>UIViewController</code> 而单独存在，其一方面是因为 <code>UIViewController</code> 隐式的承担了应用中路由的工作，处理界面之间的跳转，另一方面就是 <code>UIViewController</code> 的设计导致了所有的视图必须加在其根视图上才能工作。</p>
+
+<p><img src="https://img.nju520.me/Controller-RootView.jpg-1000width" alt="Controller-RootVie" /></p>
+
+<p>我们来看一段 <code>UIViewController</code> 中关于视图层的简单代码：</p>
+
+<pre><code class="language-objectivec">- (void)viewDidLoad {
+    [super viewDidLoad];
+    [self setupUI];
+}
+
+- (void)setupUI {
+    _backgroundView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"backgroundView"]];
+
+    _registerButton = [[UIButton alloc] init];
+    [_registerButton setTitle:@"注册" forState:UIControlStateNormal];
+    [_registerButton setTitleColor:UIColorFromRGB(0x00C3F3) forState:UIControlStateNormal];
+    [_registerButton addTarget:self action:@selector(registerButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
+
+    [self.view addSubview:_backgroundView];
+    [self.view addSubview:_registerButton];
+
+    [_backgroundView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.mas_equalTo(self.view);
+    }];
+    [_registerButton mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.size.mas_equalTo(CGSizeMake(140, 45));
+        make.bottom.mas_equalTo(self.view).offset(-25);
+        make.left.mas_equalTo(self.view).offset(32);
+    }];
+}
+</code></pre>
+
+<p>在这个欢迎界面以及大多数界面中，由于视图层的代码非常简单，我们很多情况下并不会去写一个单独的 <code>UIView</code> 类，而是将全部的视图层代码丢到了 <code>UIViewController</code> 中，这种情况下甚至也没有 Model 层，Controller 承担了全部的工作。</p>
+
+<p><img src="https://img.nju520.me/Controller-Only.jpg-1000width" alt="Controller-Only" /></p>
+
+<p>上述的代码对视图进行了初始化，将需要展示的视图加到了自己持有的根视图中，然后对这些视图进行简单的布局。</p>
+
+<p>当然我们也可以将视图的初始化单独放到一个类中，不过仍然需要处理 <code>DRKBackgroundView</code> 视图的布局等问题。</p>
+
+<pre><code class="language-objectivec">- (void)setupUI {
+    DRKBackgroundView *backgroundView = [[DRKBackgroundView alloc] init];
+    [backgroundView.registerButton addTarget:self action:@selector(registerButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
+
+    [self.view addSubview:backgroundView];
+
+    [backgroundView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.mas_equalTo(self.view);
+    }];
+}
+</code></pre>
+
+<p><code>UIViewController</code> 的这种中心化的设计虽然简单，不过也导致了很多代码没有办法真正解耦，视图层必须依赖于 <code>UIViewController</code> 才能展示。</p>
+
+<h4 id="惰性初始化">惰性初始化</h4>
+
+<p>当然，很多人在 Controller 中也会使用惰性初始化的方式生成 Controller 中使用的视图，比如：</p>
+
+<pre><code class="language-objectivec">@interface ViewController ()
+
+@property (nonatomic, strong) UIImageView *backgroundView;
+
+@end
+
+@implementation ViewController
+
+- (UIImageView *)backgroundView {
+    if (!_backgroundView) {
+        _backgroundView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"backgroundView"]];
+    }
+    return _backgroundView;
+}
+
+@end
+</code></pre>
+
+<p>这样在 <code>-viewDidLoad</code> 方法中就可以直接处理视图的视图层级以及布局工作：</p>
+
+<pre><code class="language-objectivec">- (void)viewDidLoad {
+    [super viewDidLoad];
+
+    [self.view addSubview:self.backgroundView];
+
+    [self.backgroundView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.mas_equalTo(self.view);
+    }];
+}
+</code></pre>
+
+<p>惰性初始化的方法与其他方法其实并没有什么绝对的优劣，两者的选择只是对于代码规范的一种选择，我们所需要做的，只是在同一个项目中将其中一种做法坚持到底。</p>
+
+<h3 id="处理用户行为">处理用户行为</h3>
+
+<p>在 <code>UIViewController</code> 中处理用户的行为是经常需要做的事情，这部分代码不能放到视图层或者其他地方的原因是，用户的行为经常需要与 Controller 的上下文有联系，比如，界面的跳转需要依赖于 <code>UINavigationController</code> 对象：</p>
+
+<pre><code class="language-objectivec">- (void)registerButtonTapped:(UIButton *)button {
+    RegisterViewController *registerViewController = [[RegisterViewController alloc] init];
+    [self.navigationController pushViewController:registerViewController animated:YES];
+}
+</code></pre>
+
+<p>而有的用户行为需要改变模型层的对象、持久存储数据库中的数据或者发出网络请求，主要因为我们要秉承着 MVC 的设计理念，避免 Model 层和 View 层的直接耦合。</p>
+
+<h3 id="存储当前界面的状态">存储当前界面的状态</h3>
+
+<p>在 iOS 中，我们经常需要处理表视图，而在现有的大部分表视图在加载内容时都会进行分页，使用下拉刷新和上拉加载的方式获取新的条目，而这就需要在 Controller 层保存当前显示的页数：</p>
+
+<pre><code class="language-objectivec">@interface TableViewController ()
+
+@property (nonatomic, assign) NSUInteger currentPage;
+
+@end
+</code></pre>
+
+<p>只有保存在了当前页数的状态，才能在下次请求网络数据时传入合适的页数，最后获得正确的资源，当然哪怕当前页数是可以计算出来的，比如通过当前的 Model 对象的数和每页个 Model 数，在这种情况下，我们也需要在当前 Controller 中 Model 数组的值。</p>
+
+<pre><code class="language-objectivec">@interface TableViewController ()
+
+@property (nonatomic, strong) NSArray&lt;Model *&gt; *models;
+
+@end
+</code></pre>
+
+<p>在 MVC 的设计中，这种保存当前页面状态的需求是存在的，在很多复杂的页面中，我们也需要维护大量的状态，这也是 Controller 需要承担的重要职责之一。</p>
+
+<h3 id="处理界面之间的跳转">处理界面之间的跳转</h3>
+
+<p>由于 Cocoa Touch 提供了 <code>UINavigationController</code> 和 <code>UITabBarController</code> 这两种容器 Controller，所以 iOS 中界面跳转的这一职责大部分都落到了 Controller 上。</p>
+
+<p><img src="https://img.nju520.me/UINavigationController-UITabBarController.jpg-1000width" alt="UINavigationController-UITabBarControlle" /></p>
+
+<p>iOS 中总共有三种界面跳转的方式：</p>
+
+<ul>
+  <li><code>UINavigationController</code> 中使用 push 和 pop 改变栈顶的 <code>UIViewController</code> 对象；</li>
+  <li><code>UITabBarController</code> 中点击各个 <code>UITabBarItem</code> 实现跳转；</li>
+  <li>使用所有的 <code>UIViewController</code> 实例都具有的 <code>-presentViewController:animated:completion</code> 方法；</li>
+</ul>
+
+<p>因为所有的 <code>UIViewController</code> 的实例都可以通过 <code>navigationController</code> 这一属性获取到最近的 <code>UINavigationController</code> 对象，所以我们不可避免的要在 Controller 层对界面之间的跳转进行操作。</p>
+
+<blockquote>
+  <p>当然，我们也可以引入 Router 路由对 <code>UIViewController</code> 进行注册，在访问合适的 URL 时，通过根 <code>UINavigationController</code> 进行跳转，不过这不是本篇文章想要说明的内容。</p>
+</blockquote>
+
+<p><code>UINavigationController</code> 提供的 API 还是非常简单的，我们可以直接使用 <code>-pushViewController:animated:</code> 就可以进行跳转。</p>
+
+<pre><code class="language-objectivec">RegisterViewController *registerViewController = [[RegisterViewController alloc] init];
+[self.navigationController pushViewController:registerViewController animated:YES];
+</code></pre>
+
+<h3 id="作为数据源以及代理">作为数据源以及代理</h3>
+
+<p>很多 Cocoa Touch 中视图层都是以代理的形式为外界提供接口的，其中最为典型的例子就是 <code>UITableView</code> 和它的数据源协议 <code>UITableViewDataSource</code> 和代理 <code>UITableViewDelegate</code>。</p>
+
+<p>这是因为 <code>UITableView</code> 作为视图层的对象，需要根据 Model 才能知道自己应该展示什么内容，所以在早期的很多视图层组件都是用了代理的形式，从 Controller 或者其他地方获取需要展示的数据。</p>
+
+<pre><code class="language-objectivec">#pragma mark - UITableViewDataSource
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    return self.models.count;
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    TableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell" forIndexPath:indexPath];
+    Model *model = self.models[indexPath.row];
+    [cell setupWithModel:model];
+    return cell;
+}
+</code></pre>
+
+<p>上面就是使用 <code>UITableView</code> 时经常需要的方法。</p>
+
+<p>很多文章中都提供了一种用于减少 Controller 层中代理方法数量的技巧，就是使用一个单独的类作为 <code>UITableView</code> 或者其他视图的代理：</p>
+
+<pre><code class="language-objectivec">self.tableView.delegate = anotherObject;
+self.tableView.dataSource = anotherObject;
+</code></pre>
+
+<p>然而在笔者看来这种办法并没有什么太大的用处，只是将代理方法挪到了一个其他的地方，如果这个代理方法还依赖于当前 <code>UIViewController</code> 实例的上下文，还要向这个对象中传入更多的对象，反而让原有的 MVC 变得更加复杂了。</p>
+
+<h3 id="负责-http-请求的发起">负责 HTTP 请求的发起</h3>
+
+<p>当用户的行为触发一些事件时，比如下拉刷新、更新 Model 的属性等等，Controller 就需要通过 Model 层提供的接口向服务端发出 HTTP 请求，这一过程其实非常简单，但仍然是 Controller 层的职责，也就是响应用户事件，并且更新 Model 层的数据。</p>
+
+<pre><code class="language-objectivec">- (void)registerButtonTapped:(UIButton *)button {
+    LoginManager *manager = [LoginManager manager];
+    manager.countryCode = _registerPanelView.countryCode;
+    ...
+    [manager startWithSuccessHandler:^(CCStudent *user) {
+        self.currentUser = user;
+        ...
+    } failureHandler:^(NSError *error) {
+        ...
+    }];
+}
+</code></pre>
+
+<p>当按钮被点击时 <code>LoginManager</code> 就会执行 <code>-startWithSuccessHandler:failureHandler:</code> 方法发起请求，并在请求结束后执行回调，更新 Model 的数据。</p>
+
+<h3 id="小结">小结</h3>
+
+<p>iOS 中 Controller 层的职责一直都逃不开与 View 层和 Model 层的交互，因为其作用就是视图层的用户行为进行处理并更新视图的内容，同时也会改变模型层中的数据、使用 HTTP 请求向服务端请求新的数据等作用，其功能就是处理整个应用中的业务逻辑和规则。</p>
+
+<p>但是由于 iOS 中 Controller 的众多职责，单一的 <code>UIViewController</code> 类可能会有上千行的代码，使得非常难以管理和维护，我们也希望在 iOS 中引入新的架构模式来改变 Controller 过于臃肿这一现状。</p>
+
+<h2 id="几点建议">几点建议</h2>
+
+<p>Controller 层作为 iOS 应用中重要的组成部分，在 MVC 以及类似的架构下，笔者对于 Controller 的设计其实没有太多立竿见影的想法。作为应用中处理绝大多数逻辑的 Controller 其实很难简化其中代码的数量；我们能够做的，也是只对其中的代码进行一定的规范以提高它的可维护性，在这里，笔者有几点对于 Controller 层如何设计的建议，供各位读者参考。</p>
+
+<h3 id="不要把-datasource-提取出来">不要把 DataSource 提取出来</h3>
+
+<p>iOS 中的 <code>UITableView</code> 和 <code>UICollectionView</code> 等需要 <code>dataSource</code> 的视图对象十分常见，在一些文章中会提议将数据源的实现单独放到一个对象中。</p>
+
+<pre><code class="language-objectivec">void (^configureCell)(PhotoCell*, Photo*) = ^(PhotoCell* cell, Photo* photo) {
+   cell.label.text = photo.name;
+};
+photosArrayDataSource = [[ArrayDataSource alloc] initWithItems:photos
+                                                cellIdentifier:PhotoCellIdentifier
+                                            configureCellBlock:configureCell];
+self.tableView.dataSource = photosArrayDataSource;
+</code></pre>
+
+<p>在 <a href="https://www.objc.io/issues/1-view-controllers/lighter-view-controllers/">Lighter View Controllers</a> 一文中就建议可以将数据源协议的实现方法放到 <code>ArrayDataSource</code> 对象中：</p>
+
+<pre><code class="language-objectivec">@implementation ArrayDataSource
+
+- (id)itemAtIndexPath:(NSIndexPath*)indexPath {
+    return items[(NSUInteger)indexPath.row];
+}
+
+- (NSInteger)tableView:(UITableView*)tableView
+ numberOfRowsInSection:(NSInteger)section {
+    return items.count;
+}
+
+- (UITableViewCell*)tableView:(UITableView*)tableView
+        cellForRowAtIndexPath:(NSIndexPath*)indexPath {
+    id cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier
+                                              forIndexPath:indexPath];
+    id item = [self itemAtIndexPath:indexPath];
+    configureCellBlock(cell,item);
+    return cell;
+}
+
+@end
+</code></pre>
+
+<p>做出这种建议的理由是：单独的 <code>ArrayDataSource</code> 类可以更方便的进行测试，同时，展示一个数组的对象是表视图中非常常见的需求，而 <code>ArrayDataSource</code> 能够将这种需求抽象出来并进行重用，也可以达到减轻视图控制器负担的最终目的，但是在笔者看来，上述做法并没有起到<strong>实质性</strong>效果，只是简单的将视图控制器中的一部分代码<em>移到了</em>别的位置而已，还会因为增加了额外的类使 Controller 的维护变得更加的复杂。</p>
+
+<p><img src="https://img.nju520.me/UITableView-DataSource.jpg-1000width" alt="UITableView-DataSource" /></p>
+
+<p>让每一个 Controller 作为 <code>UITableView</code> 对象的代理和数据源其实是没有任何问题的，将这些方法移出 Controller 并不能解决实际的问题。</p>
+
+<h3 id="属性和实例变量的选择">属性和实例变量的选择</h3>
+
+<p>文章的前面曾经提到过在很多的 iOS 应用中，Controller 由于持有一个根视图 <code>UIView</code> 对象，所以需要负责展示内容以及布局，很多 iOS 开发者都把一些模块的视图层代码放到了控制器中，但是无论是将视图层代码放到控制器中，还是新建一个单独的视图类都需要对视图以及子视图进行初始化和布局。</p>
+
+<p>在对视图进行初始化和布局时，我们有两种选择，一种是使用实例变量的方式主动对视图对象进行初始化，另一种是使用属性 <code>@property</code> 对视图对象进行惰性初始化。</p>
+
+<p><img src="https://img.nju520.me/Eager-Lazy-Initialization.jpg-1000width" alt="Eager-Lazy-Initialization" /></p>
+
+<p>虽然上述两种代码在结果上几乎是等价的，但是笔者更加偏好两者之中的后者，它将各个视图属性的初始化放到了各个属性的 getter 方法中，能够将代码在逻辑上分块还是比较清晰的。这两种方法其实只是不同的 taste，有些人会坚持将不需要暴露的变量都写成 <code>_xxx</code> 的形式，有些人更喜欢后者这种分散的写法，这些都不是什么太大的问题，而且很多人担心的性能问题其实也根本不是问题，重要的是我们要在同一个项目中坚持同一种写法，并且保证只有同一个风格的代码合入主分支。</p>
+
+<h3 id="把业务逻辑移到-model-层">把业务逻辑移到 Model 层</h3>
+
+<p>控制器中有很多代码和逻辑其实与控制器本身并没有太多的关系，比如：</p>
+
+<pre><code class="language-objectivec">@implementation ViewController
+
+- (NSString *)formattedPostCreatedAt {
+    NSDateFormatter *format = [[NSDateFormatter alloc] init];
+    [format setDateFormat:@"MMM dd, yyyy HH:mm"];
+    return [format stringFromDate:self.post.createdAt];
+}
+
+@end
+</code></pre>
+
+<p>在 <a href="http://nju520.me/mvx-model.html">谈谈 MVX 中的 Model 层</a> 一文中，我们曾经分析过，上述逻辑其实应该属于 Model 层，作为 <code>Post</code> 的一个实例方法：</p>
+
+<pre><code class="language-objectivec">@implementation Post
+
+- (NSString *)formattedCreatedAt {
+    NSDateFormatter *format = [[NSDateFormatter alloc] init];
+    [format setDateFormat:@"MMM dd, yyyy HH:mm"];
+    return [format stringFromDate:self.createdAt];
+}
+
+@end
+</code></pre>
+
+<p>这一条建议是从一些经典的后端 MVC 框架中学习的，Rails 提倡 <em>Fat Model, Skinny Controller</em> 就是希望开发者将 Model 相关的业务逻辑都放到 Model 层中，以减轻 Controller 层的负担。</p>
+
+<h3 id="把视图层代码移到-view-层">把视图层代码移到 View 层</h3>
+
+<p>因为 UIKit 框架设计的原因，Controller 和 View 层是强耦合的，每一个 <code>UIViewController</code> 都会持有一个 <code>UIView</code> 视图对象，这也是导致我们将很多的视图层代码直接放在 Controller 层的原因。</p>
+
+<p><img src="https://img.nju520.me/MVC-in-iOS.jpg-1000width" alt="MVC-in-iOS" /></p>
+
+<p>这种做法在当前模块的视图层比较简单时，笔者觉得没有任何的问题，虽然破坏了经典的 MVC 的架构图，但是也不是什么问题；不过，当视图层的视图对象非常多的时候，大量的配置和布局代码就会在控制器中占据大量的位置，我们可以将整个视图层的代码都移到一个单独的 <code>UIView</code> 子类中。</p>
+
+<pre><code class="language-objectivec">// RegisterView.h
+@interface RegisterView : UIView
+
+@property (nonatomic, strong) UITextField *phoneNumberTextField;
+@property (nonatomic, strong) UITextField *passwordTextField;
+
+@end
+
+// RegisterView.m
+@implementation RegisterView
+
+- (instancetype)initWithFrame:(CGRect)frame {
+    if (self = [super initWithFrame:frame]) {
+        [self addSubview:self.phoneNumberTextField];
+        [self addSubview:self.passwordTextField];
+
+        [self.phoneNumberTextField mas_makeConstraints:^(MASConstraintMaker *make) {
+            ...
+        }];
+        [self.passwordTextField mas_makeConstraints:^(MASConstraintMaker *make) {
+            ...
+        }];
+    }
+    return self;
+}
+
+- (UITextField *)phoneNumberTextField {
+    if (!_phoneNumberTextField) {
+        _phoneNumberTextField = [[UITextField alloc] init];
+        _phoneNumberTextField.font = [UIFont systemFontOfSize:16];
+    }
+    return _phoneNumberTextField;
+}
+
+- (UITextField *)passwordTextField {
+    if (!_passwordTextField) {
+        _passwordTextField = [[UITextField alloc] init];
+        ...
+    }
+    return _passwordTextField;
+}
+
+@end
+</code></pre>
+
+<p>而 Controller 需要持有该视图对象，并将自己持有的根视图替换成该视图对象：</p>
+
+<pre><code class="language-objectivec">@interface ViewController ()
+
+@property (nonatomic, strong) RegisterView *view;
+
+@end
+
+@implementation ViewController
+
+@dynamic view;
+
+- (void)loadView {
+    self.view = [[RegisterView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+}
+
+@end
+</code></pre>
+
+<p>在 <code>UIViewController</code> 对象中，我们可以通过覆写 <code>-loadView</code> 方法改变其本身持有的视图对象，并使用新的 <code>@property</code> 声明以及 <code>@dynamic</code> 改变 Controller 持有的根视图，这样我们就把视图层的配置和布局代码从控制器中完全分离了。</p>
+
+<h3 id="使用-pragma-或-extension-分割代码块">使用 pragma 或 extension 分割代码块</h3>
+
+<p>在很多时候，我们对于 Controller 中上千行的代码是非常绝望的，不熟悉这个模块的开发者想要在里面快速找到自己想要的信息真的是非常的麻烦，尤其是如果一个 <code>UIViewController</code> 中的代码没有被组织好的话，那分析起来更是异常头疼。</p>
+
+<p>我们既然没有把上千行的代码瞬间变没的方法，那就只能想想办法在现有的代码上进行美化了，办法其实很简单，就是将具有相同功能的代码分块并使用 <code>pragma</code> 预编译指定或者 <code>MARK</code> 加上 <code>extension</code> 对代码块进行分割。</p>
+
+<p>这里给一个简单的例子，</p>
+
+<pre><code class="language-objectivec">@implementation ViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    [self setupUI];
+}
+
+- (void)layoutSubviews { }
+
+#pragma mark - UI
+
+- (void)setupUI {}
+
+#pragma mark - UITableViewDataSource
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    return 1;
+}
+...
+
+#pragma mark - UITableViewDelegate
+
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+    return 100.0;
+}
+...
+
+#pragma mark - Callback
+
+- (void)buttonTapped:(UIButton *)button {}
+- (void)gestureTriggered:(UIGestureRecognizer *)gesture {}
+- (void)keyboardWillShow:(NSNotification *)noti {}
+
+#pragma mark - Getter/Setter
+
+- (NSString *)string { return _string; }
+- (void)setString:(NSString*)string { _string = string; }
+
+#pragma mark - Helper
+
+- (void)helperMethod {}
+
+@end
+</code></pre>
+
+<p>一个 <code>UIViewController</code> 大体由上面这些部分组成：</p>
+
+<ul>
+  <li>生命周期以及一些需要 <code>override</code> 的方法</li>
+  <li>视图层代码的初始化</li>
+  <li>各种数据源和代理协议的实现</li>
+  <li>事件、手势和通知的回调</li>
+  <li>实例变量的存取方法</li>
+  <li>一些其他的 Helper 方法</li>
+</ul>
+
+<p>在 Objective-C 的工程中，我们使用 <code>pragma</code> 预编译指令来对 <code>UIViewController</code> 中的；在 Swift 中，我们可以使用 <code>extension</code> 加上 <code>MARK</code> 来对代码进行分块：</p>
+
+<pre><code class="language-swift">class ViewController: UIViewController {}
+
+// MARK: - UI
+extension ViewController {}
+
+// MARK: - UITableViewDataSource
+extension ViewController: UITableViewDataSource {}
+
+// MARK: - UITableViewDelegate
+extension ViewController: UITableViewDelegate {}
+
+// MARK: - Callback
+extension ViewController {}
+
+// MARK: - Getter/Setter
+extension ViewController {}
+
+// MARK: - Helper
+extension ViewController {}
+</code></pre>
+
+<p>上述方法是一种在控制器层分割代码块的方法，它们的顺序并不是特别的重要，最重要的还是要在不同的控制器中保持上述行为的一致性，将合理的方法放到合适的代码块中。</p>
+
+<h3 id="耦合的-view-和-model-层">耦合的 View 和 Model 层</h3>
+
+<p>很多的 iOS 项目中都会为 <code>UIView</code> 添加一个绑定 Model 对象的方法，比如说：</p>
+
+<pre><code class="language-objectivec">@implementation UIView (Model)
+
+- (void)setupWithModel:(id)model {}
+
+@end
+</code></pre>
+
+<p>这个方法也可能叫做 <code>-bindWithModel:</code> 或者其他名字，其作用就是根据传入的 Model 对象更新当前是视图中的各种状态，比如 <code>UILabel</code> 中的文本、<code>UIImageView</code> 中的图片等等。</p>
+
+<p>有了上述分类，我们可以再任意的 <code>UIView</code> 的子类中覆写该方法：</p>
+
+<pre><code class="language-objectivec">- (void)setupWithModel:(Model *)model {
+    self.imageView.image = model.image;
+    self.label.text = model.name;
+}
+</code></pre>
+
+<p>这种做法其实是将原本 Controller 做的事情放到了 View 中，由视图层来负责如何展示模型对象；虽然它能够减少 Controller 中的代码，但是也导致了 View 和 Model 的耦合。</p>
+
+<p><img src="https://img.nju520.me/Coupling-View-And-Model.jpg-1000width" alt="Coupling-View-And-Mode" /></p>
+
+<p>对于 MVC 架构模式中，Model、View 和 Controller 之间的交互没有明确的规则，但是视图和模型之间的耦合会导致视图层代码很难复用；因为这样设计的视图层都依赖于外部的模型对象，所以<strong>如果同一个视图需要显示多种类型的模型时就会遇到问题</strong>。</p>
+
+<p>视图和模型之间解耦是通过控制器来处理的，控制器获取模型对象并取出其中的属性一一装填到视图中，也就是将 <code>-setupWithModel:</code> 方法中的代码从视图层移到控制器层中，并在视图类中暴露合适的接口。</p>
+
+<h2 id="总结">总结</h2>
+
+<p>本文虽然对 Controller 层的职责进行了分析，但是由于 Controller 在 MVC 中所处的位置，如果不脱离 MVC 架构模式，那么 Controller 的职责很难简化，只能在代码规范和职责划分上进行限制，而在下一篇文章中我们会详细讨论 MVC 以及衍化出来的MVP 以及 MVVM 到底是什么、以及它们有什么样的差异。</p>
+
+<h2 id="reference">Reference</h2>
+
+<ul>
+  <li><a href="https://www.objc.io/issues/1-view-controllers/lighter-view-controllers/">Lighter View Controllers</a></li>
+</ul>
+
+  ]]></description>
+</item>
+
+<item>
+  <title>谈谈 MVX 中的 View</title>
+  <link>//mvx-view</link>
+  <author>nju520</author>
+  <pubDate>2017-06-23T01:34:44+08:00</pubDate>
+  <guid>//mvx-view</guid>
+  <description><![CDATA[
+  <ul>
+  <li><a href="http://nju520.me/mvx-model.html">谈谈 MVX 中的 Model</a></li>
+  <li><a href="http://nju520.me/mvx-view.html">谈谈 MVX 中的 View</a></li>
+  <li><a href="http://nju520.me/mvx-controller.html">谈谈 MVX 中的 Controller</a></li>
+  <li><a href="http://nju520.me/mvx.html">浅谈 MVC、MVP 和 MVVM 架构模式</a></li>
+</ul>
+
+<blockquote>
+  <p>Follow GitHub: <a href="https://github.com/nju520">nju520</a></p>
+</blockquote>
+
+<p>这是谈谈 MVX 系列的第二篇文章，上一篇文章中对 iOS 中 Model 层的设计进行了简要的分析；而在这里，我们会对 MVC 中的视图层进行讨论，谈一谈现有的视图层有着什么样的问题，如何在框架的层面上去改进，同时与服务端的视图层进行对比，分析它们的差异。</p>
+
+<h2 id="uikit">UIKit</h2>
+
+<p>UIKit 是 Cocoa Touch 中用于构建和管理应用的用户界面的框架，其中几乎包含着与 UI 相关的全部功能，而我们今天想要介绍的其实是 UIKit 中与视图相关的一部分，也就是 <code>UIView</code> 以及相关类。</p>
+
+<p><code>UIView</code> 可以说是 iOS 中用于渲染和展示内容的最小单元，作为开发者能够接触到的大多数属性和方法也都由 <code>UIView</code> 所提供，比如最基本的布局方式 frame 就是通过 <code>UIView</code> 的属性所控制，在 Cocoa Touch 中的所有布局系统最终都会转化为 CFRect 并通过 frame 的方式完成最终的布局。</p>
+
+<p><img src="https://img.nju520.me/Frame-And-Components.jpg-1000width" alt="Frame-And-Components" /></p>
+
+<p><code>UIView</code> 作为 UIKit 中极为重要的类，它的 API 以及设计理念决定了整个 iOS 的视图层该如何工作，这也是理解视图层之前必须要先理解 <code>UIView</code> 的原因。</p>
+
+<h3 id="uiview">UIView</h3>
+
+<p>在 UIKit 中，除了极少数用于展示的类不继承自 <code>UIView</code> 之外，几乎所有类的父类或者或者祖先链中一定会存在 <code>UIView</code>。</p>
+
+<p><img src="https://img.nju520.me/UIView-And-Subclasses.jpg-1000width" alt="UIView-And-Subclasses" /></p>
+
+<p>我们暂且抛开不继承自 <code>UIView</code> 的 <code>UIBarItem</code> 类簇不提，先通过一段代码分析一下 <code>UIView</code> 具有哪些特性。</p>
+
+<pre><code class="language-objectivec">UIImageView *backgroundView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"backgoundImage"]];
+UIImageView *logoView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"logo"]];
+
+UIButton *loginButton = [[UIButton alloc] init];
+[loginButton setTitle:@"登录" forState:UIControlStateNormal];
+[loginButton setTitleColor:UIColorFromRGB(0xFFFFFF) forState:UIControlStateNormal];
+[loginButton.titleLabel setFont:[UIFont boldSystemFontOfSize:18]];
+[loginButton setBackgroundColor:UIColorFromRGB(0x00C3F3)];
+
+[self.view addSubview:backgroundView];
+[backgroundView addSubview:logoView];
+[backgroundView addSubview:loginButton];
+</code></pre>
+
+<p><code>UIView</code> 作为视图层大部分元素的根类，提供了两个非常重要的特性：</p>
+
+<ul>
+  <li>由于 <code>UIView</code> 具有 <code>frame</code> 属性，所以为所有继承自 <code>UIView</code> 的类提供了绝对布局相关的功能，也就是在 Cocoa Touch 中，所有的视图元素都可以通过 <code>frame</code> 设置自己在父视图中的绝对布局；</li>
+  <li>
+    <p><code>UIView</code> 在接口中提供了操作和管理视图层级的属性和方法，比如 <code>superview</code>、<code>subviews</code> 以及 <code>-addSubview:</code> 等方法；</p>
+
+    <pre><code class="language-objectivec">@interface UIView (UIViewHierarchy)
+
+@property (nullable, nonatomic, readonly) UIView       *superview;
+@property (nonatomic, readonly, copy) NSArray&lt;__kindof UIView *&gt; *subviews;
+
+- (void)addSubview:(UIView *)view;
+
+...
+
+@end
+</code></pre>
+
+    <p>也就是说 <strong>UIView 和它所有的子类都可以拥有子视图，成为容器并包含其他 UIView 的实例</strong>。</p>
+
+    <pre><code class="language-objectivec">[self.view addSubview:backgroundView];
+[backgroundView addSubview:logoView];
+[backgroundView addSubview:loginButton];
+</code></pre>
+  </li>
+</ul>
+
+<p>这种使用 <code>UIView</code> 同时为子类提供默认的 <code>frame</code> 布局以及子视图支持的方式在一定程度上能够降低视图模型的复杂度：因为所有的视图都是一个容器，所以在开发时不需要区分视图和容器，但是这种方式虽然带来了一些方便，但是也不可避免地带来了一些问题。</p>
+
+<h3 id="uiview-与布局">UIView 与布局</h3>
+
+<p>在早期的 Cocoa Touch 中，整个视图层的布局都只是通过 <code>frame</code> 属性来完成的（绝对布局），一方面是因为在 iPhone5 之前，iOS 应用需要适配的屏幕尺寸非常单一，完全没有适配的兼容问题，所以使用单一的 <code>frame</code> 布局方式完全是可行的。</p>
+
+<p>但是在目前各种屏幕尺寸的种类暴增的情况下，就很难使用 <code>frame</code> 对所有的屏幕进行适配，在这时苹果就引入了 Auto Layout 采用相对距离为视图层的元素进行布局。</p>
+
+<p><img src="https://img.nju520.me/AutoLayout.jpg-1000width" alt="AutoLayout" /></p>
+
+<p>不过，这算是苹果比较失败的一次性尝试，主要是因为使用 Auto Layout 对视图进行布局实在太过复杂，所以刚出来的时候也不温不火，很少有人使用，直到 Masonry 的出现使得编写 Auto Layout 代码没有那么麻烦和痛苦才普及起来。</p>
+
+<p>但是由于 Auto Layout 的工作原理实际上是解 N 元一次方程组，所以在遇到复杂视图时，会遇到非常严重的性能问题，如果想要了解相关的问题的话，可以阅读 <a href="http://nju520.me/layout-performance.html">从 Auto Layout 的布局算法谈性能</a> 这篇文章，在这里就不再赘述了。</p>
+
+<p>然而 Auto Layout 的相对布局虽然能够在<em>一定程度上</em>解决适配<strong>屏幕大小和尺寸接近的</strong>适配问题，比如 iPhone4s、iPhone5、iPhone6 Plus 等移动设备，或者iPad 等平板设备。但是，Auto Layout 不能通过一套代码打通 iPhone 和 iPad 之间布局方式的差异，只能通过代码中的 if 和 else 进行判断。</p>
+
+<p>在这种背景下，苹果做了很多的尝试，比如说 <a href="https://developer.apple.com/library/content/documentation/UserExperience/Conceptual/AutolayoutPG/Size-ClassSpecificLayout.html">Size-Class-Specific Layout</a>，Size Class 将屏幕的长宽分为三种：</p>
+
+<ul>
+  <li>Compact</li>
+  <li>Regular</li>
+  <li>Any</li>
+</ul>
+
+<p>这样就出现了最多 3 x 3 的组合，比如屏幕宽度为 Compact 高度为 Regular 等等，它与 Auto Layout 一起工作省去了一些 if 和 else 的条件判断，但是从实际效果上来说，它的用处并不是特别大，而且使用代码来做 Size Class 的相关工作依然非常困难。</p>
+
+<p>除了 Auto Layout 和 Size Class 之外，苹果在 iOS9 还推出了 <code>UIStackView</code> 来增加 iOS 中的布局方式和手段，这是一种类似 flexbox 的布局方式。</p>
+
+<p>虽然 <code>UIStackView</code> 可以起到一定的作用，但是由于大多数 iOS 应用都要求对设计稿进行严格还原并且其 API 设计相对啰嗦，开发者同时也习惯了使用 Auto Layout 的开发方式，在惯性的驱动下，<code>UIStackView</code> 应用的也不是非常广泛。</p>
+
+<p><img src="https://img.nju520.me/UIStackView.jpg-1000width" alt="UIStackVie" /></p>
+
+<p>不过现在很多跨平台的框架都是用类似 <code>UIStackView</code> 的方式进行布局，比如 React Native、Weex 等，其内部都使用 Facebook 开源的 Yoga。</p>
+
+<blockquote>
+  <p>由于 flexbox 以及类似的布局方式在其他平台上都有类似的实现，并且其应用确实非常广泛，笔者认为随着工具的完善，这种布局方式会逐渐进入 iOS 开发者的工具箱中。</p>
+</blockquote>
+
+<p>三种布局方式 <code>frame</code>、Auto Layout 以及 <code>UIStackView</code> 其实最终布局都会使用 <code>frame</code>，其他两种方式 Auto Layout 和 <code>UIStackView</code> 都会将代码<em>描述</em>的布局转换成 <code>frame</code> 进行。</p>
+
+<h4 id="布局机制的混用">布局机制的混用</h4>
+
+<p>Auto Layout 和 <code>UIStackView</code> 的出现虽然为布局提供了一些方便，但是也增加了布局系统的复杂性。</p>
+
+<p>因为在 iOS 中几乎所有的视图都继承自 <code>UIView</code>，这样也同时继承了 <code>frame</code> 属性，在使用 Auto Layout 和 <code>UIStackView</code> 时，并没有禁用 <code>frame</code> 布局，所以在混用却没有掌握技巧时可能会有一些比较奇怪的问题。</p>
+
+<p>其实，在混用 Auto Layout 和 <code>frame</code> 时遇到的大部分奇怪的问题都是因为 <a href="https://developer.apple.com/reference/uikit/uiview/1622572-translatesautoresizingmaskintoco">translatesAutoresizingMaskIntoConstraints</a> 属性没有被正确设置的原因。</p>
+
+<blockquote>
+  <p>If this property’s value is true, the system creates a set of constraints that duplicate the behavior specified by the view’s autoresizing mask. This also lets you modify the view’s size and location using the view’s frame, bounds, or center properties, allowing you to create a static, frame-based layout within Auto Layout.</p>
+</blockquote>
+
+<p>在这里就不详细解释该属性的作用和使用方法了。</p>
+
+<h4 id="对动画的影响">对动画的影响</h4>
+
+<p>在 Auto Layout 出现之前，由于一切布局都是使用 <code>frame</code> 工作的，所以在 iOS 中完成对动画的编写十分容易。</p>
+
+<pre><code class="language-objectivec">UIView.animate(withDuration: 1.0) {
+    view.frame = CGRect(x: 10, y: 10, width: 200, height: 200)
+}
+</code></pre>
+
+<p>而当大部分的 iOS 应用都转而使用 Auto Layout 之后，对于视图大小、位置有关的动画就比较麻烦了：</p>
+
+<pre><code class="language-objectivec">topConstraint.constant = 10
+leftConstraint.constant = 10
+heightConstraint.constant = 200
+widthConstraint.constant = 200
+UIView.animate(withDuration: 1.0) {
+    view.layoutIfNeeded()
+}
+</code></pre>
+
+<p>我们需要对视图上的约束对象一一修改并在最后调用 <code>layoutIfNeeded</code> 方法才可以完成相同的动画。由于 Auto Layout 对动画的支持并不是特别的优秀，所以在很多时候笔者在使用 Auto Layout 的视图上，都会使用 <code>transform</code> 属性来改变视图的位置，这样虽然也没有那么的优雅，不过也是一个比较方便的解决方案。</p>
+
+<p><img src="https://img.nju520.me/lottie.jpg-1000width" alt="lottie" /></p>
+
+<h3 id="frame-的问题">frame 的问题</h3>
+
+<p>每一个 <code>UIView</code> 的 <code>frame</code> 属性其实都是一个 <code>CGRect</code> 结构体，这个结构体展开之后有四个组成部分：</p>
+
+<ul>
+  <li>origin
+    <ul>
+      <li>x</li>
+      <li>y</li>
+    </ul>
+  </li>
+  <li>size
+    <ul>
+      <li>width</li>
+      <li>height</li>
+    </ul>
+  </li>
+</ul>
+
+<p>当我们设置一个 <code>UIView</code> 对象的 <code>frame</code> 属性时，其实是同时设置了它在父视图中的位置和它的大小，从这里可以获得一条比较重要的信息：</p>
+
+<blockquote>
+  <p>iOS 中所有的 <code>UIView</code> 对象都是使用 <code>frame</code> 布局的，否则 <code>frame</code> 中的 <code>origin</code> 部分就失去了意义。</p>
+</blockquote>
+
+<p>但是如果为 <code>UIStackView</code> 中的视图设置 <code>frame</code> 的话，这个属性就完全没什么作用了，比如下面的代码：</p>
+
+<pre><code class="language-objectivec">UIStackView *stackView = [[UIStackView alloc] init];
+stackView.frame = self.view.frame;
+[self.view addSubview:stackView];
+
+UIView *greenView = [[UIView alloc] init];
+greenView.backgroundColor = [UIColor greenColor];
+greenView.frame = CGRectMake(0, 0, 100, 100);
+[stackView addArrangedSubview:greenView];
+
+UIView *redView = [[UIView alloc] init];
+redView.backgroundColor = [UIColor redColor];
+redView.frame = CGRectMake(0, 0, 100, 100);
+[stackView addArrangedSubview:redView];
+</code></pre>
+
+<p><code>frame</code> 属性在 <code>UIStackView</code> 上基本上就完全失效了，我们还需要使用约束来控制 <code>UIStackView</code> 中视图的大小，不过如果你要使用 <code>frame</code> 属性来查看视图在父视图的位置和大小，在恰当的时机下是可行的。</p>
+
+<h4 id="谈谈-origin">谈谈 origin</h4>
+
+<p>但是 <code>frame</code> 的不正确使用会导致视图之间的耦合，如果内部视图设置了自己在父视图中的 <code>origin</code>，但是父视图其实并不会使用直接 <code>frame</code> 布局该怎么办？比如，父视图是一个 <code>UIStackView</code>，它就会重写子视图的 <code>origin</code> 甚至是没有正确设置的 <code>size</code> 属性。</p>
+
+<p>最重要的是 <code>UIView</code> 上 <code>frame</code> 的设计导致了视图之间可能会有较强的耦合，因为<strong>子视图不应该知道自己在父视图中的位置</strong>，它应该只关心自己的大小。</p>
+
+<p>也就是作为一个简单的 <code>UIView</code> 它应该只能设置自己的 <code>size</code> 而不是 <code>origin</code>，因为父视图可能是一个 <code>UIStackView</code> 也可能是一个 <code>UITableView</code> 甚至是一个扇形的视图也不是不可能，所以<strong>位置这一信息并不是子视图应该关心的</strong>。</p>
+
+<p>如果视图设置了自己的 <code>origin</code> 其实也就默认了自己的父视图一定是使用 <code>frame</code> 进行布局的，而一旦依赖于外部的信息，它就很难进行复用了。</p>
+
+<h4 id="再谈-size">再谈 size</h4>
+
+<p>关于视图大小的确认，其实也是有一些问题的，因为视图在布局时确实可能依赖于父视图的大小，或者更确切的说是需要父视图提供一个可供布局的大小，然后让子视图通过这个 <code>CGSize</code> 返回一个自己需要的大小给父视图。</p>
+
+<p><img src="https://img.nju520.me/texture.png-1000width" alt="texture" /></p>
+
+<p>这种计算视图大小的方式，其实比较像 <a href="https://github.com/TextureGroup/Texture">Texture</a> 也就是原来的 AsyncDisplayKit 中对于布局系统的实现。</p>
+
+<p>父视图通过调用子视图的 <code>-layoutSpecThatFits:</code> 方法获取子视图布局所需要的大小，而子视图通过父视图传入的 <code>CGSizeRange</code> 来设置自己的大小。</p>
+
+<pre><code class="language-objectivec">- (ASLayoutSpec *)layoutSpecThatFits:(ASSizeRange)constrainedSize
+    ...
+}
+</code></pre>
+
+<p>通过这种方式，子视图对父视图一无所知，它不知道父视图的任何属性，只通过 <code>-layoutSpecThatFits:</code> 方法传入的参数进行布局，实现了解耦以及代码复用。</p>
+
+<h3 id="小结">小结</h3>
+
+<p>由于确实需要对多尺寸的屏幕进行适配，苹果推出 Auto Layout 和 <code>UIStackView</code> 的初衷也没有错，但是在笔者看来，因为绝大部分视图都继承自 <code>UIView</code>，所以在很多情况下并没有对开发者进行强限制，比如在使用 <code>UIStackView</code> 时只能使用 flexbox 式的布局，在使用 Auto Layout 时也只能使用约束对视图进行布局等等，所以在很多时候会带来一些不必要的问题。</p>
+
+<p>同时 <code>UIView</code> 中的 <code>frame</code> 属性虽然在一开始能够很好的解决的布局的问题，但是随着布局系统变得越来越复杂，使得很多 UI 组件在与非 <code>frame</code> 布局的容器同时使用时产生了冲突，最终破坏了良好的封装性。</p>
+
+<p>到目前为止 iOS 中的视图层的问题主要就是 <code>UIView</code> 作为视图层中的上帝类，提供的 <code>frame</code> 布局系统不能良好的和其他布局系统工作，在一些时候 <code>frame</code> 属性完全成为了摆设。</p>
+
+<h2 id="其他平台对视图层的设计">其他平台对视图层的设计</h2>
+
+<p>在接下来的文章中，我们会介绍和分析其他平台 Android、Web 前端以及后端是如何对视图层进行设计的。</p>
+
+<h3 id="android-与-view">Android 与 View</h3>
+
+<p>与 iOS 上使用命令式的风格生成界面不同，Android 使用声明式的 XML 对界面进行描述，在这里举一个最简单的例子：</p>
+
+<pre><code class="language-xml">&lt;android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.example.nju520.myapplication.DisplayMessageActivity"&gt;
+
+    &lt;TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="TextView"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent" /&gt;
+
+&lt;/android.support.constraint.ConstraintLayout&gt;
+</code></pre>
+
+<blockquote>
+  <p>整个 XML 文件同时描述了视图的结构和样式，而这也是 Android 对于视图层的设计方式，将结构和样式混合在一个文件中。</p>
+</blockquote>
+
+<p>我们首先来分析一下上述代码的结构，整个 XML 文件中只有两个元素，如果我们去掉其中所有的属性，整个界面的元素就是这样的：</p>
+
+<pre><code class="language-xml">&lt;ConstraintLayout&gt;
+    &lt;TextView/&gt;
+&lt;/ConstraintLayout&gt;
+</code></pre>
+
+<p>由一个 <code>ConstraintLayout</code> 节点包含一个 <code>TextView</code> 节点。</p>
+
+<h4 id="view-和-viewgroup">View 和 ViewGroup</h4>
+
+<p>我们再来看一个 Android 中稍微复杂的视图结构：</p>
+
+<pre><code class="language-xml">&lt;LinearLayout&gt;
+    &lt;RelativeLayout&gt;
+        &lt;ImageView/&gt;
+        &lt;LinearLayout&gt;
+            &lt;TextView/&gt;
+            &lt;TextView/&gt;
+        &lt;/LinearLayout&gt;
+    &lt;/RelativeLayout&gt;
+    &lt;View/&gt;
+&lt;/LinearLayout&gt;
+</code></pre>
+
+<p>上面的 XML 代码描述了一个更加复杂的视图树，这里通过一张图更清晰地展示该视图表示的结构：</p>
+
+<p><img src="https://img.nju520.me/Android-View-Tree.jpg-1000width" alt="Android-View-Tree" /></p>
+
+<p>我们可以发现，Android 的视图其实分为两类：</p>
+
+<ul>
+  <li>一类是不能有子节点的视图，比如 <code>View</code>、<code>ImageView</code> 和 <code>TextView</code> 等；</li>
+  <li>另一类是可以有子节点的视图，比如 <code>LinearLayout</code> 和 <code>RelativeLayout</code> 等；</li>
+</ul>
+
+<p>在 Android 中，这两类的前者都是 <code>View</code> 的子类，也就是视图；后者是 <code>ViewGroup</code> 的子类，它主要充当视图的容器，与它的子节点以树形的结构形成了一个层次结构。</p>
+
+<p>这种分离视图和容器的方式很好的分离了职责，将管理和控制子视图的功能划分给了 <code>ViewGroup</code>，将显示内容的职责抛给了 <code>View</code> 对各个功能进行了合理的拆分。</p>
+
+<p>子视图的布局属性只有在父视图为特定 <code>ViewGroup</code> 时才会激活，否则就会忽略在 XML 中声明的属性。</p>
+
+<h4 id="混合的结构与样式">混合的结构与样式</h4>
+
+<p>在使用 XML 或者类 XML 的这种文本来描述视图层的内容时，总会遇到一种无法避免的争论：样式到底应该放在哪里？上面的例子显然说明了 Android 对于这一问题的选择，也就是将样式放在 XML 结构中。</p>
+
+<p>这一章节中并不会讨论样式到底应该放在哪里这一问题，我们会在后面的章节中具体讨论，将样式放在 XML 结构中和单独使用各自的优缺点。</p>
+
+<h3 id="web-前端">Web 前端</h3>
+
+<p>随着 Web 前端应用变得越来越复杂，在目前的大多数 Web 前端项目的实践中，我们已经会使用前后端分离方式开发 Web 应用，而 Web 前端也同时包含 Model、View 以及 Controller 三部分，不再通过服务端直接生成前端的 HTML 代码了。</p>
+
+<p><img src="https://img.nju520.me/html-css.jpg-1000width" alt="html-css" /></p>
+
+<p>现在最流行的 Web 前端框架有三个，分别是 React、Vue 和 Angular。不过，这篇文章会以最根本的 HTML 和 CSS 为例，简单介绍 Web 前端中的视图层是如何工作的。</p>
+
+<pre><code class="language-html">&lt;div&gt;
+  &lt;h1 class="text-center"&gt;Header&lt;/h1&gt;
+&lt;/div&gt;
+
+.text-center {
+  text-align: center;
+}
+</code></pre>
+
+<p>在 HTML 中其实并没有视图和容器这种概念的划分，绝大多数的元素节点都可以包含子节点，只有少数的无内容标签，比如说 <code>br</code>、<code>hr</code>、<code>img</code>、<code>input</code>、<code>link</code> 以及 <code>meta</code> 才不会<strong>解析</strong>自己的子节点。</p>
+
+<h4 id="分离的结构与样式">分离的结构与样式</h4>
+
+<p>与 Android 在定义视图时，使用混合的结构与样式不同，Web 前端在视图层中，采用 HTML 与 CSS 分离，即结构与样式分离的方式进行设计；虽然在 HTML 中，我们也可以使用 <code>style</code> 将 CSS 代码写在视图层的结构中，不过在一般情况下，我们并不会这么做。</p>
+
+<pre><code class="language-html">&lt;body style="background-color:powderblue;"&gt;
+&lt;/body&gt;
+</code></pre>
+
+<h3 id="结构与样式">结构与样式</h3>
+
+<p>在这一章节中，我们会对结构与样式组织方式之间的优劣进行简单的讨论。</p>
+
+<p>Android 和 Web 前端使用不同的方式对视图层的结构和样式进行组织，前者使用混合的方式，后者使用分离的结构和样式。</p>
+
+<p>相比于分离的组织方式，混合的组织方式有以下的几个优点：</p>
+
+<ul>
+  <li>不需要实现元素选择器，降低视图层解析器实现的复杂性；</li>
+  <li>元素的样式是内联的，对于元素的样式的定义一目了然，不需要考虑样式的继承等复杂特性；</li>
+</ul>
+
+<p>分离的组织方式却正相反：</p>
+
+<ul>
+  <li>元素选择器的实现，增加了 CSS 样式代码的复用性，不需要多次定义相同的样式；</li>
+  <li>将 CSS 代码从结构中抽离能够增强 HTML 的可读性，可以非常清晰、直观的了解 HTML 的层级结构；</li>
+</ul>
+
+<p>对于结构与样式，不同的组织方式能够带来不同的收益，这也是在设计视图层时需要考虑的事情，我们没有办法在使用一种组织方式时获得两种方式的优点，只能尽可能权衡利弊，选择最合适的方法。</p>
+
+<h3 id="后端的视图层">后端的视图层</h3>
+
+<p>这一章节将会研究一下后端视图层的设计，不过在真正开始分析其视图层设计之前，我们需要考虑一个问题，后端的视图层到底是什么？它有客户端或者 Web 前端中的<strong>用于展示内容</strong>视图层么？</p>
+
+<p>这其实是一个比较难以回答的问题，不过严格意义上的后端是没有用于展示内容的视图层的，也就是为客户端提供 API 接口的后端，它们的视图层，其实就是用于返回 JSON 的模板。</p>
+
+<pre><code class="language-ruby">json.extract! user, :id, :mobile, :nickname, :gender, :created_at, :updated_at
+json.url user_url user, format: :json
+</code></pre>
+
+<p>在 Ruby on Rails 中一般都是类似于上面的 jbuilder 代码。拥有视图层的后端应用大多都是使用了模板引擎技术，直接为 HTTP 请求返回渲染之后的 HTML 和 CSS 等前端代码。</p>
+
+<p>总而言是，使用了模板引擎的后端应用其实是混合了 Web 前端和后端，整个服务的视图层其实就是 Web 前端的代码；而现在的大多数 Web 应用，由于遵循了前后端分离的设计，两者之间的通信都使用约定好的 API 接口，所以后端的视图层其实就是单纯的用于渲染 JSON 的代码，比如 Rails 中的 jbuilder。</p>
+
+<h2 id="理想中的视图层">理想中的视图层</h2>
+
+<p>iOS 中理想的视图层需要解决两个最关键的问题：</p>
+
+<ol>
+  <li>细分 <code>UIView</code> 的职责，将其分为视图和容器两类，前者负责展示内容，后者负责对子视图进行布局；</li>
+  <li>去除整个视图层对于 <code>frame</code> 属性的依赖，不对外提供 <code>frame</code> 接口，每个视图只能知道自己的大小；</li>
+</ol>
+
+<p>解决上述两个问题的办法就是封装原有的 <code>UIView</code> 类，使用组合模式为外界提供合适的接口。</p>
+
+<p><img src="https://img.nju520.me/Node-Delegate-UIView.jpg-1000width" alt="Node-Delegate-UIVie" /></p>
+
+<h3 id="细分-uiview-的职责">细分 UIView 的职责</h3>
+
+<p><code>Node</code> 会作为 <code>UIView</code> 的代理，同时也作为整个视图层新的根类，它将屏蔽掉外界与 <code>UIView</code> 层级操作的有关方法，比如说：<code>-addSubview:</code> 等，同时，它也会屏蔽掉 <code>frame</code> 属性，这样每一个 <code>Node</code> 类的实例就只能设置自己的大小了。</p>
+
+<pre><code class="language-swift">public class Node: Buildable {
+    public typealias Element = Node
+    public let view: UIView = UIView()
+
+    @discardableResult
+    public func size(_ size: CGSize) -&gt; Element {
+        view.size = size
+        return self
+    }    
+}
+</code></pre>
+
+<p>上面的代码简单说明了这一设计的实现原理，我们可以理解为 <code>Node</code> 作为 <code>UIView</code> 的透明代理，它不提供任何与视图层级相关的方法以及 <code>frame</code> 属性。</p>
+
+<p><img src="https://img.nju520.me/Node-Delegate-Filter.jpg-1000width" alt="Node-Delegate-Filte" /></p>
+
+<h3 id="容器的实现">容器的实现</h3>
+
+<p>除了添加一个用于展示内容的 <code>Node</code> 类，我们还需要一个 <code>Container</code> 的概念，提供为管理子视图的 API 和方法，在这里，我们添加了一个空的 <code>Container</code> 协议：</p>
+
+<pre><code class="language-swift">public protocol Container { }
+</code></pre>
+
+<p>利用这个协议，我们构建一个 iOS 中最简单的容器 <code>AbsoluteContainer</code>，内部使用 <code>frame</code> 对子视图进行布局，它应该为外界提供添加子视图的接口，在这里就是 <code>build(closure:)</code> 方法：</p>
+
+<pre><code class="language-swift">public class AbsoluteContainer: Node, Container {
+    typealias Element = AbsoluteContainer
+    @discardableResult
+    public func build(closure: () -&gt; Node) -&gt; Relation&lt;AbsoluteContainer&gt; {
+        let node = closure()
+        view.addSubview(node.view)
+        return Relation&lt;AbsoluteContainer&gt;(container: self, node: node)
+    }
+}
+</code></pre>
+
+<p>该方法会在调用后返回一个 <code>Relation</code> 对象，这主要是因为在这种设计下的 <code>origin</code> 或者 <code>center</code> 等属性不再是 <code>Node</code> 的一个接口，它应该是 <code>Node</code> 节点出现在 <code>AbsoluteContainer</code> 时的产物，也就是说，只有在这两者同时出现时，才可以使用这些属性更新 <code>Node</code> 节点的位置：</p>
+
+<pre><code class="language-swift">public class Relation&lt;Container&gt; {
+    public let container: Container
+    public let node: Node
+
+    public init(container: Container, node: Node) {
+        self.container = container
+        self.node = node
+    }
+}
+
+public extension Relation where Container == AbsoluteContainer {
+    @discardableResult
+    public func origin(_ origin: CGPoint) -&gt; Relation {
+        node.view.origin = origin
+        return self
+    }
+}
+</code></pre>
+
+<p>这样就完成了对于 <code>UIView</code> 中视图层级和位置功能的剥离，同时使用透明代理以及 <code>Relation</code> 为 <code>Node</code> 提供其他用于设置视图位置的接口。</p>
+
+<blockquote>
+  <p>这一章节中的代码都来自于 <a href="https://github.com/nju520/Mineral">Mineral</a>，如果对代码有兴趣的读者，可以下载自行查看。</p>
+</blockquote>
+
+<h2 id="总结">总结</h2>
+
+<p>Cocoa Touch 中的 UIKit 对视图层的设计在一开始确实是没有问题的，主要原因是在 iOS 早期的布局方式并不复杂，只有单一的 <code>frame</code> 布局，而这种方式也恰好能够满足整个平台对于 iOS 应用开发的需要，但是随着屏幕尺寸的增多，苹果逐渐引入的其它布局方式与原有的体系发生了一些冲突，导致在开发时可能遇到奇怪的问题，而这也是本文想要解决的，将原有属于 <code>UIView</code> 的职责抽离出来，提供更合理的抽象。</p>
+
+<h2 id="references">References</h2>
+
+<ul>
+  <li><a href="http://nju520.me/layout-performance.html">从 Auto Layout 的布局算法谈性能</a></li>
+  <li><a href="https://developer.apple.com/library/content/documentation/UserExperience/Conceptual/AutolayoutPG/index.html#//apple_ref/doc/uid/TP40010853-CH7-SW1">Understanding Auto Layout</a></li>
+  <li><a href="https://developer.apple.com/library/content/documentation/UserExperience/Conceptual/AutolayoutPG/Size-ClassSpecificLayout.html">Size-Class-Specific Layout</a></li>
+  <li><a href="https://developer.apple.com/reference/uikit/uiview/1622572-translatesautoresizingmaskintoco">translatesAutoresizingMaskIntoConstraints</a></li>
+</ul>
+
+  ]]></description>
+</item>
+
+<item>
+  <title>谈谈 MVX 中的 Model</title>
+  <link>//mvx-model</link>
+  <author>nju520</author>
+  <pubDate>2017-06-23T00:34:44+08:00</pubDate>
+  <guid>//mvx-model</guid>
+  <description><![CDATA[
+  <ul>
+  <li><a href="http://nju520.me/mvx-model.html">谈谈 MVX 中的 Model</a></li>
+  <li><a href="http://nju520.me/mvx-view.html">谈谈 MVX 中的 View</a></li>
+  <li><a href="http://nju520.me/mvx-controller.html">谈谈 MVX 中的 Controller</a></li>
+  <li><a href="http://nju520.me/mvx.html">浅谈 MVC、MVP 和 MVVM 架构模式</a></li>
+</ul>
+
+<blockquote>
+  <p>Follow GitHub: <a href="https://github.com/nju520">nju520</a></p>
+</blockquote>
+
+<h2 id="常见的-model-层">常见的 Model 层</h2>
+
+<p>在大多数 iOS 的项目中，Model 层只是一个单纯的数据结构，你可以看到的绝大部分模型都是这样的：</p>
+
+<pre><code class="language-swift">struct User {
+    enum Gender: String {
+        case male = "male"
+        case female = "female"
+    }
+    let name: String
+    let email: String
+    let age: Int
+    let gender: Gender
+}
+</code></pre>
+
+<p>模型起到了定义一堆『坑』的作用，只是一个简单的模板，并没有参与到实际的业务逻辑，只是在模型层进行了一层<strong>抽象</strong>，将服务端发回的 JSON 或者说 <code>Dictionary</code> 对象中的字段一一取出并装填到预先定义好的模型中。</p>
+
+<p><img src="https://img.nju520.me/JSON-to-Model.jpg-1000width" alt="JSON-to-Model" /></p>
+
+<p>我们可以将这种模型层中提供的对象理解为『即开即用』的 <code>Dictionary</code> 实例；在使用时，可以直接从模型中取出属性，省去了从 <code>Dictionary</code> 中抽出属性以及验证是否合法的过程。</p>
+
+<pre><code class="language-swift">let user = User...
+
+nameLabel.text = user.name
+emailLabel.text = user.email
+ageLabel.text = "\(user.age)"
+genderLabel.text = user.gender.rawValue
+</code></pre>
+
+<h3 id="json---model">JSON -&gt; Model</h3>
+
+<p>使用 Swift 将 <code>Dictionary</code> 转换成模型，在笔者看来其实是一件比较麻烦的事情，主要原因是 Swift 作为一个号称类型安全的语言，有着使用体验非常差的 Optional 特性，从 <code>Dictionary</code> 中取出的值都是不一定存在的，所以如果需要纯手写这个过程其实还是比较麻烦的。</p>
+
+<pre><code class="language-swift">extension User {
+    init(json: [String: Any]) {
+        let name = json["name"] as! String
+        let email = json["email"] as! String
+        let age = json["age"] as! Int
+        let gender = Gender(rawValue: json["gender"] as! String)!
+        self.init(name: name, email: email, age: age, gender: gender)
+    }
+}
+</code></pre>
+
+<p>这里为 <code>User</code> 模型创建了一个 extension 并写了一个简单的模型转换的初始化方法，当我们从 JSON 对象中取值时，得到的都是 Optional 对象；而在大多数情况下，我们都没有办法直接对 Optional 对象进行操作，这就非常麻烦了。</p>
+
+<h4 id="麻烦的-optional">麻烦的 Optional</h4>
+
+<p>在 Swift 中遇到无法立即使用的 Optional 对象时，我们可以会使用 <code>!</code> 默认将字典中取出的值当作非 Optional 处理，但是如果服务端发回的数据为空，这里就会直接崩溃；当然，也可使用更加安全的 <code>if let</code> 对 Optional 对象进行解包（unwrap）。</p>
+
+<pre><code class="language-swift">extension User {
+    init?(json: [String: Any]) {
+        if let name = json["name"] as? String,
+            let email = json["email"] as? String,
+            let age = json["age"] as? Int,
+            let genderString = json["gender"] as? String,
+            let gender = Gender(rawValue: genderString) {
+            self.init(name: name, email: email, age: age, gender: gender)
+        }
+        return nil
+    }
+}
+</code></pre>
+
+<p>上面的代码看起来非常的丑陋，而正是因为上面的情况在 Swift 中非常常见，所以社区在 Swift 2.0 中引入了 <code>guard</code> 关键字来优化代码的结构。</p>
+
+<pre><code class="language-swift">extension User {
+    init?(json: [String: Any]) {
+        guard let name = json["name"] as? String,
+            let email = json["email"] as? String,
+            let age = json["age"] as? Int,
+            let genderString = json["gender"] as? String,
+            let gender = Gender(rawValue: genderString) else {
+                return nil
+        }
+        self.init(name: name, email: email, age: age, gender: gender)
+    }
+}
+</code></pre>
+
+<p>不过，上面的代码在笔者看来，并没有什么本质的区别，不过使用 <code>guard</code> 对错误的情况进行提前返回确实是一个非常好的编程习惯。</p>
+
+<h4 id="不关心空值的-oc">不关心空值的 OC</h4>
+
+<p>为什么 Objective-C 中没有这种问题呢？主要原因是在 OC 中所有的对象其实都是 Optional 的，我们也并不在乎对象是否为空，因为在 OC 中<strong>向 nil 对象发送消息并不会造成崩溃，Objective-C 运行时仍然会返回 nil 对象</strong>。</p>
+
+<blockquote>
+  <p>这虽然在一些情况下会造成一些问题，比如，当 <code>nil</code> 导致程序发生崩溃时，比较难找到程序中 <code>nil</code> 出现的原始位置，但是却保证了程序的灵活性，笔者更倾向于 Objective-C 中的做法，不过这也就见仁见智了。</p>
+</blockquote>
+
+<p>OC 作为动态语言，这种设计思路其实还是非常优秀的，它避免了大量由于对象不存在导致无法完成方法调用造成的崩溃；同时，作为开发者，我们往往都不需要考虑 <code>nil</code> 的存在，所以使用 OC 时写出的模型转换的代码都相对好看很多。</p>
+
+<pre><code class="language-objectivec">// User.h
+typedef NS_ENUM(NSUInteger, Gender) {
+    Male = 0,
+    Female = 1,
+};
+
+@interface User: NSObject
+
+@property (nonatomic, strong) NSString *email;
+@property (nonatomic, strong) NSString *name;
+@property (nonatomic, assign) NSUInteger age;
+@property (nonatomic, assign) Gender gender;
+
+@end
+
+// User.m
+@implementation User
+
+- (instancetype)initWithJSON:(NSDictionary *)json {
+    if (self = [super init]) {
+        self.email = json[@"email"];
+        self.name = json[@"name"];
+        self.age = [json[@"age"] integerValue];
+        self.gender = [json[@"gender"] integerValue];
+    }
+    return self;
+}
+
+@end
+</code></pre>
+
+<p>当然，在 OC 中也有很多优秀的 JSON 转模型的框架，如果我们使用 YYModel 这种开源框架，其实只需要写一个 <code>User</code> 类的定义就可以获得 <code>-yy_modelWithJSON:</code> 等方法来初始化 <code>User</code> 对象：</p>
+
+<pre><code class="language-objectivec">User *user = [User yy_modelWithJSON:json];
+</code></pre>
+
+<p>而这也是通过 Objective-C 强大的运行时特性做到的。</p>
+
+<blockquote>
+  <p>除了 YYModel，我们也可以使用 Mantle 等框架在 OC 中解决 JSON 到模型的转换的问题。</p>
+</blockquote>
+
+<h4 id="元编程能力">元编程能力</h4>
+
+<p>从上面的代码，我们可以看出：Objective-C 和 Swift 对于相同功能的处理，却有较大差别的实现。这种情况的出现主要原因是语言的设计思路导致的；Swift 一直<em>鼓吹</em>自己有着较强的安全性，能够写出更加稳定可靠的应用程序，而安全性来自于 Swift 语言的设计哲学；由此看来静态类型、安全和动态类型、元编程能力（？）看起来是比较难以共存的。</p>
+
+<blockquote>
+  <p>其实很多静态编程语言，比如 C、C++ 和 Rust 都通过宏实现了比较强大的元编程能力，虽然 Swift 也通过模板在元编程支持上做了一些微小的努力，不过到目前来看（ 3.0 ）还是远远不够的。</p>
+</blockquote>
+
+<p><img src="https://img.nju520.me/Dynamic-Static.png-1000width" alt="Dynamic-Stati" /></p>
+
+<p>OC 中对于 <code>nil</code> 的处理能够减少我们在编码时的工作量，不过也对工程师的代码质量提出了考验。我们需要思考 <code>nil</code> 的出现会不会带来崩溃，是否会导致行为的异常、增加应用崩溃的风险以及不确定性，而这也是 Swift 引入 Optional 这一概念来避免上述问题的初衷。</p>
+
+<p>相比而言，笔者还是更喜欢强大的元编程能力，这样可以减少大量的重复工作并且提供更多的可能性，与提升工作效率相比，牺牲一些安全性还是可以接受的。</p>
+
+<h3 id="网络服务-service-层">网络服务 Service 层</h3>
+
+<p>现有的大多数应用都会将网路服务组织成单独的一层，所以有时候你会看到所谓的 MVCS 架构模式，它其实只是在 MVC 的基础上加上了一个服务层（Service），而在 iOS 中常见的 MVC 架构模式也都可以理解为 MVCS 的形式，当引入了 Service 层之后，整个数据的获取以及处理的流程是这样的：</p>
+
+<p><img src="https://img.nju520.me/MVCS-Architecture.png-1000width" alt="MVCS-Architecture" /></p>
+
+<ol>
+  <li>大多数情况下服务的发起都是在 Controller 中进行的；</li>
+  <li>然后会在 HTTP 请求的回调中交给模型层处理 JSON 数据；</li>
+  <li>返回开箱即用的对象交还给 Controller 控制器；</li>
+  <li>最后由 View 层展示服务端返回的数据；</li>
+</ol>
+
+<p>不过按理来说服务层并不属于模型层，为什么要在这里进行介绍呢？这是因为 <strong>Service 层其实与 Model 层之间的联系非常紧密</strong>；网络请求返回的结果决定了 Model 层该如何设计以及该有哪些功能模块，而 Service 层的设计是与后端的 API 接口的设计强关联的，这也是我们谈模型层的设计无法绕过的坑。</p>
+
+<p>iOS 中的 Service 层大体上有两种常见的组织方式，其中一种是命令式的，另一种是声明式的。</p>
+
+<h4 id="命令式">命令式</h4>
+
+<p>命令式的 Service 层一般都会为每一个或者一组 API 写一个专门用于 HTTP 请求的 Manager 类，在这个类中，我们会在每一个静态方法中使用 AFNetworking 或者 Alamofire 等网络框架发出 HTTP 请求。</p>
+
+<pre><code class="language-objectivec">import Foundation
+import Alamofire
+
+final class UserManager {
+    static let baseURL = "http://localhost:3000"
+    static let usersBaseURL = "\(baseURL)/users"
+
+    static func allUsers(completion: @escaping ([User]) -&gt; ()) {
+        let url = "\(usersBaseURL)"
+        Alamofire.request(url).responseJSON { response in
+            if let jsons = response.result.value as? [[String: Any]] {
+                let users = User.users(jsons: jsons)
+                completion(users)
+            }
+        }
+    }
+
+    static func user(id: Int, completion: @escaping (User) -&gt; ()) {
+        let url = "\(usersBaseURL)/\(id)"
+        Alamofire.request(url).responseJSON { response in
+            if let json = response.result.value as? [String: Any],
+                let user = User(json: json) {
+                completion(user)
+            }
+        }
+    }
+}
+</code></pre>
+
+<p>在这个方法中，我们完成了网络请求、数据转换 JSON、JSON 转换到模型以及最终使用 <code>completion</code> 回调的过程，调用 Service 服务的 Controller 可以直接从回调中使用构建好的 Model 对象。</p>
+
+<pre><code class="language-objectivec">UserManager.user(id: 1) { user in
+    self.nameLabel.text = user.name
+    self.emailLabel.text = user.email
+    self.ageLabel.text = "\(user.age)"
+    self.genderLabel.text = user.gender.rawValue
+}
+</code></pre>
+
+<h4 id="声明式">声明式</h4>
+
+<p>使用声明式的网络服务层与命令式的方法并没有本质的不同，它们最终都调用了底层的一些网络库的 API，这种网络服务层中的请求都是以配置的形式实现的，需要对原有的命令式的请求进行一层封装，也就是说所有的参数 <code>requestURL</code>、<code>method</code> 和 <code>parameters</code> 都应该以配置的形式声明在每一个 <code>Request</code> 类中。</p>
+
+<p><img src="https://img.nju520.me/Abstract-Request.jpg-1000width" alt="Abstract-Request" /></p>
+
+<p>如果是在 Objective-C 中，一般会定义一个抽象的基类，并让所有的 Request 都继承它；但是在 Swift 中，我们可以使用协议以及协议扩展的方式实现这一功能。</p>
+
+<pre><code class="language-swift">protocol AbstractRequest {
+    var requestURL: String { get }
+    var method: HTTPMethod { get }
+    var parameters: Parameters? { get }
+}
+
+extension AbstractRequest {
+    func start(completion: @escaping (Any) -&gt; Void) {
+        Alamofire.request(requestURL, method: self.method).responseJSON { response in
+            if let json = response.result.value {
+                completion(json)
+            }
+        }
+    }
+}
+</code></pre>
+
+<p>在 <code>AbstractRequest</code> 协议中，我们定义了发出一个请求所需要的全部参数，并在协议扩展中实现了 <code>start(completion:)</code> 方法，这样实现该协议的类都可以直接调用 <code>start(completion:)</code> 发出网络请求。</p>
+
+<pre><code class="language-swift">final class AllUsersRequest: AbstractRequest {
+    let requestURL = "http://localhost:3000/users"
+    let method = HTTPMethod.get
+    let parameters: Parameters? = nil
+}
+
+final class FindUserRequest: AbstractRequest {
+    let requestURL: String
+    let method = HTTPMethod.get
+    let parameters: Parameters? = nil
+
+    init(id: Int) {
+        self.requestURL = "http://localhost:3000/users/\(id)"
+    }
+}
+</code></pre>
+
+<p>我们在这里写了两个简单的 <code>Request</code> 类 <code>AllUsersRequest</code> 和 <code>FindUserRequest</code>，它们两个一个负责获取所有的 <code>User</code> 对象，一个负责从服务端获取指定的 <code>User</code>；在使用上面的声明式 Service 层时也与命令式有一些不同：</p>
+
+<pre><code class="language-swift">FindUserRequest(id: 1).start { json in
+    if let json = json as? [String: Any],
+        let user = User(json: json) {
+        print(user)
+    }
+}
+</code></pre>
+
+<p>因为在 Swift 中，我们没法将 JSON 在 Service 层转换成模型对象，所以我们不得不在 <code>FindUserRequest</code> 的回调中进行类型以及 JSON 转模型等过程；又因为 HTTP 请求可能依赖其他的参数，所以在使用这种形式请求资源时，我们需要在初始化方法传入参数。</p>
+
+<h4 id="命令式-vs-声明式">命令式 vs 声明式</h4>
+
+<p>现有的 iOS 开发中的网络服务层一般都是使用这两种组织方式，我们一般会按照<strong>资源</strong>或者<strong>功能</strong>来划分命令式中的 <code>Manager</code> 类，而声明式的 <code>Request</code> 类与实际请求是一对一的关系。</p>
+
+<p><img src="https://img.nju520.me/Manager-And-Request.jpg-1000width" alt="Manager-And-Request" /></p>
+
+<p>这两种网络层的组织方法在笔者看来没有高下之分，无论是 <code>Manager</code> 还是 <code>Request</code> 的方式，尤其是后者由于一个类只对应一个 API 请求，在整个 iOS 项目变得异常复杂时，就会导致<strong>网络层类的数量剧增</strong>。</p>
+
+<p>这个问题并不是不可以接受的，在大多数项目中的网络请求就是这么做的，虽然在查找实际的请求类时有一些麻烦，不过只要遵循一定的<strong>命名规范</strong>还是可以解决的。</p>
+
+<h3 id="小结">小结</h3>
+
+<p>现有的 MVC 下的 Model 层，其实只起到了对数据结构定义的作用，它将服务端返回的 JSON 数据，以更方便使用的方式包装了一下，这样呈现给上层的就是一些即拆即用的『字典』。</p>
+
+<p><img src="https://img.nju520.me/Model-And-Dictioanry.jpg-1000width" alt="Model-And-Dictioanry" /></p>
+
+<p>单独的 Model 层并不能返回什么关键的作用，它只有与网络服务层 Service 结合在一起的时候才能发挥更重要的能力。</p>
+
+<p><img src="https://img.nju520.me/Service-And-API.jpg-1000width" alt="Service-And-API" /></p>
+
+<p>而网络服务 Service 层是对 HTTP 请求的封装，其实现形式有两种，一种是命令式的，另一种是声明式的，这两种实现的方法并没有绝对的优劣，遵循合适的形式设计或者重构现有的架构，随着应用的开发与迭代，为上层提供相同的接口，保持一致性才是设计 Service 层最重要的事情。</p>
+
+<h2 id="服务端的-model-层">服务端的 Model 层</h2>
+
+<p>虽然文章是对客户端中 Model 层进行分析和介绍，但是在客户端大规模使用 MVC 架构模式之前，服务端对于 MVC 的使用早已有多年的历史，而移动端以及 Web 前端对于架构的设计是近年来才逐渐被重视。</p>
+
+<p>因为客户端的应用变得越来越复杂，动辄上百万行代码的巨型应用不断出现，以前流水线式的开发已经没有办法解决现在的开发、维护工作，所以合理的架构设计成为客户端应用必须要重视的事情。</p>
+
+<p>这一节会以 Ruby on Rails 中 Model 层的设计为例，分析在经典的 MVC 框架中的 Model 层是如何与其他模块进行交互的，同时它又担任了什么样的职责。</p>
+
+<h3 id="model-层的职责">Model 层的职责</h3>
+
+<p>Rails 中的 Model 层主要承担着以下两大职责：</p>
+
+<ol>
+  <li>使用数据库存储并管理 Web 应用的数据；</li>
+  <li>包含 Web 应用<strong>所有</strong>的业务逻辑；</li>
+</ol>
+
+<p>除了上述两大职责之外，Model 层还会存储应用的状态，同时，由于它对用户界面一无所知，所以它不依赖于任何视图的状态，这也使得 Model 层的代码可以复用。</p>
+
+<p>Model 层的两大职责决定了它在整个 MVC 框架的位置：</p>
+
+<p><img src="https://img.nju520.me/Server-MVC.jpg-1000width" alt="Server-MV" /></p>
+
+<p>因为 Model 是对数据库中表的映射，所以当 Controller 向 Model 层请求数据时，它会从数据库中获取相应的数据，然后对数据进行加工最后返回给 Controller 层。</p>
+
+<h4 id="数据库">数据库</h4>
+
+<p>Model 层作为数据库中表的映射，它就需要实现两部分功能：</p>
+
+<ol>
+  <li>使用合理的方式对数据库进行迁移和更新；</li>
+  <li>具有数据库的绝大部分功能，包括最基础的增删改查；</li>
+</ol>
+
+<p>在这里我们以 Rails 的 ActiveRecord 为例，简单介绍这两大功能是如何工作的。</p>
+
+<p>ActiveRecord 为数据库的迁移和更新提供了一种名为 Migration 的机制，它可以被理解为一种 DSL，对数据库中的表的字段、类型以及约束进行描述：</p>
+
+<pre><code class="language-ruby">class CreateProducts &lt; ActiveRecord::Migration[5.0]
+  def change
+    create_table :products do |t|
+      t.string :name
+      t.text :description
+    end
+  end
+end
+</code></pre>
+
+<p>上面的 Ruby 代码创建了一个名为 <code>Products</code> 表，其中包含三个字段 <code>name</code>、<code>description</code> 以及一个默认的主键 <code>id</code>，然而在上述文件生成时，数据库中对应的表还不存在，当我们在命令行中执行 <code>rake db:migrate</code> 时，才会执行下面的 SQL 语句生成一张表：</p>
+
+<pre><code class="language-sql">CREATE TABLE products (
+    id int(11)   DEFAULT NULL auto_increment PRIMARY KEY
+    name         VARCHAR(255),
+    description  text,
+);
+</code></pre>
+
+<p>同样地，如果我们想要更新数据库中的表的字段，也需要创建一个 Migration 文件，ActiveRecord 会为我们直接生成一个 SQL 语句并在数据库中执行。</p>
+
+<p>ActiveRecord 对数据库的增删改查功能都做了相应的实现，在使用它进行数据库查询时，会生成一条 SQL 语句，在数据库中执行，并将执行的结果初始化成一个 Model 的实例并返回：</p>
+
+<pre><code class="language-ruby">user = User.find(10)
+# =&gt; SELECT * FROM users WHERE (users.id = 10) LIMIT 1
+</code></pre>
+
+<p>这就是 ActiveRecord 作为 Model 层的 ORM 框架解决两个关键问题的方式，其最终结果都是生成一条 SQL 语句并扔到数据库中执行。</p>
+
+<p><img src="https://img.nju520.me/Relation-Between-Database-And-Model.jpg-1000width" alt="Relation-Between-Database-And-Mode" /></p>
+
+<p>总而言之，Model 层为调用方屏蔽了所有与数据库相关的底层细节，使开发者不需要考虑如何手写 SQL 语句，只需要关心原生的代码，能够极大的降低出错的概率；但是，由于 SQL 语句都由 Model 层负责处理生成，它并不会根据业务帮助我们优化 SQL 查询语句，所以在遇到数据量较大时，其性能难免遇到各种问题，我们仍然需要手动优化查询的 SQL 语句。</p>
+
+<h4 id="controller">Controller</h4>
+
+<p>Model 与数据库之间的关系其实大多数都与数据的存储查询有关，而与 Controller 的关系就不是这样了，在 Rails 这个 MVC 框架中，提倡将业务逻辑放到 Model 层进行处理，也就是所谓的：</p>
+
+<blockquote>
+  <p>Fat Models, skinny controllers.</p>
+</blockquote>
+
+<p>这种说法形成的原因是，在绝大部分的 MVC 框架中，Controller 的作用都是将请求代理给 Model 去完成，它本身并不包含任何的业务逻辑，任何实际的查询、更新和删除操作都不应该在 Controller 层直接进行，而是要讲这些操作交给 Model 去完成。</p>
+
+<pre><code class="language-ruby">class UsersController
+  def show
+    @user = User.find params[:id]
+  end
+end
+</code></pre>
+
+<p>这也就是为什么在后端应用中设计合理的 Controller 实际上并没有多少行代码，因为大多数业务逻辑相关的代码都会放到 Model 层。</p>
+
+<p>Controller 的作用更像是胶水，将 Model 层中获取的模型传入 View 层中，渲染 HTML 或者返回 JSON 数据。</p>
+
+<h3 id="小结-1">小结</h3>
+
+<p>虽然服务端对于应用架构的设计已经有了很长时间的沉淀，但是由于客户端和服务端的职责截然不同，我们可以从服务端借鉴一些设计，但是并不应该照搬后端应用架构设计的思路。</p>
+
+<p>服务端重数据，如果把整个 Web 应用看做一个黑箱，那么它的输入就是用户发送的数据，发送的形式无论是遵循 HTTP 协议也好还是其它协议也好，它们都是数据。</p>
+
+<p><img src="https://img.nju520.me/web-black-box.jpg-1000width" alt="web-black-box" /></p>
+
+<p>在服务端拿到数据后对其进行处理、加工以及存储，最后仍然以数据的形式返回给用户。</p>
+
+<p>而客户端重展示，其输入就是用户的行为触发的事件，而输出是用户界面：</p>
+
+<p><img src="https://img.nju520.me/client-black-box.jpg-1000width" alt="client-black-box" /></p>
+
+<p>也就是说，用户的行为在客户端应用中得到响应，并更新了用户界面 GUI。总而言之：</p>
+
+<blockquote>
+  <p>客户端重展示，服务端重数据。</p>
+</blockquote>
+
+<p>这也是在设计客户端 Model 层时需要考虑的重要因素。</p>
+
+<h2 id="理想中的-model-层">理想中的 Model 层</h2>
+
+<p>在上面的两个小节中，分别介绍了 iOS 中现有的 Model 层以及服务端的 Model 层是如何使用的，并且介绍了它们的职责，在这一章节中，我们准备介绍笔者对于 Model 层的看法以及设计。</p>
+
+<h3 id="明确职责">明确职责</h3>
+
+<p>在具体讨论 Model 层设计之前，肯定要明确它的职责，它应该做什么、不应该做什么以及需要为外界提供什么样的接口和功能。</p>
+
+<p>客户端重展示，无论是 Web、iOS 还是 Android，普通用户应该<strong>无法直接接触到服务端</strong>，如果一个软件系统的使用非常复杂，并且让<strong>普通</strong>用户<strong>直接</strong>接触到服务端的各种报错、提示，比如 404 等等，那么这个软件的设计可能就是不合理的。</p>
+
+<blockquote>
+  <p>这里加粗了普通和直接两个词，如果对这句话有疑问，请多读几遍 :)
+专业的错误信息在软件工程师介入排错时非常有帮助，这种信息应当放置在不明显的角落。</p>
+</blockquote>
+
+<p><img src="https://img.nju520.me/404.gif" alt="404" /></p>
+
+<p>作为软件工程师或者设计师，应该为用户提供更加合理的界面以及展示效果，比如，使用<em>您所浏览的网页不存在</em>来描述或者代替只有从事软件开发行业的人才了解的 404 或者 500 等错误是更为<strong>合适</strong>的方式。</p>
+
+<p>上面的例子主要是为了说明客户端的最重要的职责，将<strong>数据合理地展示给用户</strong>，从这里我们可以领会到，Model 层虽然重要，但是却不是客户端最为复杂的地方，它只是起到了一个将服务端数据『映射』到客户端的作用，这个映射的过程就是获取数据的过程，也决定了 Model 层在 iOS 应用中的位置。</p>
+
+<p><img src="https://img.nju520.me/Model-in-Client.jpg-1000width" alt="Model-in-Client" /></p>
+
+<p>那么这样就产生了几个非常重要的问题和子问题：</p>
+
+<ul>
+  <li>数据如何获取？
+    <ul>
+      <li>在何时获取数据？</li>
+      <li>如何存储服务端的数据？</li>
+    </ul>
+  </li>
+  <li>数据如何展示？
+    <ul>
+      <li>应该为上层提供什么样的接口？</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="model-层--service-层">Model 层 += Service 层？</h3>
+
+<p>首先，我们来解决数据获取的问题，在 iOS 客户端常见的 Model 层中，数据的获取都不是由 Model 层负责的，而是由一个单独的 Service 层进行处理，然而经常这么组织网络请求并不是一个非常优雅的办法：</p>
+
+<ol>
+  <li>如果按照 API 组织 Service 层，那么网络请求越多，整个项目的 Service 层的类的数量就会越庞大；</li>
+  <li>如果按照资源组织 Service 层，那么为什么不把 Service 层中的代码直接扔到 Model 层呢？</li>
+</ol>
+
+<p>既然 HTTP 请求都以获取相应的资源为目标，那么以 Model 层为中心来组织 Service 层并没有任何语义和理解上的问题。</p>
+
+<p>如果服务端的 API 严格地按照 RESTful 的形式进行设计，那么就可以在客户端的 Model 层建立起一一对应的关系，拿最基本的几个 API 请求为例：</p>
+
+<pre><code class="language-swift">extension RESTful {
+    static func index(completion: @escaping ([Self]) -&gt; ())
+
+    static func show(id: Int, completion: @escaping (Self?) -&gt; ())
+
+    static func create(params: [String: Any], completion: @escaping (Self?) -&gt; ())
+
+    static func update(id: Int, params: [String: Any], completion: @escaping (Self?) -&gt; ())
+
+    static func delete(id: Int, completion: @escaping () -&gt; ())
+}
+</code></pre>
+
+<p>我们在 Swift 中通过 Protocol Extension 的方式为所有遵循 <code>RESTful</code> 协议的模型添加基本的 CRUD 方法，那么 <code>RESTful</code> 协议本身又应该包含什么呢？</p>
+
+<pre><code class="language-swift">protocol RESTful {
+    init?(json: [String: Any])
+    static var url: String { get }
+}
+</code></pre>
+
+<p>RESTful 协议本身也十分简单，一是 JSON 转换方法，也就是如何将服务器返回的 JSON 数据转换成对应的模型，另一个是资源的 <code>url</code></p>
+
+<blockquote>
+  <p>对于这里的 <code>url</code>，我们可以遵循约定优于配置的原则，通过反射获取一个<strong>默认</strong>的资源链接，从而简化原有的 <code>RESTful</code> 协议，但是这里为了简化代码并没有使用这种方法。</p>
+</blockquote>
+
+<pre><code class="language-swift">extension User: RESTful {
+    static var url: String {
+        return "http://localhost:3000/users"
+    }
+
+    init?(json: [String: Any]) {
+        guard let id = json["id"] as? Int,
+            let name = json["name"] as? String,
+            let email = json["email"] as? String,
+            let age = json["age"] as? Int,
+            let genderValue = json["gender"] as? Int,
+            let gender = Gender(rawInt: genderValue) else {
+                return nil
+        }
+        self.init(id: id, name: name, email: email, age: age, gender: gender)
+    }
+}
+</code></pre>
+
+<p>在 <code>User</code> 模型遵循上述协议之后，我们就可以简单的通过它的静态方法来对服务器上的资源进行一系列的操作。</p>
+
+<pre><code class="language-swift">User.index { users in
+    // users
+}
+
+User.create(params: ["name": "Stark", "email": "example@email.com", "gender": 0, "age": 100]) { user in
+    // user
+}
+</code></pre>
+
+<p>当然 RESTful 的 API 接口仍然需要服务端提供支持，不过以 Model 取代 Service 作为 HTTP 请求的发出者确实是可行的。</p>
+
+<h4 id="问题">问题</h4>
+
+<p>虽然上述的方法简化了 Service 层，但是在真正使用时确实会遇到较多的限制，比如，用户需要对另一用户进行关注或者取消关注操作，这样的 API 如果要遵循 RESTful 就需要使用以下的方式进行设计：</p>
+
+<pre><code class="language-swift">POST   /api/users/1/follows
+DELETE /api/users/1/follows
+</code></pre>
+
+<p>这种情况就会导致在当前的客户端的 Model 层没法建立合适的抽象，因为 <code>follows</code> 并不是一个真实存在的模型，它只代表两个用户之间的关系，所以在当前所设计的模型层中没有办法实现上述的功能，还需要引入 Service 层，来对服务端中的每一个 Controller 的 action 进行抽象，在这里就不展开讨论了。</p>
+
+<p>对 Model 层网络服务的设计，与服务端的设计有着非常大的关联，如果能够对客户端和服务端之间的 API 进行严格规范，那么对于设计出简洁、优雅的网络层还是有巨大帮助的。</p>
+
+<h3 id="缓存与持久存储">缓存与持久存储</h3>
+
+<p>客户端的持久存储其实与服务端的存储天差地别，客户端中保存的各种数据更准确的说其实是<strong>缓存</strong>，既然是缓存，那么它在客户端应用中的地位并不是极其重要、非他不可的；正相反，很多客户端应用没有缓存也运行的非常好，它并不是一个必要的功能，只是能够提升用户体验而已。</p>
+
+<p>虽然客户端的存储只是缓存，但是在目前的大型应用中，也确实需要这种缓存，有以下几个原因：</p>
+
+<ul>
+  <li>能够快速为用户提供可供浏览的内容；</li>
+  <li>在网络情况较差或者无网络时，也能够为用户提供兜底数据；</li>
+</ul>
+
+<p>以上的好处其实都是从用户体验的角度说的，不过缓存确实能够提高应用的质量。</p>
+
+<p>在 iOS 中，持久存储虽然不是一个必要的功能，但是苹果依然为我们提供了不是那么好用的 Core Data 框架，但这并不是这篇文章需要介绍和讨论的内容。</p>
+
+<p>目前的绝大多数 Model 框架，其实提供的都只是<strong>硬编码</strong>的数据库操作能力，或者提供的 API 不够优雅，原因是虽然 Swift 语法比 Objective-C 更加简洁，但是缺少元编程能力是它的硬伤。</p>
+
+<p>熟悉 ActiveRecord 的开发者应该都熟悉下面的使用方式：</p>
+
+<pre><code class="language-ruby">User.find_by_name "draven"
+</code></pre>
+
+<p>在 Swift 中通过现有的特性很难提供这种 API，所以很多情况下只能退而求其次，继承 <code>NSObject</code> 并且使用 <code>dynamic</code> 关键字记住 Objective-C 的特性实现一些功能：</p>
+
+<pre><code class="language-objectivec">class User: Object {
+    dynamic var name = ""
+    dynamic var age = 0
+}
+</code></pre>
+
+<p>这确实是一种解决办法，但是并不是特别的优雅，如果我们在编译器间获得模型信息，然后使用这些信息生成代码就可以解决这些问题了，这种方法同时也能够在 Xcode 编译器中添加代码提示。</p>
+
+<h3 id="上层接口">上层接口</h3>
+
+<p>Model 层为上层提供提供的接口其实就是自身的一系列属性，只是将服务器返回的 JSON 经过处理和类型转换，变成了即拆即用的数据。</p>
+
+<p><img src="https://img.nju520.me/JSON-Model.jpg-1000width" alt="JSON-Mode" /></p>
+
+<p>上层与 Model 层交互有两种方式，一是通过 Model 层调用 HTTP 请求，异步获取模型数据，另一种就是通过 Model 暴露出来的属性进行存取，而底层数据库会在 Model 属性更改时发出网络请求并且修改对应的字段。</p>
+
+<h2 id="总结">总结</h2>
+
+<p>虽然客户端的 Model 层与服务端的 Model 层有着相同的名字，但是客户端的 Model 层由于处理的是缓存，对本地的数据库中的表进行迁移、更改并不是一个必要的功能，在本地表字段进行大规模修改时，只需要删除全部表中的内容，并重新创建即可，只要不影响服务端的数据就不是太大的问题。</p>
+
+<p>iOS 中的 Model 层不应该是一个单纯的数据结构，它应该起到发出 HTTP 请求、进行字段验证以及持久存储的职责，同时为上层提供网络请求的方法以及字段作为接口，为视图的展示提供数据源的作用。我们应该将更多的与 Model 层有关的业务逻辑移到 Model 中以控制 Controller 的复杂性。</p>
+
+
+  ]]></description>
+</item>
+
+
+  </channel>
+</rss>
