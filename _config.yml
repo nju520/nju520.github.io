@@ -27,7 +27,7 @@ url: 'https://nju520.me'
 img_url: 'https://img.nju520.me'
 image: 'assets/images/draven.png'
 
-short_url: 'nju520.me'
+# short_url: 'nju520.me'
 google_analytics: UA-114647632-1
 disqus: nju520
 # edit baseurl to simply '/' if using as your personal page (instead of a project page)
