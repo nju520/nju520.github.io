@@ -1,6 +1,6 @@
-var toc = $(".section-nav");
-var contentTop = $(".post-content").offset().top;
-var absoluteY = toc.offset().top;
+// var toc = $(".section-nav");
+// var contentTop = $(".post-content").offset().top;
+// var absoluteY = toc.offset().top;
 
 //window.addEventListener('scroll', (e) => {
 //  const contentEle = document.querySelector('.post-content')
@@ -13,7 +13,7 @@ var absoluteY = toc.offset().top;
 //  }
 //})
 
-$(window).scroll(function (event) {
+// $(window).scroll(function (event) {
   //var scroll = $(window).scrollTop();
   //var fixedY = 20;
   //var topY = scroll >= absoluteY ? scroll + fixedY : contentTop + 20;
@@ -23,7 +23,7 @@ $(window).scroll(function (event) {
   // else {
   //   toc.removeClass('markdown-toc-fixed')
   // }
-});
+// });
 
 $(".section-nav a").click(function() {
   $("html, body").animate({
