@@ -326,7 +326,7 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
 这一部分代码还负责返回查询参数，将 `AFQueryStringPair` 或者 `key` `value` 转换为以下这种形式：
 
 ~~~
-username=dravenss&password=123456&hello[world]=helloworld
+username=hackerss&password=123456&hello[world]=helloworld
 ~~~
 
 它的实现主要依赖于一个递归函数 `AFQueryStringPairsFromKeyAndValue`，如果当前的 `value` 是一个集合类型的话，那么它就会不断地递归调用自己。

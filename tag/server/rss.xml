@@ -4341,7 +4341,7 @@ run ApplicationName::Application.routes
 
 <p><img src="https://img.nju520.me/2017-10-24-partition-in-dynamo.png" alt="partition-in-dynamo" /></p>
 
-<p>每一个节点都会被 Dynamo 在这个环中分配一个随机的位置，而这个节点会处理从哈希的输出在当前节点前的所有键；假设我们有一个键值对 <code>(draven, developer)</code>，<code>Hash(draven)</code> 的结果位于上图中的绿色区域，从环中的位置开始按照<strong>顺时针</strong>的顺序寻找，找到的以第一个节点 B 就会成为协调者（coordinator）负责处理当前的键值对，上图中的每一个节点都会负责与其颜色相同的部分。</p>
+<p>每一个节点都会被 Dynamo 在这个环中分配一个随机的位置，而这个节点会处理从哈希的输出在当前节点前的所有键；假设我们有一个键值对 <code>(hacker, developer)</code>，<code>Hash(hacker)</code> 的结果位于上图中的绿色区域，从环中的位置开始按照<strong>顺时针</strong>的顺序寻找，找到的以第一个节点 B 就会成为协调者（coordinator）负责处理当前的键值对，上图中的每一个节点都会负责与其颜色相同的部分。</p>
 
 <p>由于 Dynamo 系统中的每一个节点在刚刚加入当前的集群时，会被分配一个随机的位置，所以由于算法的随机性可能会导致不同节点处理的范围有所不同，最终每一个节点的负载也并不相同；为了解决这个问题，Dynamo 使用了一致性哈希算法的变种，将同一个物理节点分配到环中的多个位置（标记），成为多个虚拟节点，但是在这种策略下，如果当前的 Dynamo 节点一天处理上百万的请求，那么新增节点为了不影响已有节点的性能，会在后台进行启动，整个过程大约会<strong>消耗一整天</strong>的时间，这其实是很难接受的，除此之外这种策略还会造成系统进行日常归档极其缓慢。</p>
 
@@ -4850,9 +4850,9 @@ delegate :select, :group, :order, :except, :reorder, :limit, :offset, :joins, :l
 
 <p>所有直接在类上调用的方法都会先执行 <code>#all</code>，也就是说下面的几种写法是完全相同的：</p>
 
-<pre><code class="language-ruby">User    .where(name: 'draven')
-User.all.where(name: 'draven')
-User.all.where(name: 'draven').all
+<pre><code class="language-ruby">User    .where(name: 'hacker')
+User.all.where(name: 'hacker')
+User.all.where(name: 'hacker').all
 </code></pre>
 
 <p>当我们了解了 <code>.where == .all + #where</code> 就可以再一次使用 pry 来查找真正被 ActiveRecord 实现的 <code>#where</code> 方法：</p>
@@ -4999,14 +4999,14 @@ end
 
 <p>查询方法 <code>#where!</code> 中的四行代码只有一行代码是我们需要关注的，该方法调用 <code>WhereClauseFactory#build</code> 生成一条 where 查询并存储到当前对象的 <code>where_clause</code> 中，在这个过程中并不会生成 SQL，而是会生成一个 <code>WhereClause</code> 对象，其中存储着 SQL 节点树：</p>
 
-<pre><code class="language-ruby">pry(main)&gt; User.where(name: 'draven').where_clause
+<pre><code class="language-ruby">pry(main)&gt; User.where(name: 'hacker').where_clause
 =&gt; #&lt;ActiveRecord::Relation::WhereClause:0x007fe5a10bf2c8
  @binds=
   [#&lt;ActiveRecord::Relation::QueryAttribute:0x007fe5a10bf4f8
     @name="name",
     @original_attribute=nil,
     @type=#&lt;ActiveModel::Type::String:0x007fe59d33f2e0 @limit=nil, @precision=nil, @scale=nil&gt;,
-    @value_before_type_cast="draven"&gt;],
+    @value_before_type_cast="hacker"&gt;],
  @predicates=
   [#&lt;Arel::Nodes::Equality:0x007fe5a10bf368
     @left=
@@ -5139,7 +5139,7 @@ end
 
 <p>如果我们直接在一个查询链中访问 <code>#values</code> 方法可以获得其中存储的所有查询条件：</p>
 
-<pre><code class="language-ruby">pry(main)&gt; User.where(name: 'draven').order(name: :desc).values
+<pre><code class="language-ruby">pry(main)&gt; User.where(name: 'hacker').order(name: :desc).values
 =&gt; {:references=&gt;[],
  :where=&gt;
   #&lt;ActiveRecord::Relation::WhereClause:0x007fe59d14d860&gt;,

@@ -242,7 +242,7 @@
     &lt;p&gt;在前两篇文章中，我们已经对 iOS 中的 Model 层以及 View 层进行了分析，划分出了它们的具体职责，其中 Model 层除了负责数据的持久存储、缓存工作，还要负责所有 HTTP... &lt;a class="read-more" href="/mvx-controller.html"&gt;&amp;raquo;&lt;/a&gt;&lt;/p&gt;
   &lt;/section&gt;
   &lt;footer class="post-meta"&gt;
-    &lt;img class="author-thumb" src="/assets/images/draven.png" alt="Author image" nopin="nopin" /&gt;
+    &lt;img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" /&gt;
     &lt;a href='/author/nju520'&gt;nju520&lt;/a&gt;
     &lt;time class="post-date" datetime="2017-06-23"&gt;23 Jun 2017&lt;/time&gt;
   &lt;/footer&gt;
@@ -2066,7 +2066,7 @@ DELETE /api/users/1/follows
 
 <p>熟悉 ActiveRecord 的开发者应该都熟悉下面的使用方式：</p>
 
-<pre><code class="language-ruby">User.find_by_name "draven"
+<pre><code class="language-ruby">User.find_by_name "hacker"
 </code></pre>
 
 <p>在 Swift 中通过现有的特性很难提供这种 API，所以很多情况下只能退而求其次，继承 <code>NSObject</code> 并且使用 <code>dynamic</code> 关键字记住 Objective-C 的特性实现一些功能：</p>

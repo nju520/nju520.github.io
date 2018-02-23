@@ -1057,9 +1057,9 @@ delegate :select, :group, :order, :except, :reorder, :limit, :offset, :joins, :l
 
 <p>所有直接在类上调用的方法都会先执行 <code>#all</code>，也就是说下面的几种写法是完全相同的：</p>
 
-<pre><code class="language-ruby">User    .where(name: 'draven')
-User.all.where(name: 'draven')
-User.all.where(name: 'draven').all
+<pre><code class="language-ruby">User    .where(name: 'hacker')
+User.all.where(name: 'hacker')
+User.all.where(name: 'hacker').all
 </code></pre>
 
 <p>当我们了解了 <code>.where == .all + #where</code> 就可以再一次使用 pry 来查找真正被 ActiveRecord 实现的 <code>#where</code> 方法：</p>
@@ -1206,14 +1206,14 @@ end
 
 <p>查询方法 <code>#where!</code> 中的四行代码只有一行代码是我们需要关注的，该方法调用 <code>WhereClauseFactory#build</code> 生成一条 where 查询并存储到当前对象的 <code>where_clause</code> 中，在这个过程中并不会生成 SQL，而是会生成一个 <code>WhereClause</code> 对象，其中存储着 SQL 节点树：</p>
 
-<pre><code class="language-ruby">pry(main)&gt; User.where(name: 'draven').where_clause
+<pre><code class="language-ruby">pry(main)&gt; User.where(name: 'hacker').where_clause
 =&gt; #&lt;ActiveRecord::Relation::WhereClause:0x007fe5a10bf2c8
  @binds=
   [#&lt;ActiveRecord::Relation::QueryAttribute:0x007fe5a10bf4f8
     @name="name",
     @original_attribute=nil,
     @type=#&lt;ActiveModel::Type::String:0x007fe59d33f2e0 @limit=nil, @precision=nil, @scale=nil&gt;,
-    @value_before_type_cast="draven"&gt;],
+    @value_before_type_cast="hacker"&gt;],
  @predicates=
   [#&lt;Arel::Nodes::Equality:0x007fe5a10bf368
     @left=
@@ -1346,7 +1346,7 @@ end
 
 <p>如果我们直接在一个查询链中访问 <code>#values</code> 方法可以获得其中存储的所有查询条件：</p>
 
-<pre><code class="language-ruby">pry(main)&gt; User.where(name: 'draven').order(name: :desc).values
+<pre><code class="language-ruby">pry(main)&gt; User.where(name: 'hacker').order(name: :desc).values
 =&gt; {:references=&gt;[],
  :where=&gt;
   #&lt;ActiveRecord::Relation::WhereClause:0x007fe59d14d860&gt;,
@@ -2517,7 +2517,7 @@ end
 
 <p>当完成了对文档的各种操作之后，该方法会直接调用 <code>DatabaseTransformer#insert_record</code> 将数据插入 MySQL 对应的表中；我们可以直接使用如下的代码将某个 Collection 中的全部文档迁移到 MySQL 中：</p>
 
-<pre><code class="language-ruby">transformer = DatabaseTransformer.new 'draven_production'
+<pre><code class="language-ruby">transformer = DatabaseTransformer.new 'hacker_production'
 transformer.import :post, :_slugs, name: :title, _status: :status
 </code></pre>
 
@@ -2669,7 +2669,7 @@ puts ActiveRecord::Base.descendants
 <pre><code class="language-ruby">class PostsTag &lt; ActiveRecord::Base; end
 
 # migrate data from mongodb to mysql.
-transformer = DatabaseTransformer.new 'draven_production'
+transformer = DatabaseTransformer.new 'hacker_production'
 transformer.import :posts_tags
 
 # establish association between posts and tags.

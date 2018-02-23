@@ -551,7 +551,7 @@ DELETE /api/users/1/follows
 熟悉 ActiveRecord 的开发者应该都熟悉下面的使用方式：
 
 ~~~ruby
-User.find_by_name "draven"
+User.find_by_name "hacker"
 ~~~
 
 在 Swift 中通过现有的特性很难提供这种 API，所以很多情况下只能退而求其次，继承 `NSObject` 并且使用 `dynamic` 关键字记住 Objective-C 的特性实现一些功能：

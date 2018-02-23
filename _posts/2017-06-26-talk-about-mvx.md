@@ -217,7 +217,7 @@ MVP 的第一个主要变种就是被动视图（Passive View）；顾名思义�
     <p>在前两篇文章中，我们已经对 iOS 中的 Model 层以及 View 层进行了分析，划分出了它们的具体职责，其中 Model 层除了负责数据的持久存储、缓存工作，还要负责所有 HTTP... <a class="read-more" href="/mvx-controller.html">&raquo;</a></p>
   </section>
   <footer class="post-meta">
-    <img class="author-thumb" src="/assets/images/draven.png" alt="Author image" nopin="nopin" />
+    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
     <a href='/author/nju520'>nju520</a>
     <time class="post-date" datetime="2017-06-23">23 Jun 2017</time>
   </footer>

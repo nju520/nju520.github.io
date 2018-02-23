@@ -1117,7 +1117,7 @@ responseIsValid = NO;
 
 <p>这一部分代码还负责返回查询参数，将 <code>AFQueryStringPair</code> 或者 <code>key</code> <code>value</code> 转换为以下这种形式：</p>
 
-<pre><code>username=dravenss&amp;password=123456&amp;hello[world]=helloworld
+<pre><code>username=hackerss&amp;password=123456&amp;hello[world]=helloworld
 </code></pre>
 
 <p>它的实现主要依赖于一个递归函数 <code>AFQueryStringPairsFromKeyAndValue</code>，如果当前的 <code>value</code> 是一个集合类型的话，那么它就会不断地递归调用自己。</p>

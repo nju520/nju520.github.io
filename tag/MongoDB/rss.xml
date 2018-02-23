@@ -252,7 +252,7 @@ end
 
 <p>当完成了对文档的各种操作之后，该方法会直接调用 <code>DatabaseTransformer#insert_record</code> 将数据插入 MySQL 对应的表中；我们可以直接使用如下的代码将某个 Collection 中的全部文档迁移到 MySQL 中：</p>
 
-<pre><code class="language-ruby">transformer = DatabaseTransformer.new 'draven_production'
+<pre><code class="language-ruby">transformer = DatabaseTransformer.new 'hacker_production'
 transformer.import :post, :_slugs, name: :title, _status: :status
 </code></pre>
 
@@ -404,7 +404,7 @@ puts ActiveRecord::Base.descendants
 <pre><code class="language-ruby">class PostsTag &lt; ActiveRecord::Base; end
 
 # migrate data from mongodb to mysql.
-transformer = DatabaseTransformer.new 'draven_production'
+transformer = DatabaseTransformer.new 'hacker_production'
 transformer.import :posts_tags
 
 # establish association between posts and tags.

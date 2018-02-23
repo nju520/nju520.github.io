@@ -80,7 +80,7 @@ desc: 在关系型数据库中设计索引其实并不是复杂的事情，很�
 
 > 主键列 `id` 在所有的 MySQL 索引中都是一定会存在的。
 
-对于查询 `SELECT id, username, age FROM users WHERE username="draven"` 来说，(id, username) 就是一个窄索引，因为该索引没有包含存在于 SQL 查询中的 age 列，而 (id, username, age) 就是该查询的一个宽索引了，它**包含这个查询中所需要的全部数据列**。
+对于查询 `SELECT id, username, age FROM users WHERE username="hacker"` 来说，(id, username) 就是一个窄索引，因为该索引没有包含存在于 SQL 查询中的 age 列，而 (id, username, age) 就是该查询的一个宽索引了，它**包含这个查询中所需要的全部数据列**。
 
 宽索引能够避免二次的随机 IO，而窄索引就需要在对索引进行顺序读取之后再根据主键 id 从主键索引中查找对应的数据：
 
@@ -96,7 +96,7 @@ desc: 在关系型数据库中设计索引其实并不是复杂的事情，很�
 
 ![Filter-Facto](https://img.nju520.me/2017-09-11-Filter-Factor.jpg-1000width)
 
-对于 users 表来说，sex="male" 就不是一个好的过滤因子，它会选择整张表中一半的数据，所以**在一般情况下**我们最好不要使用 sex 列作为整个索引的第一列；而 name="draven" 的使用就可以得到一个比较好的过滤因子了，它的使用能过滤整个数据表中 99.9% 的数据；当然我们也可以将这三个过滤进行组合，创建一个新的索引 (name, age, sex) 并同时使用这三列作为过滤条件：
+对于 users 表来说，sex="male" 就不是一个好的过滤因子，它会选择整张表中一半的数据，所以**在一般情况下**我们最好不要使用 sex 列作为整个索引的第一列；而 name="hacker" 的使用就可以得到一个比较好的过滤因子了，它的使用能过滤整个数据表中 99.9% 的数据；当然我们也可以将这三个过滤进行组合，创建一个新的索引 (name, age, sex) 并同时使用这三列作为过滤条件：
 
 ![Combined-Filter-Facto](https://img.nju520.me/2017-09-11-Combined-Filter-Factor.jpg-1000width)
 
@@ -114,11 +114,11 @@ desc: 在关系型数据库中设计索引其实并不是复杂的事情，很�
 
 ### 匹配列与过滤列
 
-假设在 users 表中有 name、age 和 (name, sex, age) 三个辅助索引；当 WHERE 条件中存在类似 age = 21 或者 name = "draven" 这种**等值谓词**时，它们都会成为匹配列（Matching Column）用于选择索引树中的数据行，但是当我们使用以下查询时：
+假设在 users 表中有 name、age 和 (name, sex, age) 三个辅助索引；当 WHERE 条件中存在类似 age = 21 或者 name = "hacker" 这种**等值谓词**时，它们都会成为匹配列（Matching Column）用于选择索引树中的数据行，但是当我们使用以下查询时：
 
 ~~~sql
 SELECT * FROM users
-WHERE name = "draven" AND sex = "male" AND age > 20;
+WHERE name = "hacker" AND sex = "male" AND age > 20;
 ~~~
 
 虽然我们有 (name, sex, age) 索引包含了上述查询条件中的全部列，但是在这里只有 name 和 sex 两列才是匹配列，MySQL 在执行上述查询时，会选择 name 和 sex 作为匹配列，扫描所有满足条件的数据行，然后将 age 当做过滤列（Filtering Column）：

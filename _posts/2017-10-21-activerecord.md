@@ -413,9 +413,9 @@ delegate :select, :group, :order, :except, :reorder, :limit, :offset, :joins, :l
 所有直接在类上调用的方法都会先执行 `#all`，也就是说下面的几种写法是完全相同的：
 
 ~~~ruby
-User    .where(name: 'draven')
-User.all.where(name: 'draven')
-User.all.where(name: 'draven').all
+User    .where(name: 'hacker')
+User.all.where(name: 'hacker')
+User.all.where(name: 'hacker').all
 ~~~
 
 当我们了解了 `.where == .all + #where` 就可以再一次使用 pry 来查找真正被 ActiveRecord 实现的 `#where` 方法：
@@ -570,14 +570,14 @@ end
 查询方法 `#where!` 中的四行代码只有一行代码是我们需要关注的，该方法调用 `WhereClauseFactory#build` 生成一条 where 查询并存储到当前对象的 `where_clause` 中，在这个过程中并不会生成 SQL，而是会生成一个 `WhereClause` 对象，其中存储着 SQL 节点树：
 
 ~~~ruby
-pry(main)> User.where(name: 'draven').where_clause
+pry(main)> User.where(name: 'hacker').where_clause
 => #<ActiveRecord::Relation::WhereClause:0x007fe5a10bf2c8
  @binds=
   [#<ActiveRecord::Relation::QueryAttribute:0x007fe5a10bf4f8
     @name="name",
     @original_attribute=nil,
     @type=#<ActiveModel::Type::String:0x007fe59d33f2e0 @limit=nil, @precision=nil, @scale=nil>,
-    @value_before_type_cast="draven">],
+    @value_before_type_cast="hacker">],
  @predicates=
   [#<Arel::Nodes::Equality:0x007fe5a10bf368
     @left=
@@ -714,7 +714,7 @@ end
 如果我们直接在一个查询链中访问 `#values` 方法可以获得其中存储的所有查询条件：
 
 ~~~ruby
-pry(main)> User.where(name: 'draven').order(name: :desc).values
+pry(main)> User.where(name: 'hacker').order(name: :desc).values
 => {:references=>[],
  :where=>
   #<ActiveRecord::Relation::WhereClause:0x007fe59d14d860>,
