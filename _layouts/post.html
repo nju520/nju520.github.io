@@ -111,8 +111,9 @@ class: "post-template"
          repo: 'bobo-comments',
          owner: 'nju520',
          admin: ['nju520'],
-         id: "{{ page.url | prepend: site.host_url }}",
-         // facebook-like distraction free mode
+         // labels: ['Gitalk', 'gitment'].concat(["{{ page.tags | join: '","'}}"]),
+         id: location.origin + location.pathname,
+         // id: "{{ page.url | prepend: site.host_url }}",
          distractionFreeMode: false
        });
 
