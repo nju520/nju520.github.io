@@ -7,12 +7,12 @@ tags: Rack系列 WEBrick rack ruby server
 desc: 这篇文章会介绍在开发环境中最常用的应用容器 WEBrick 的实现原理，除了通过源代码分析之外，我们也会介绍它的 IO 模型以及一些特点。在 GitHub 上，WEBrick 从 2003 年的六月份就开始开发了，有着十几年历史的 WEBrick 的实现非常简单，总共只有 4000 多行的代码。
 ---
 
-+ [谈谈 Rack 协议与实现](https://hwbnju.com/rack)
-+ [浅谈 WEBrick 的多线程模型](https://hwbnju.com/rack-webrick)
-+ [浅谈 Thin 的事件驱动模型](https://hwbnju.com/rack-thin)
-+ [浅谈 Unicorn 的多进程模型](https://hwbnju.com/rack-unicorn)
-+ [浅谈 Puma 的并发模型与实现](https://hwbnju.com/rack-puma)
-+ [Ruby Web 服务器的并发模型与性能](https://hwbnju.com/ruby-webserver)
++ [谈谈 Rack 协议与实现](http://hwbnju.com/rack)
++ [浅谈 WEBrick 的多线程模型](http://hwbnju.com/rack-webrick)
++ [浅谈 Thin 的事件驱动模型](http://hwbnju.com/rack-thin)
++ [浅谈 Unicorn 的多进程模型](http://hwbnju.com/rack-unicorn)
++ [浅谈 Puma 的并发模型与实现](http://hwbnju.com/rack-puma)
++ [Ruby Web 服务器的并发模型与性能](http://hwbnju.com/ruby-webserver)
 
 这篇文章会介绍在开发环境中最常用的应用容器 WEBrick 的实现原理，除了通过源代码分析之外，我们也会介绍它的 IO 模型以及一些特点。
 
@@ -51,7 +51,7 @@ module Rack
 end
 ~~~
 
-我们在上一篇文章 [谈谈 Rack 协议与实现](https://hwbnju.com/rack) 中介绍 Rack 的实现原理时，最终调用了上述方法，从这里开始大部分的实现都与 WEBrick 有关了。
+我们在上一篇文章 [谈谈 Rack 协议与实现](http://hwbnju.com/rack) 中介绍 Rack 的实现原理时，最终调用了上述方法，从这里开始大部分的实现都与 WEBrick 有关了。
 
 在这里，你可以看到方法会先处理传入的参数比如：地址、端口号等等，在这之后会使用 WEBrick 提供的 `HTTPServer` 来处理 HTTP 请求，调用 `mount` 在根路由上挂载应用和处理器 `Rack::Handler::WEBrick` 接受请求，最后执行 `#start` 方法启动服务器。
 

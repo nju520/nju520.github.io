@@ -7,12 +7,12 @@ tags: Rack系列 rack ruby webserver server
 desc: 这是整个 Rack 系列文章的最后一篇了，在之前其实也尝试写过很多系列文章，但是到最后都因为各种原因放弃了，最近由于自己对 Ruby 的 webserver 非常感兴趣，所以看了下社区中常见 webserver 的实现原理，包括 WEBrick、Thin、Unicorn 和 Puma，虽然在 Ruby 社区中也有一些其他的 webserver 有着比较优异的性能，但是在这有限的文章中也没有办法全都介绍一遍。
 ---
 
-+ [谈谈 Rack 协议与实现](https://hwbnju.com/rack)
-+ [浅谈 WEBrick 的多线程模型](https://hwbnju.com/rack-webrick)
-+ [浅谈 Thin 的事件驱动模型](https://hwbnju.com/rack-thin)
-+ [浅谈 Unicorn 的多进程模型](https://hwbnju.com/rack-unicorn)
-+ [浅谈 Puma 的并发模型与实现](https://hwbnju.com/rack-puma)
-+ [Ruby Web 服务器的并发模型与性能](https://hwbnju.com/ruby-webserver)
++ [谈谈 Rack 协议与实现](http://hwbnju.com/rack)
++ [浅谈 WEBrick 的多线程模型](http://hwbnju.com/rack-webrick)
++ [浅谈 Thin 的事件驱动模型](http://hwbnju.com/rack-thin)
++ [浅谈 Unicorn 的多进程模型](http://hwbnju.com/rack-unicorn)
++ [浅谈 Puma 的并发模型与实现](http://hwbnju.com/rack-puma)
++ [Ruby Web 服务器的并发模型与性能](http://hwbnju.com/ruby-webserver)
 
 这是整个 Rack 系列文章的最后一篇了，在之前其实也尝试写过很多系列文章，但是到最后都因为各种原因放弃了，最近由于自己对 Ruby 的 webserver 非常感兴趣，所以看了下社区中常见 webserver 的实现原理，包括 WEBrick、Thin、Unicorn 和 Puma，虽然在 Ruby 社区中也有一些其他的 webserver 有着比较优异的性能，但是在这有限的文章中也没有办法全都介绍一遍。
 

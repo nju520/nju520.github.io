@@ -19,12 +19,12 @@
   <guid>//rack</guid>
   <description><![CDATA[
   <ul>
-  <li><a href="https://hwbnju.com/rack">谈谈 Rack 协议与实现</a></li>
-  <li><a href="https://hwbnju.com/rack-webrick">浅谈 WEBrick 的多线程模型</a></li>
-  <li><a href="https://hwbnju.com/rack-thin">浅谈 Thin 的事件驱动模型</a></li>
-  <li><a href="https://hwbnju.com/rack-unicorn">浅谈 Unicorn 的多进程模型</a></li>
-  <li><a href="https://hwbnju.com/rack-puma">浅谈 Puma 的并发模型与实现</a></li>
-  <li><a href="https://hwbnju.com/ruby-webserver">Ruby Web 服务器的并发模型与性能</a></li>
+  <li><a href="http://hwbnju.com/rack">谈谈 Rack 协议与实现</a></li>
+  <li><a href="http://hwbnju.com/rack-webrick">浅谈 WEBrick 的多线程模型</a></li>
+  <li><a href="http://hwbnju.com/rack-thin">浅谈 Thin 的事件驱动模型</a></li>
+  <li><a href="http://hwbnju.com/rack-unicorn">浅谈 Unicorn 的多进程模型</a></li>
+  <li><a href="http://hwbnju.com/rack-puma">浅谈 Puma 的并发模型与实现</a></li>
+  <li><a href="http://hwbnju.com/ruby-webserver">Ruby Web 服务器的并发模型与性能</a></li>
 </ul>
 
 <p>作为 Rails 开发者，基本上每天都与 Rails 的各种 API 以及数据库打交道，Rails 的世界虽然非常简洁，不过其内部的实现还是很复杂的，很多刚刚接触 Rails 的开发者可能都不知道 Rails 其实就是一个 <a href="https://github.com/rack/rack">Rack</a> 应用，在这一系列的文章中，我们会分别介绍 Rack 以及一些常见的遵循 Rack 协议的 webserver 的实现原理。</p>

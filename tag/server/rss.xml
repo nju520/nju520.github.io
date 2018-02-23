@@ -383,7 +383,7 @@ iex&gt; val
 <p><img src="https://img.nju520.me/2017-12-10-objc-message-resolution-and-forwarding.png" alt="objc-message-resolution-and-forwarding" /></p>
 
 <blockquote>
-  <p>上述图片取自 <a href="https://hwbnju.com/racdelegateproxy">从代理到 RACSignal</a>，使用时对图片中的颜色以及字号稍作修改。</p>
+  <p>上述图片取自 <a href="http://hwbnju.com/racdelegateproxy">从代理到 RACSignal</a>，使用时对图片中的颜色以及字号稍作修改。</p>
 </blockquote>
 
 <p>当 ObjC 的运行时在方法查找的过程中已经查找到了上帝类 <code>NSObject</code> 时，仍然没有找到方法的实现就会进入上面的流程，先执行的 <code>+resolveInstanceMethod:</code> 方法就是一个可以为当前的类添加方法的入口：</p>
@@ -518,10 +518,10 @@ find_by_name, ["dog", "another_dog"]
   <li><a href="https://doc.rust-lang.org/book/first-edition/macros.html">Macros · Rust Doc</a></li>
   <li><a href="https://www.cs.indiana.edu/ftp/techreports/TR206.pdf">Macro-by-Example</a></li>
   <li><a href="https://www.rust-lang.org/en-US/">Rust</a></li>
-  <li><a href="https://hwbnju.com/message">从源代码看 ObjC 中消息的发送</a></li>
+  <li><a href="http://hwbnju.com/message">从源代码看 ObjC 中消息的发送</a></li>
   <li><a href="https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtDynamicResolution.html">Dynamic Method Resolution</a></li>
   <li><a href="https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtForwarding.html#//apple_ref/doc/uid/TP40008048-CH105-SW1">Message Forwarding</a></li>
-  <li><a href="https://hwbnju.com/racdelegateproxy">从代理到 RACSignal</a></li>
+  <li><a href="http://hwbnju.com/racdelegateproxy">从代理到 RACSignal</a></li>
   <li><a href="https://developer.apple.com/documentation/objectivec/nsobject/1418500-resolveinstancemethod">resolveInstanceMethod(_:)</a></li>
   <li><a href="http://rubylearning.com/satishtalim/ruby_method_missing.html">Ruby Method Missing</a></li>
   <li><a href="https://www.leighhalliday.com/ruby-metaprogramming-method-missing">Ruby Metaprogramming - Method Missing</a></li>
@@ -993,12 +993,12 @@ Storage Driver: aufs
   <guid>//ruby-webserver</guid>
   <description><![CDATA[
   <ul>
-  <li><a href="https://hwbnju.com/rack">谈谈 Rack 协议与实现</a></li>
-  <li><a href="https://hwbnju.com/rack-webrick">浅谈 WEBrick 的多线程模型</a></li>
-  <li><a href="https://hwbnju.com/rack-thin">浅谈 Thin 的事件驱动模型</a></li>
-  <li><a href="https://hwbnju.com/rack-unicorn">浅谈 Unicorn 的多进程模型</a></li>
-  <li><a href="https://hwbnju.com/rack-puma">浅谈 Puma 的并发模型与实现</a></li>
-  <li><a href="https://hwbnju.com/ruby-webserver">Ruby Web 服务器的并发模型与性能</a></li>
+  <li><a href="http://hwbnju.com/rack">谈谈 Rack 协议与实现</a></li>
+  <li><a href="http://hwbnju.com/rack-webrick">浅谈 WEBrick 的多线程模型</a></li>
+  <li><a href="http://hwbnju.com/rack-thin">浅谈 Thin 的事件驱动模型</a></li>
+  <li><a href="http://hwbnju.com/rack-unicorn">浅谈 Unicorn 的多进程模型</a></li>
+  <li><a href="http://hwbnju.com/rack-puma">浅谈 Puma 的并发模型与实现</a></li>
+  <li><a href="http://hwbnju.com/ruby-webserver">Ruby Web 服务器的并发模型与性能</a></li>
 </ul>
 
 <p>这是整个 Rack 系列文章的最后一篇了，在之前其实也尝试写过很多系列文章，但是到最后都因为各种原因放弃了，最近由于自己对 Ruby 的 webserver 非常感兴趣，所以看了下社区中常见 webserver 的实现原理，包括 WEBrick、Thin、Unicorn 和 Puma，虽然在 Ruby 社区中也有一些其他的 webserver 有着比较优异的性能，但是在这有限的文章中也没有办法全都介绍一遍。</p>
@@ -1180,12 +1180,12 @@ Transfer rate:          692.73 [Kbytes/sec] received
   <guid>//rack-puma</guid>
   <description><![CDATA[
   <ul>
-  <li><a href="https://hwbnju.com/rack">谈谈 Rack 协议与实现</a></li>
-  <li><a href="https://hwbnju.com/rack-webrick">浅谈 WEBrick 的多线程模型</a></li>
-  <li><a href="https://hwbnju.com/rack-thin">浅谈 Thin 的事件驱动模型</a></li>
-  <li><a href="https://hwbnju.com/rack-unicorn">浅谈 Unicorn 的多进程模型</a></li>
-  <li><a href="https://hwbnju.com/rack-puma">浅谈 Puma 的并发模型与实现</a></li>
-  <li><a href="https://hwbnju.com/ruby-webserver">Ruby Web 服务器的并发模型与性能</a></li>
+  <li><a href="http://hwbnju.com/rack">谈谈 Rack 协议与实现</a></li>
+  <li><a href="http://hwbnju.com/rack-webrick">浅谈 WEBrick 的多线程模型</a></li>
+  <li><a href="http://hwbnju.com/rack-thin">浅谈 Thin 的事件驱动模型</a></li>
+  <li><a href="http://hwbnju.com/rack-unicorn">浅谈 Unicorn 的多进程模型</a></li>
+  <li><a href="http://hwbnju.com/rack-puma">浅谈 Puma 的并发模型与实现</a></li>
+  <li><a href="http://hwbnju.com/ruby-webserver">Ruby Web 服务器的并发模型与性能</a></li>
 </ul>
 
 <p>这篇文章已经是整个 Rack 系列文章的第五篇了，在前面的文章中我们见到了多线程模型、多进程模型以及事件驱动的 I/O 模型，对于几种常见的 webserver 已经很了解了，其实无论是 Ruby 还是其他社区对于 webserver 的实现也就是这么几种方式：多线程、多线程和 Reactor。</p>
@@ -1783,12 +1783,12 @@ end
   <guid>//rack-unicorn</guid>
   <description><![CDATA[
   <ul>
-  <li><a href="https://hwbnju.com/rack">谈谈 Rack 协议与实现</a></li>
-  <li><a href="https://hwbnju.com/rack-webrick">浅谈 WEBrick 的多线程模型</a></li>
-  <li><a href="https://hwbnju.com/rack-thin">浅谈 Thin 的事件驱动模型</a></li>
-  <li><a href="https://hwbnju.com/rack-unicorn">浅谈 Unicorn 的多进程模型</a></li>
-  <li><a href="https://hwbnju.com/rack-puma">浅谈 Puma 的并发模型与实现</a></li>
-  <li><a href="https://hwbnju.com/ruby-webserver">Ruby Web 服务器的并发模型与性能</a></li>
+  <li><a href="http://hwbnju.com/rack">谈谈 Rack 协议与实现</a></li>
+  <li><a href="http://hwbnju.com/rack-webrick">浅谈 WEBrick 的多线程模型</a></li>
+  <li><a href="http://hwbnju.com/rack-thin">浅谈 Thin 的事件驱动模型</a></li>
+  <li><a href="http://hwbnju.com/rack-unicorn">浅谈 Unicorn 的多进程模型</a></li>
+  <li><a href="http://hwbnju.com/rack-puma">浅谈 Puma 的并发模型与实现</a></li>
+  <li><a href="http://hwbnju.com/ruby-webserver">Ruby Web 服务器的并发模型与性能</a></li>
 </ul>
 
 <p>作为 Ruby 社区中老牌的 webserver，在今天也有很多开发者在生产环境使用 Unicorn 处理客户端的发出去的 HTTP 请求，与 WEBrick 和 Thin 不同，Unicorn 使用了完全不同的模型，提供了多进程模型批量处理来自客户端的请求。</p>
@@ -2416,12 +2416,12 @@ end
   <guid>//rack-thin</guid>
   <description><![CDATA[
   <ul>
-  <li><a href="https://hwbnju.com/rack">谈谈 Rack 协议与实现</a></li>
-  <li><a href="https://hwbnju.com/rack-webrick">浅谈 WEBrick 的多线程模型</a></li>
-  <li><a href="https://hwbnju.com/rack-thin">浅谈 Thin 的事件驱动模型</a></li>
-  <li><a href="https://hwbnju.com/rack-unicorn">浅谈 Unicorn 的多进程模型</a></li>
-  <li><a href="https://hwbnju.com/rack-puma">浅谈 Puma 的并发模型与实现</a></li>
-  <li><a href="https://hwbnju.com/ruby-webserver">Ruby Web 服务器的并发模型与性能</a></li>
+  <li><a href="http://hwbnju.com/rack">谈谈 Rack 协议与实现</a></li>
+  <li><a href="http://hwbnju.com/rack-webrick">浅谈 WEBrick 的多线程模型</a></li>
+  <li><a href="http://hwbnju.com/rack-thin">浅谈 Thin 的事件驱动模型</a></li>
+  <li><a href="http://hwbnju.com/rack-unicorn">浅谈 Unicorn 的多进程模型</a></li>
+  <li><a href="http://hwbnju.com/rack-puma">浅谈 Puma 的并发模型与实现</a></li>
+  <li><a href="http://hwbnju.com/ruby-webserver">Ruby Web 服务器的并发模型与性能</a></li>
 </ul>
 
 <p>在上一篇文章中我们已经介绍了 WEBrick 的实现，它的 handler 是写在 Rack 工程中的，而在这篇文章介绍的 webserver <a href="https://github.com/macournoyer/thin">thin</a> 的 Rack 处理器也是写在 Rack 中的；与 WEBrick 相同，Thin 的实现也非常简单，官方对它的介绍是：</p>
@@ -2722,7 +2722,7 @@ end
 
 <p>到此为止，我们对于 Thin 是如何处理来自用户的 HTTP 请求的就比较清楚了，我们可以看到 Thin 本身并没有做一些类似解析 HTTP 数据包以及发送数据的问题，它使用了来自 Rack 和 EventMachine 两个开源框架中很多已有的代码逻辑，确实只做了一些胶水的事情。</p>
 
-<p>对于 Rack 是如何工作的我们在前面的文章 <a href="https://hwbnju.com/rack">谈谈 Rack 协议与实现</a> 中已经介绍过了；虽然我们看到了很多与 EventMachine 相关的代码，但是到这里我们仍然对 EventMachine 不是太了解。</p>
+<p>对于 Rack 是如何工作的我们在前面的文章 <a href="http://hwbnju.com/rack">谈谈 Rack 协议与实现</a> 中已经介绍过了；虽然我们看到了很多与 EventMachine 相关的代码，但是到这里我们仍然对 EventMachine 不是太了解。</p>
 
 <h2 id="eventmachine-和-reactor-模式">EventMachine 和 Reactor 模式</h2>
 
@@ -2932,7 +2932,7 @@ def add_selectable io
 end
 </code></pre>
 
-<p>在整个事件循环的大循环中，这里存入的所有 Socket 都会被 <code>#select</code> 方法监听，在响应的事件发生时交给合适的回调处理，作者在 <a href="https://hwbnju.com/redis-eventloop">Redis 中的事件循环</a> 一文中也介绍过非常相似的处理过程。</p>
+<p>在整个事件循环的大循环中，这里存入的所有 Socket 都会被 <code>#select</code> 方法监听，在响应的事件发生时交给合适的回调处理，作者在 <a href="http://hwbnju.com/redis-eventloop">Redis 中的事件循环</a> 一文中也介绍过非常相似的处理过程。</p>
 
 <p><img src="https://img.nju520.me/2017-11-04-eventmachine-select.png" alt="eventmachine-select" /></p>
 
@@ -3195,12 +3195,12 @@ end
   <guid>//rack-webrick</guid>
   <description><![CDATA[
   <ul>
-  <li><a href="https://hwbnju.com/rack">谈谈 Rack 协议与实现</a></li>
-  <li><a href="https://hwbnju.com/rack-webrick">浅谈 WEBrick 的多线程模型</a></li>
-  <li><a href="https://hwbnju.com/rack-thin">浅谈 Thin 的事件驱动模型</a></li>
-  <li><a href="https://hwbnju.com/rack-unicorn">浅谈 Unicorn 的多进程模型</a></li>
-  <li><a href="https://hwbnju.com/rack-puma">浅谈 Puma 的并发模型与实现</a></li>
-  <li><a href="https://hwbnju.com/ruby-webserver">Ruby Web 服务器的并发模型与性能</a></li>
+  <li><a href="http://hwbnju.com/rack">谈谈 Rack 协议与实现</a></li>
+  <li><a href="http://hwbnju.com/rack-webrick">浅谈 WEBrick 的多线程模型</a></li>
+  <li><a href="http://hwbnju.com/rack-thin">浅谈 Thin 的事件驱动模型</a></li>
+  <li><a href="http://hwbnju.com/rack-unicorn">浅谈 Unicorn 的多进程模型</a></li>
+  <li><a href="http://hwbnju.com/rack-puma">浅谈 Puma 的并发模型与实现</a></li>
+  <li><a href="http://hwbnju.com/ruby-webserver">Ruby Web 服务器的并发模型与性能</a></li>
 </ul>
 
 <p>这篇文章会介绍在开发环境中最常用的应用容器 WEBrick 的实现原理，除了通过源代码分析之外，我们也会介绍它的 IO 模型以及一些特点。</p>
@@ -3238,7 +3238,7 @@ Code      4001 lines
 end
 </code></pre>
 
-<p>我们在上一篇文章 <a href="https://hwbnju.com/rack">谈谈 Rack 协议与实现</a> 中介绍 Rack 的实现原理时，最终调用了上述方法，从这里开始大部分的实现都与 WEBrick 有关了。</p>
+<p>我们在上一篇文章 <a href="http://hwbnju.com/rack">谈谈 Rack 协议与实现</a> 中介绍 Rack 的实现原理时，最终调用了上述方法，从这里开始大部分的实现都与 WEBrick 有关了。</p>
 
 <p>在这里，你可以看到方法会先处理传入的参数比如：地址、端口号等等，在这之后会使用 WEBrick 提供的 <code>HTTPServer</code> 来处理 HTTP 请求，调用 <code>mount</code> 在根路由上挂载应用和处理器 <code>Rack::Handler::WEBrick</code> 接受请求，最后执行 <code>#start</code> 方法启动服务器。</p>
 
@@ -3648,12 +3648,12 @@ end
   <guid>//rack</guid>
   <description><![CDATA[
   <ul>
-  <li><a href="https://hwbnju.com/rack">谈谈 Rack 协议与实现</a></li>
-  <li><a href="https://hwbnju.com/rack-webrick">浅谈 WEBrick 的多线程模型</a></li>
-  <li><a href="https://hwbnju.com/rack-thin">浅谈 Thin 的事件驱动模型</a></li>
-  <li><a href="https://hwbnju.com/rack-unicorn">浅谈 Unicorn 的多进程模型</a></li>
-  <li><a href="https://hwbnju.com/rack-puma">浅谈 Puma 的并发模型与实现</a></li>
-  <li><a href="https://hwbnju.com/ruby-webserver">Ruby Web 服务器的并发模型与性能</a></li>
+  <li><a href="http://hwbnju.com/rack">谈谈 Rack 协议与实现</a></li>
+  <li><a href="http://hwbnju.com/rack-webrick">浅谈 WEBrick 的多线程模型</a></li>
+  <li><a href="http://hwbnju.com/rack-thin">浅谈 Thin 的事件驱动模型</a></li>
+  <li><a href="http://hwbnju.com/rack-unicorn">浅谈 Unicorn 的多进程模型</a></li>
+  <li><a href="http://hwbnju.com/rack-puma">浅谈 Puma 的并发模型与实现</a></li>
+  <li><a href="http://hwbnju.com/ruby-webserver">Ruby Web 服务器的并发模型与性能</a></li>
 </ul>
 
 <p>作为 Rails 开发者，基本上每天都与 Rails 的各种 API 以及数据库打交道，Rails 的世界虽然非常简洁，不过其内部的实现还是很复杂的，很多刚刚接触 Rails 的开发者可能都不知道 Rails 其实就是一个 <a href="https://github.com/rack/rack">Rack</a> 应用，在这一系列的文章中，我们会分别介绍 Rack 以及一些常见的遵循 Rack 协议的 webserver 的实现原理。</p>
@@ -4305,7 +4305,7 @@ run ApplicationName::Application.routes
 
 <p><img src="https://img.nju520.me/2017-10-24-dynamodb.png" alt="dynamodb" /></p>
 
-<p>之前在阅读 Google 的 <a href="https://static.googleusercontent.com/media/research.google.com/en//archive/bigtable-osdi06.pdf">Bigtable: A Distributed Storage System for Structured Data</a> 时写了一篇 <a href="https://hwbnju.com/bigtable-leveldb">浅析 Bigtable 和 LevelDB 的实现</a> 文章分析了 Bigtable 的单机版 LevelDB 的实现原理；在研究 Dynamo 时，作者发现 Dynamo 虽然和 Bigtable 同为 NoSQL，但是它们的实现却有着很大的不同，最主要的原因来自不同的应用场景和不同的目的。</p>
+<p>之前在阅读 Google 的 <a href="https://static.googleusercontent.com/media/research.google.com/en//archive/bigtable-osdi06.pdf">Bigtable: A Distributed Storage System for Structured Data</a> 时写了一篇 <a href="http://hwbnju.com/bigtable-leveldb">浅析 Bigtable 和 LevelDB 的实现</a> 文章分析了 Bigtable 的单机版 LevelDB 的实现原理；在研究 Dynamo 时，作者发现 Dynamo 虽然和 Bigtable 同为 NoSQL，但是它们的实现却有着很大的不同，最主要的原因来自不同的应用场景和不同的目的。</p>
 
 <h2 id="bigtable-和-dynamo">Bigtable 和 Dynamo</h2>
 
@@ -4452,7 +4452,7 @@ run ApplicationName::Application.routes
   <li><a href="https://en.wikipedia.org/wiki/Merkle_tree">Merkle tree</a></li>
   <li><a href="https://link.springer.com/content/pdf/10.1007/3-540-48184-2_32.pdf">A Digital Signature Based on a Conventional Encryption Function</a></li>
   <li><a href="http://www.raychase.net/2396">Dynamo 的实现技术和去中心化</a></li>
-  <li><a href="https://hwbnju.com/bigtable-leveldb">浅析 Bigtable 和 LevelDB 的实现</a></li>
+  <li><a href="http://hwbnju.com/bigtable-leveldb">浅析 Bigtable 和 LevelDB 的实现</a></li>
 </ul>
 
   ]]></description>

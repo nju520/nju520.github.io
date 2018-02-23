@@ -2,5 +2,5 @@
 # www.google.com/support/webmasters/bin/answer.py?hl=en&answer=156449
 
 User-agent: *
-Sitemap: https://hwbnju.com/sitemap.xml
+Sitemap: http://hwbnju.com/sitemap.xml
 

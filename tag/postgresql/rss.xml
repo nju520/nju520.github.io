@@ -212,7 +212,7 @@
 <h2 id="reference">Reference</h2>
 
 <ul>
-  <li><a href="https://hwbnju.com/database-concurrency-control.html">浅谈数据库并发控制 - 锁和 MVCC · 雄关漫道真如铁</a></li>
+  <li><a href="http://hwbnju.com/database-concurrency-control.html">浅谈数据库并发控制 - 锁和 MVCC · 雄关漫道真如铁</a></li>
   <li><a href="https://www.ibm.com/support/knowledgecenter/en/SSPK3V_7.0.0/com.ibm.swg.im.soliddb.sql.doc/doc/pessimistic.vs.optimistic.concurrency.control.html">PESSIMISTIC vs. OPTIMISTIC concurrency control</a></li>
   <li><a href="https://devcenter.heroku.com/articles/postgresql-concurrency">PostgreSQL Concurrency with MVCC</a></li>
   <li><a href="https://www.enterprisedb.com/well-known-databases-use-different-approaches-mvcc">Well-known Databases Use Different Approaches for MVCC</a></li>

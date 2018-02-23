@@ -385,7 +385,7 @@ Objective-C 是一种通用的面向对象编程语言，它将 Smalltalk 消息
 
 ![objc-message-resolution-and-forwarding](https://img.nju520.me/2017-12-10-objc-message-resolution-and-forwarding.png)
 
-> 上述图片取自 [从代理到 RACSignal](https://hwbnju.com/racdelegateproxy)，使用时对图片中的颜色以及字号稍作修改。
+> 上述图片取自 [从代理到 RACSignal](http://hwbnju.com/racdelegateproxy)，使用时对图片中的颜色以及字号稍作修改。
 
 当 ObjC 的运行时在方法查找的过程中已经查找到了上帝类 `NSObject` 时，仍然没有找到方法的实现就会进入上面的流程，先执行的 `+resolveInstanceMethod:` 方法就是一个可以为当前的类添加方法的入口：
 
@@ -523,10 +523,10 @@ find_by_name, ["dog", "another_dog"]
 + [Macros · Rust Doc](https://doc.rust-lang.org/book/first-edition/macros.html)
 + [Macro-by-Example](https://www.cs.indiana.edu/ftp/techreports/TR206.pdf)
 + [Rust](https://www.rust-lang.org/en-US/)
-+ [从源代码看 ObjC 中消息的发送](https://hwbnju.com/message)
++ [从源代码看 ObjC 中消息的发送](http://hwbnju.com/message)
 + [Dynamic Method Resolution](https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtDynamicResolution.html)
 + [Message Forwarding](https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtForwarding.html#//apple_ref/doc/uid/TP40008048-CH105-SW1)
-+ [从代理到 RACSignal](https://hwbnju.com/racdelegateproxy)
++ [从代理到 RACSignal](http://hwbnju.com/racdelegateproxy)
 + [resolveInstanceMethod(_:)](https://developer.apple.com/documentation/objectivec/nsobject/1418500-resolveinstancemethod)
 + [Ruby Method Missing](http://rubylearning.com/satishtalim/ruby_method_missing.html)
 + [Ruby Metaprogramming - Method Missing](https://www.leighhalliday.com/ruby-metaprogramming-method-missing)

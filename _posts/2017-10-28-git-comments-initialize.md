@@ -35,7 +35,7 @@ $ sudo gem install faraday activesupport sitemap-parser
 
 ### 使用 sitemap 文件
 
-如果我们使用的博客服务是 Jekyll，那么就可以通过 [jekyll-sitemap](https://github.com/jekyll/jekyll-sitemap) 插件为博客创建对应的 sitemap 文件，例如：https://hwbnju.com/sitemap.xml。
+如果我们使用的博客服务是 Jekyll，那么就可以通过 [jekyll-sitemap](https://github.com/jekyll/jekyll-sitemap) 插件为博客创建对应的 sitemap 文件，例如：http://hwbnju.com/sitemap.xml。
 
 有 sitemap 文件之后就非常好办了，在任意目录下创建 `comment.rb` 文件后，将下面的代码粘贴到文件中：
 
@@ -43,7 +43,7 @@ $ sudo gem install faraday activesupport sitemap-parser
 username = "nju520" # GitHub 用户名
 new_token = "xxxxxxx"  # GitHub Token
 repo_name = "github-comments-repo" # 存放 issues
-sitemap_url = "https://hwbnju.com/sitemap.xml" # sitemap
+sitemap_url = "http://hwbnju.com/sitemap.xml" # sitemap
 kind = "Gitalk" # "Gitalk" or "gitment"
 
 require 'open-uri'
@@ -119,10 +119,10 @@ end
 $ irb
 2.3.3 :001 > require 'sitemap-parser'
  => true
-2.3.3 :002 > sitemap_url = "https://hwbnju.com/sitemap.xml"
- => "https://hwbnju.com/sitemap.xml"
+2.3.3 :002 > sitemap_url = "http://hwbnju.com/sitemap.xml"
+ => "http://hwbnju.com/sitemap.xml"
 2.3.3 :003 > SitemapParser.new(sitemap_url).to_a
- => ["https://hwbnju.com/prolog-ji-chu-1", "https://hwbnju.com/prolog-pi-pei-2", "https://hwbnju.com/prolog-di-gui-3", ..., "https://hwbnju.com/dynamo"]
+ => ["http://hwbnju.com/prolog-ji-chu-1", "http://hwbnju.com/prolog-pi-pei-2", "http://hwbnju.com/prolog-di-gui-3", ..., "http://hwbnju.com/dynamo"]
  ~~~
 
 当我们将上述结果中不想要创建评论的文章删除之后，将结果填到 `urls` 这个临时变量中，运行下面的命令就可以了。

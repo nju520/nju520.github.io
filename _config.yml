@@ -11,7 +11,7 @@ kramdown:
 highlighter: none
 paginate: 15
 language: 'en-uk'
-host_url: 'https://hwbnju.com'
+host_url: 'http://hwbnju.com'
 
 # Website info
 name: '雄关漫道真如铁'
@@ -23,7 +23,7 @@ author: 'nju520'
 nickname: nju520
 bio: 'Ruby / Python / JS'
 location: 'Hangzhou, China'
-url: 'https://hwbnju.com'
+url: 'http://hwbnju.com'
 img_url: 'https://img.nju520.me'
 image: 'assets/images/hacker.png'
 
