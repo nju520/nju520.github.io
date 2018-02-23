@@ -27,7 +27,7 @@ url: 'http://hwbnju.com'
 img_url: 'https://img.nju520.me'
 image: 'assets/images/hacker.png'
 
-# short_url: 'nju520.me'
+short_url: 'hwbnju.com'
 google_analytics: UA-114647632-1
 disqus: nju520
 # edit baseurl to simply '/' if using as your personal page (instead of a project page)
@@ -36,7 +36,6 @@ baseurl: /
 # Permalinks
 # permalink: /:title
 permalink: pretty
-# permalink: /tag/:tag
 
 # gems and other configs
 plugins:
