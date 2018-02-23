@@ -54,7 +54,7 @@
 
 <p>博客的访问量跟年初相比提高了 10 倍左右，其中一大部分原因还是之前博客确实没什么访问量，其余的就是总结出了一套排版和制图的规则，写博客的这几年的时间非常明显地提升了表达想法并且梳理思路的能力。</p>
 
-<p>今年总共写了 30 多篇博客，前半年由于还在学校，同时为了毕业，一直在写一篇跟 MVC 相关的论文，所以很多博客都与 iOS 开发有关；六、七月份发的几篇博客其实都出自毕设论文的不同章节，这四篇博客从开始写到发布花了将近 4 个月的时间，这几篇中最满意的还是 <a href="https://nju520.me/mvx">浅谈 MVC、MVP 和 MVVM 架构模式</a>，写这篇文章的时候确实花费了非常多的时间，参考了很多的资料，就是为了避免在这种关键问题上误导别人。</p>
+<p>今年总共写了 30 多篇博客，前半年由于还在学校，同时为了毕业，一直在写一篇跟 MVC 相关的论文，所以很多博客都与 iOS 开发有关；六、七月份发的几篇博客其实都出自毕设论文的不同章节，这四篇博客从开始写到发布花了将近 4 个月的时间，这几篇中最满意的还是 <a href="https://hwbnju.com/mvx">浅谈 MVC、MVP 和 MVVM 架构模式</a>，写这篇文章的时候确实花费了非常多的时间，参考了很多的资料，就是为了避免在这种关键问题上误导别人。</p>
 
 <p><img src="https://img.nju520.me/2017-12-27-MVC-MVVM-MVP.jpg" alt="MVC-MVVM-MVP" /></p>
 
@@ -65,15 +65,15 @@
 </blockquote>
 
 <ul>
-  <li><a href="https://nju520.me/consensus">分布式一致性与共识算法</a></li>
-  <li><a href="https://nju520.me/docker">Docker 核心技术与实现原理</a></li>
-  <li><a href="https://nju520.me/metaprogramming">谈元编程与表达能力</a></li>
-  <li><a href="https://nju520.me/mysql-innodb">『浅入浅出』MySQL 和 InnoDB</a></li>
-  <li><a href="https://nju520.me/mongodb-to-mysql">如何从 MongoDB 迁移到 MySQL</a></li>
+  <li><a href="https://hwbnju.com/consensus">分布式一致性与共识算法</a></li>
+  <li><a href="https://hwbnju.com/docker">Docker 核心技术与实现原理</a></li>
+  <li><a href="https://hwbnju.com/metaprogramming">谈元编程与表达能力</a></li>
+  <li><a href="https://hwbnju.com/mysql-innodb">『浅入浅出』MySQL 和 InnoDB</a></li>
+  <li><a href="https://hwbnju.com/mongodb-to-mysql">如何从 MongoDB 迁移到 MySQL</a></li>
   <li>…</li>
 </ul>
 
-<p>在这几篇文章中 <a href="https://nju520.me/metaprogramming">谈元编程与表达能力</a> 讲了一些我个人对于元编程的看法和理解；<a href="https://nju520.me/consensus">分布式一致性与共识算法</a> 是我在学习区块链技术的时候写的，无论是在学习的过程中还是从最后的阅读量来看，作者还是觉得挺满意的；最后的 <a href="https://nju520.me/docker">Docker 核心技术与实现原理</a> 应该是今年阅读量最高的一篇博客了，发布至今不到一个月的时间，这篇文章的阅读量就能达到 3w 以上，这是作者万万没有想到的。</p>
+<p>在这几篇文章中 <a href="https://hwbnju.com/metaprogramming">谈元编程与表达能力</a> 讲了一些我个人对于元编程的看法和理解；<a href="https://hwbnju.com/consensus">分布式一致性与共识算法</a> 是我在学习区块链技术的时候写的，无论是在学习的过程中还是从最后的阅读量来看，作者还是觉得挺满意的；最后的 <a href="https://hwbnju.com/docker">Docker 核心技术与实现原理</a> 应该是今年阅读量最高的一篇博客了，发布至今不到一个月的时间，这篇文章的阅读量就能达到 3w 以上，这是作者万万没有想到的。</p>
 
 <h2 id="技术成长">技术成长</h2>
 

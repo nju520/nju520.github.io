@@ -22,7 +22,7 @@
 
 <p><img src="https://img.nju520.me/2017-10-24-dynamodb.png" alt="dynamodb" /></p>
 
-<p>之前在阅读 Google 的 <a href="https://static.googleusercontent.com/media/research.google.com/en//archive/bigtable-osdi06.pdf">Bigtable: A Distributed Storage System for Structured Data</a> 时写了一篇 <a href="https://nju520.me/bigtable-leveldb">浅析 Bigtable 和 LevelDB 的实现</a> 文章分析了 Bigtable 的单机版 LevelDB 的实现原理；在研究 Dynamo 时，作者发现 Dynamo 虽然和 Bigtable 同为 NoSQL，但是它们的实现却有着很大的不同，最主要的原因来自不同的应用场景和不同的目的。</p>
+<p>之前在阅读 Google 的 <a href="https://static.googleusercontent.com/media/research.google.com/en//archive/bigtable-osdi06.pdf">Bigtable: A Distributed Storage System for Structured Data</a> 时写了一篇 <a href="https://hwbnju.com/bigtable-leveldb">浅析 Bigtable 和 LevelDB 的实现</a> 文章分析了 Bigtable 的单机版 LevelDB 的实现原理；在研究 Dynamo 时，作者发现 Dynamo 虽然和 Bigtable 同为 NoSQL，但是它们的实现却有着很大的不同，最主要的原因来自不同的应用场景和不同的目的。</p>
 
 <h2 id="bigtable-和-dynamo">Bigtable 和 Dynamo</h2>
 
@@ -169,7 +169,7 @@
   <li><a href="https://en.wikipedia.org/wiki/Merkle_tree">Merkle tree</a></li>
   <li><a href="https://link.springer.com/content/pdf/10.1007/3-540-48184-2_32.pdf">A Digital Signature Based on a Conventional Encryption Function</a></li>
   <li><a href="http://www.raychase.net/2396">Dynamo 的实现技术和去中心化</a></li>
-  <li><a href="https://nju520.me/bigtable-leveldb">浅析 Bigtable 和 LevelDB 的实现</a></li>
+  <li><a href="https://hwbnju.com/bigtable-leveldb">浅析 Bigtable 和 LevelDB 的实现</a></li>
 </ul>
 
   ]]></description>
@@ -2425,7 +2425,7 @@ end
 <h2 id="reference">Reference</h2>
 
 <ul>
-  <li><a href="https://nju520.me/database-concurrency-control.html">浅谈数据库并发控制 - 锁和 MVCC · 雄关漫道真如铁</a></li>
+  <li><a href="https://hwbnju.com/database-concurrency-control.html">浅谈数据库并发控制 - 锁和 MVCC · 雄关漫道真如铁</a></li>
   <li><a href="https://www.ibm.com/support/knowledgecenter/en/SSPK3V_7.0.0/com.ibm.swg.im.soliddb.sql.doc/doc/pessimistic.vs.optimistic.concurrency.control.html">PESSIMISTIC vs. OPTIMISTIC concurrency control</a></li>
   <li><a href="https://devcenter.heroku.com/articles/postgresql-concurrency">PostgreSQL Concurrency with MVCC</a></li>
   <li><a href="https://www.enterprisedb.com/well-known-databases-use-different-approaches-mvcc">Well-known Databases Use Different Approaches for MVCC</a></li>

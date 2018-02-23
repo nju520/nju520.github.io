@@ -7,12 +7,12 @@ tags: Rack系列 Unicorn rack ruby server
 desc: 作为 Ruby 社区中老牌的 webserver，在今天也有很多开发者在生产环境使用 Unicorn 处理客户端的发出去的 HTTP 请求，与 WEBrick 和 Thin 不同，Unicorn 使用了完全不同的模型，提供了多进程模型批量处理来自客户端的请求。Unicorn 为 Rails 应用提供并发的方式是使用 fork 创建多个 worker 线程，监听同一个 Socket 上的输入。
 ---
 
-+ [谈谈 Rack 协议与实现](https://nju520.me/rack)
-+ [浅谈 WEBrick 的多线程模型](https://nju520.me/rack-webrick)
-+ [浅谈 Thin 的事件驱动模型](https://nju520.me/rack-thin)
-+ [浅谈 Unicorn 的多进程模型](https://nju520.me/rack-unicorn)
-+ [浅谈 Puma 的并发模型与实现](https://nju520.me/rack-puma)
-+ [Ruby Web 服务器的并发模型与性能](https://nju520.me/ruby-webserver)
++ [谈谈 Rack 协议与实现](https://hwbnju.com/rack)
++ [浅谈 WEBrick 的多线程模型](https://hwbnju.com/rack-webrick)
++ [浅谈 Thin 的事件驱动模型](https://hwbnju.com/rack-thin)
++ [浅谈 Unicorn 的多进程模型](https://hwbnju.com/rack-unicorn)
++ [浅谈 Puma 的并发模型与实现](https://hwbnju.com/rack-puma)
++ [Ruby Web 服务器的并发模型与性能](https://hwbnju.com/ruby-webserver)
 
 作为 Ruby 社区中老牌的 webserver，在今天也有很多开发者在生产环境使用 Unicorn 处理客户端的发出去的 HTTP 请求，与 WEBrick 和 Thin 不同，Unicorn 使用了完全不同的模型，提供了多进程模型批量处理来自客户端的请求。
 

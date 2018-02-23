@@ -19,12 +19,12 @@
   <guid>//rack-puma</guid>
   <description><![CDATA[
   <ul>
-  <li><a href="https://nju520.me/rack">谈谈 Rack 协议与实现</a></li>
-  <li><a href="https://nju520.me/rack-webrick">浅谈 WEBrick 的多线程模型</a></li>
-  <li><a href="https://nju520.me/rack-thin">浅谈 Thin 的事件驱动模型</a></li>
-  <li><a href="https://nju520.me/rack-unicorn">浅谈 Unicorn 的多进程模型</a></li>
-  <li><a href="https://nju520.me/rack-puma">浅谈 Puma 的并发模型与实现</a></li>
-  <li><a href="https://nju520.me/ruby-webserver">Ruby Web 服务器的并发模型与性能</a></li>
+  <li><a href="https://hwbnju.com/rack">谈谈 Rack 协议与实现</a></li>
+  <li><a href="https://hwbnju.com/rack-webrick">浅谈 WEBrick 的多线程模型</a></li>
+  <li><a href="https://hwbnju.com/rack-thin">浅谈 Thin 的事件驱动模型</a></li>
+  <li><a href="https://hwbnju.com/rack-unicorn">浅谈 Unicorn 的多进程模型</a></li>
+  <li><a href="https://hwbnju.com/rack-puma">浅谈 Puma 的并发模型与实现</a></li>
+  <li><a href="https://hwbnju.com/ruby-webserver">Ruby Web 服务器的并发模型与性能</a></li>
 </ul>
 
 <p>这篇文章已经是整个 Rack 系列文章的第五篇了，在前面的文章中我们见到了多线程模型、多进程模型以及事件驱动的 I/O 模型，对于几种常见的 webserver 已经很了解了，其实无论是 Ruby 还是其他社区对于 webserver 的实现也就是这么几种方式：多线程、多线程和 Reactor。</p>

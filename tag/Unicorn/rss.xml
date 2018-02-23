@@ -19,12 +19,12 @@
   <guid>//rack-unicorn</guid>
   <description><![CDATA[
   <ul>
-  <li><a href="https://nju520.me/rack">谈谈 Rack 协议与实现</a></li>
-  <li><a href="https://nju520.me/rack-webrick">浅谈 WEBrick 的多线程模型</a></li>
-  <li><a href="https://nju520.me/rack-thin">浅谈 Thin 的事件驱动模型</a></li>
-  <li><a href="https://nju520.me/rack-unicorn">浅谈 Unicorn 的多进程模型</a></li>
-  <li><a href="https://nju520.me/rack-puma">浅谈 Puma 的并发模型与实现</a></li>
-  <li><a href="https://nju520.me/ruby-webserver">Ruby Web 服务器的并发模型与性能</a></li>
+  <li><a href="https://hwbnju.com/rack">谈谈 Rack 协议与实现</a></li>
+  <li><a href="https://hwbnju.com/rack-webrick">浅谈 WEBrick 的多线程模型</a></li>
+  <li><a href="https://hwbnju.com/rack-thin">浅谈 Thin 的事件驱动模型</a></li>
+  <li><a href="https://hwbnju.com/rack-unicorn">浅谈 Unicorn 的多进程模型</a></li>
+  <li><a href="https://hwbnju.com/rack-puma">浅谈 Puma 的并发模型与实现</a></li>
+  <li><a href="https://hwbnju.com/ruby-webserver">Ruby Web 服务器的并发模型与性能</a></li>
 </ul>
 
 <p>作为 Ruby 社区中老牌的 webserver，在今天也有很多开发者在生产环境使用 Unicorn 处理客户端的发出去的 HTTP 请求，与 WEBrick 和 Thin 不同，Unicorn 使用了完全不同的模型，提供了多进程模型批量处理来自客户端的请求。</p>

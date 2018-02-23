@@ -197,7 +197,7 @@ MySQL 中实现的多版本两阶段锁协议（Multiversion 2PL）将 MVCC 和 
 
 ## Reference
 
-+ [浅谈数据库并发控制 - 锁和 MVCC · 雄关漫道真如铁](https://nju520.me/database-concurrency-control.html)
++ [浅谈数据库并发控制 - 锁和 MVCC · 雄关漫道真如铁](https://hwbnju.com/database-concurrency-control.html)
 + [PESSIMISTIC vs. OPTIMISTIC concurrency control](https://www.ibm.com/support/knowledgecenter/en/SSPK3V_7.0.0/com.ibm.swg.im.soliddb.sql.doc/doc/pessimistic.vs.optimistic.concurrency.control.html)
 + [PostgreSQL Concurrency with MVCC](https://devcenter.heroku.com/articles/postgresql-concurrency)
 + [Well-known Databases Use Different Approaches for MVCC](https://www.enterprisedb.com/well-known-databases-use-different-approaches-mvcc)
