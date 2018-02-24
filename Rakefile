@@ -42,12 +42,12 @@ namespace :site do
   end
 
   desc "Generate the site and push changes to remote origin"
-  task :deploy do
+  task :deploy, :message do |t, args|
 
     # Commit and push to GitHub for source branch
     sh "git checkout #{SOURCE_BRANCH}"
-    message = ARGV[1]
-    push(message, SOURCE_BRANCH)
+
+    push(args.message, SOURCE_BRANCH)
 
     # Generate the site
     sh "bundle exec jekyll build"
@@ -56,7 +56,6 @@ namespace :site do
     # Dir.chdir("#{Dir.pwd}/#{CONFIG["destination"]}") { sh "git checkout #{DESTINATION_BRANCH}" }
     sh "cd #{Dir.pwd}/#{CONFIG["destination"]}"
     sh "git checkout #{DESTINATION_BRANCH}"
-    message = ARGV[1]
-    push(message, DESTINATION_BRANCH)
+    push(args.message, DESTINATION_BRANCH)
   end
 end
