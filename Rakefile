@@ -54,5 +54,7 @@ namespace :site do
     # Commit and push to github for master branch
     sh "cd #{Dir.pwd}/#{CONFIG["destination"]}"
     push(args.message, DESTINATION_BRANCH)
+
+    sh "git checkout #{SOURCE_BRANCH}"
   end
 end
