@@ -18,6 +18,7 @@ DESTINATION_BRANCH = "master"
 def push(message, branch)
   # check if there is anything to add and commit, and pushes it
   sh "if [ -n '$(git status)' ]; then
+        git checkout #{branch}
         git add --all .;
         git commit -m '#{message}';
         git push origin #{branch};
@@ -45,17 +46,13 @@ namespace :site do
   task :deploy, :message do |t, args|
 
     # Commit and push to GitHub for source branch
-    sh "git checkout #{SOURCE_BRANCH}"
-
     push(args.message, SOURCE_BRANCH)
 
     # Generate the site
     sh "bundle exec jekyll build"
 
-    # Commit and push to github
-    # Dir.chdir("#{Dir.pwd}/#{CONFIG["destination"]}") { sh "git checkout #{DESTINATION_BRANCH}" }
+    # Commit and push to github for master branch
     sh "cd #{Dir.pwd}/#{CONFIG["destination"]}"
-    sh "git checkout #{DESTINATION_BRANCH}"
     push(args.message, DESTINATION_BRANCH)
   end
 end
