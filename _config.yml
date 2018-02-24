@@ -53,8 +53,8 @@ sass:
 safe: false
 lsi: false
 username: nju520
-repo: jekyll-blog
-branch: master
+repo: nju520.github.io
+branch: source
 # relative_source: ../jasper/
 # destination: ../jasper-pages/
 production_url:  https://biomadeira.github.io/jasper/
