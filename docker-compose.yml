@@ -1,0 +1,12 @@
+jekyll:
+  build: .
+  volumes_from:
+    - nginx
+
+nginx:
+  build: ./nginx
+  ports:
+    - "80:80"
+  volumes:
+    - /var/www/blog
+    - "./etc/nginx/site-enabled/blog.conf:/nginx/blog.conf"

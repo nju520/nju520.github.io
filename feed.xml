@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+	<channel>
+		<title>雄关漫道真如铁
+			- Articles</title>
+		<description>
+			nju520's Blog
+			
+		</description>
+		<link>
+			http://hwbnju.com
+    </link>
+		
+			
+				<item>
+					<title>Ruby Rack 协议及其应用(一)</title>
+					
+						<description>&lt;h2 id=&quot;rack协议&quot;&gt;Rack协议&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Sat, 03 Mar 2018 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/rack
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/rack</guid>
+				</item>
+			
+		
+	</channel>
+</rss>

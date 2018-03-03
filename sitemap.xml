@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url>
+<loc>http://hwbnju.com/rack</loc>
+<lastmod>2018-03-03T00:00:00+08:00</lastmod>
+</url>
+<url>
+<loc>http://hwbnju.com/</loc>
+</url>
+<url>
+<loc>http://hwbnju.com/tag/Rack%E7%B3%BB%E5%88%97/</loc>
+</url>
+<url>
+<loc>http://hwbnju.com/tag/rack/</loc>
+</url>
+<url>
+<loc>http://hwbnju.com/tag/ruby/</loc>
+</url>
+<url>
+<loc>http://hwbnju.com/tag/rails/</loc>
+</url>
+<url>
+<loc>http://hwbnju.com/tag/server/</loc>
+</url>
+</urlset>
