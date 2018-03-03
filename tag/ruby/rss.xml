@@ -102,7 +102,7 @@ end
 
 <p>我们可以使用Pry在 console中尝试使用Rack:</p>
 
-<pre><code>$ pry
+<pre><code class="language-ruby">$ pry
 [7] pry(main)&gt; require 'rack'
 =&gt; false
 [8] pry(main)&gt; app = -&gt; (env) {[200, {}, ["Hello World"]]}
@@ -126,7 +126,7 @@ http://localhost:3000/ -&gt; /favicon.ico
 
 <p>除了使用 lambda外,我们的应用程序还可以使用method对象:</p>
 
-<pre><code>[10] pry(main)&gt; def my_method(env)
+<pre><code class="language-ruby">[10] pry(main)&gt; def my_method(env)
 [10] pry(main)*   [200, {}, ['Hello World']]
 [10] pry(main)* end
 =&gt; :my_method
@@ -146,7 +146,7 @@ Listening on localhost:3000, CTRL+C to stop
 
 <p>一个合法的Rack程序也可以是任何对象, 只要它的类定义了call方法:</p>
 
-<pre><code>[15] pry(main)&gt; class MyRackApp
+<pre><code class="language-ruby">[15] pry(main)&gt; class MyRackApp
 [15] pry(main)*   def call(env)
 [15] pry(main)*     [200, {}, ['Hello from MyRackApp']]
 [15] pry(main)*   end
@@ -159,13 +159,13 @@ Listening on localhost:3000, CTRL+C to stop
 
 <p>以上几种方式都是在 console中启动的Web Server 来处理浏览器的请求, 实际应用中一般是将代码统一放在 config.ru 文件中:</p>
 
-<pre><code># config.ru
+<pre><code class="language-ruby"># config.ru
 run Proc.new { |env| ['200', {'Content-Type' =&gt; 'text/html'}, ['Hello World']] }
 </code></pre>
 
 <p>在同一目录下使用 backup 命令就可以启动一个 Web Server 进程:</p>
 
-<pre><code># 如果文件名恰好为 config.ru, 我们可以省略配置文件直接运行 rackup
+<pre><code class="language-ruby"># 如果文件名恰好为 config.ru, 我们可以省略配置文件直接运行 rackup
 $ rackup config.ru
 
 Puma starting in single mode...
@@ -183,7 +183,7 @@ Use Ctrl-C to stop
 
 <p>使用 http 工具发出请求:</p>
 
-<pre><code>http http:localhost:9292
+<pre><code class="language-ruby">http http:localhost:9292
 
 HTTP/1.1 200 OK
 Content-Type: text/html
@@ -217,7 +217,7 @@ Rack::Handler::Thin.run app, Port: 3000
 
 <p>这个简单的Rack应用程序会把env的内容都打印出来. 采用 http 发出请求 <code>http :3000/admin/?name=hwbnju</code>可以看到如下输出:</p>
 
-<pre><code>GATEWAY_INTERFACE =&gt; CGI/1.2
+<pre><code class="language-ruby">GATEWAY_INTERFACE =&gt; CGI/1.2
 HTTP_ACCEPT =&gt; */*
 HTTP_ACCEPT_ENCODING =&gt; gzip, deflate
 HTTP_CONNECTION =&gt; keep-alive
@@ -547,7 +547,7 @@ Rack::Handler::WEBrick.run app, :Port =&gt; 3000
 
 <h5 id="源码解读-1">源码解读</h5>
 
-<pre><code>require 'rack/request'
+<pre><code class="language-ruby">require 'rack/request'
 require 'rack/utils'
 require 'rack/body_proxy'
 require 'rack/media_type'
@@ -658,7 +658,7 @@ Rack::Handler::WEBrick.run Decorator.new(app), :Port =&gt; 3000
 
 <p>接下来我们就要定义一个 Decorator类, 创建 Decorator实例时传入原始的 rack_app 作为其参数. 这个实例也能够被Rack的Handler调用–显然这个实例也是合法的Rack应用程序. 因此 Decorator类需要一个call方法.</p>
 
-<pre><code>class Decorator
+<pre><code class="language-ruby">class Decorator
   def initialize(app, &amp;block)
     @app = app
     @block = @block
@@ -680,7 +680,7 @@ end
 
 <p>运行程序, 我们可以在命令行中得到和之前一样的结果:</p>
 
-<pre><code>$ http http://localhost:3000/hello
+<pre><code class="language-shell">$ http http://localhost:3000/hello
 ===========header==========
 You say hello
 ===========footer==========
