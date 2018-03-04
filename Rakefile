@@ -21,7 +21,7 @@ def push(message, branch)
         git checkout #{branch}
         git add --all .;
         git commit -m '#{message}';
-        git push origin #{branch};
+        git push origin #{branch} --force;
      fi"
   puts "Pushed updated branch #{branch} to GitHub Pages"
 end
