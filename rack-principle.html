@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- [[! Document Settings ]] -->
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- [[! Page Meta ]] -->
+    <title>
+      
+        Ruby Rack 协议及其应用(二)
+      
+    </title>
+    
+    <meta name="description" content="Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本系列文章就深入探讨Rack协议的原理以及实现." />
+    
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="/assets/images/favicon.ico" >
+
+    <!-- [[! Styles'n'Scripts ]] -->
+    <link rel="stylesheet" type="text/css" href="/assets/css/screen.css" />
+    <link rel="stylesheet" type="text/css"
+      href="//fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400" />
+
+    <link rel="stylesheet" type="text/css" href="/assets/css/prism.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/toc.css" />
+
+    <!-- [[! Ghost outputs important style and meta data with this tag ]] -->
+    <link rel="canonical" href="/" />
+<meta name="referrer" content="origin" />
+<link rel="next" href="/page2/" />
+
+<meta property="og:site_name" content="雄关漫道真如铁" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Ruby Rack 协议及其应用(二)" />
+
+<meta property="og:description" content="Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本系列文章就深入探讨Rack协议的原理以及实现." />
+
+<meta property="og:url" content="http://hwbnju.com/rack-principle" />
+<meta property="og:image" content="" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Ruby Rack 协议及其应用(二)" />
+
+<meta name="twitter:description" content="Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本系列文章就深入探讨Rack协议的原理以及实现." />
+
+<meta name="twitter:url" content="http://hwbnju.com/rack-principle" />
+<meta name="twitter:image:src" content="" />
+
+<script type="application/ld+json">
+  {
+  "@context": "http://schema.org",
+  "@type": "Website",
+  "publisher": "nju520",
+  "url": "http://hwbnju.com/rack-principle",
+  "image": "",
+  "description": "Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本系列文章就深入探讨Rack协议的原理以及实现."
+  }
+</script>
+
+<meta name="generator" content="Jekyll 3.0.0" />
+<link rel="alternate" type="application/rss+xml" title="雄关漫道真如铁" href="/feed.xml" />
+
+    <!-- Add Google Analytics  -->
+    <!-- Google Analytics Tracking code -->
+<script>
+ (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+ })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ ga('create', 'UA-114647632-1', 'auto');
+ ga('send', 'pageview', location.pathname);
+
+</script>
+
+<!-- Baidu Analytics  Manager -->
+<script>
+ var _hmt = _hmt || [];
+ (function() {
+   var hm = document.createElement("script");
+   hm.src = "https://hm.baidu.com/hm.js?e9208862845c46a0f79e7828f495e407";
+   var s = document.getElementsByTagName("script")[0];
+   s.parentNode.insertBefore(hm, s);
+ })();
+</script>
+
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-PWFC85B');</script>
+  <!-- End Google Tag Manager -->
+
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-114647632-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-114647632-1');
+</script>
+
+  </head>
+  <body class=" post-template nav-closed">
+    <!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PWFC85B"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+
+    <div class="nav">
+  <h3 class="nav-title">Home</h3>
+  <a href="#" class="nav-close">
+    <span class="hidden">Close</span>
+  </a>
+  <ul>
+    <li class="nav-home " role="presentation"><a href="/">Home</a></li>
+    <!-- <li class="nav-about " role="presentation"><a href="/about">About</a></li>
+    <li class="nav-author " role="presentation"><a href="/author/casper">Author</a></li> -->
+    <li class="nav-ios " role="presentation"><a href="/tag/iOS">iOS</a></li>
+    <li class="nav-mvc " role="presentation"><a href="/tag/MVC">MVC</a></li>
+    <li class="nav-server " role="presentation"><a href="/tag/server">Server</a></li>
+    <li class="nav-ruby " role="presentation"><a href="/tag/ruby">Ruby</a></li>
+  </ul>
+  <a class="subscribe-button icon-feed" href="/feed.xml">Subscribe</a>
+</div>
+<span class="nav-cover"></span>
+
+
+    <div class="site-wrapper">
+
+      <!-- [[! Everything else gets inserted here ]] -->
+      <!-- < default -->
+
+<!-- The comment above "< default" means - insert everything in this file into -->
+<!-- the [body] of the default.hbs template, which contains our header/footer. -->
+
+<!-- Everything inside the #post tags pulls data from the post -->
+<!-- #post -->
+
+<header class="main-header post-head no-cover">
+  <nav class="main-nav overlay clearfix">
+    <a class="back-button icon-arrow-left" href="/">Home</a>
+    <a class="menu-button icon-menu" href="#"><span class="word">Menu</span></a>
+  </nav>
+</header>
+
+<main class="content" role="main">
+
+  <article class="post">
+
+    <header class="post-template post-header">
+      <h1 class="post-title">Ruby Rack 协议及其应用(二)</h1>
+      <section class="post-meta">
+        <time class="post-date" datetime="2018-03-04">04 Mar 2018</time>
+        <!-- <a href='/'>nju520</a> -->
+        <!-- [[tags prefix=" on "]] -->
+        
+        
+        <a href='/tag/Rack系列'>Rack系列</a>
+        
+        <a href='/tag/rack'>rack</a>
+        
+        <a href='/tag/ruby'>ruby</a>
+        
+        <a href='/tag/rails'>rails</a>
+        
+        <a href='/tag/server'>server</a>
+        
+        
+      </section>
+    </header>
+
+    <section class="post-content">
+
+      <ul class="section-nav">
+<li class="toc-entry toc-h2"><a href="#rack实现原理">Rack实现原理</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#创建应用程序">创建应用程序</a></li>
+<li class="toc-entry toc-h3"><a href="#rackup-命令">rackup 命令</a></li>
+<li class="toc-entry toc-h3"><a href="#启动-web-server">启动 Web Server</a>
+<ul>
+<li class="toc-entry toc-h4"><a href="#初始化和配置">初始化和配置</a></li>
+<li class="toc-entry toc-h4"><a href="#包装应用">包装应用</a></li>
+<li class="toc-entry toc-h4"><a href="#中间件的实现分析">中间件的实现分析</a></li>
+<li class="toc-entry toc-h4"><a href="#选择-web-server">选择 Web Server</a></li>
+<li class="toc-entry toc-h4"><a href="#终于启动了">终于启动了</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h3"><a href="#authenticate">Authenticate</a></li>
+<li class="toc-entry toc-h3"><a href="#cookie">Cookie</a></li>
+</ul>
+</li>
+</ul><h2 id="rack实现原理">
+<a id="rack实现原理" class="anchor" href="#rack%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86" aria-hidden="true"><span class="octicon octicon-link"></span></a>Rack实现原理</h2>
+
+<h3 id="创建应用程序">
+<a id="创建应用程序" class="anchor" href="#%E5%88%9B%E5%BB%BA%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F" aria-hidden="true"><span class="octicon octicon-link"></span></a>创建应用程序</h3>
+
+<p>要分析<code>Rack</code>的源码, 我们首先创建一个简单的<code>Rack应用程序</code></p>
+
+<pre><code class="language-ruby">#config.ru
+# 将 body 标签的内容转换为全大写.
+class ToUpper
+  def initialize(app)
+    @app = app
+  end
+  def call(env)
+    status, head, body = @app.call(env)
+    upcased_body = body.map{|chunk| chunk.upcase }
+    [status, head, upcased_body]
+  end
+end
+# 将 body 内容置于标签, 设置字体颜色为红色, 并指明返回的内容为 text/html.
+class WrapWithRedP
+  def initialize(app)
+    @app = app
+  end
+  def call(env)
+    status, head, body = @app.call(env)
+    red_body = body.map{|chunk| "&lt;p style='color:red;'&gt;#{chunk}&lt;/p&gt;" }
+    head['Content-type'] = 'text/html'
+    [status, head, red_body]
+  end
+end
+
+# 将 body 内容放置到 HTML 文档中.
+class WrapWithHtml
+  def initialize(app)
+    @app = app
+  end
+
+  def call(env)
+    status, head, body = @app.call(env)
+    wrap_html = &lt;&lt;-EOF
+       &lt;!DOCTYPE html&gt;
+       &lt;html&gt;
+         &lt;head&gt;
+         &lt;title&gt;hello&lt;/title&gt;
+         &lt;body&gt;
+         #{body[0]}
+         &lt;/body&gt;
+       &lt;/html&gt;
+    EOF
+    [status, head, [wrap_html]]
+  end
+end
+
+# 起始点, 只返回一行字符的 rack app.
+class Hello
+  def initialize
+    super
+  end
+  def call(env)
+    [200, {'Content-Type' =&gt; 'text/plain'}, ["hello, this is a test."]]
+  end
+end
+use WrapWithHtml
+use WrapWithRedP
+use ToUpper
+run Hello.new
+</code></pre>
+
+<h3 id="rackup-命令">
+<a id="rackup-命令" class="anchor" href="#rackup-%E5%91%BD%E4%BB%A4" aria-hidden="true"><span class="octicon octicon-link"></span></a>rackup 命令</h3>
+
+<p>在 <code>terminal</code>下输入命令 <code>rackup</code>, 就会启动一个<code>Web服务</code></p>
+
+<pre><code class="language-shell">$ rackup
+
+Puma starting in single mode...
+* Version 3.11.2 (ruby 2.4.2-p198), codename: Love Song
+* Min threads: 0, max threads: 16
+* Environment: development
+* Listening on tcp://localhost:9292
+Use Ctrl-C to stop
+</code></pre>
+
+<p><code>rackup</code> 来自于哪里? 如何加载<code>config.ru</code>文件并生成项目?</p>
+
+<p>首先我们可以通过 <code>where</code>命令来查找当前<code>rackup</code>指令的执行路径并打印文件代码:</p>
+
+<pre><code class="language-shell">$ where rackup
+/Users/bobo/.rvm/gems/ruby-2.4.2/bin/rackup
+
+$ cat /Users/bobo/.rvm/gems/ruby-2.4.2/bin/rackup
+#!/usr/bin/env ruby
+#
+# This file was generated by RubyGems.
+#
+# The application 'rack' is installed as part of a gem, and
+# this file is here to facilitate running it.
+#
+
+require 'rubygems'
+
+version = "&gt;= 0.a"
+
+if ARGV.first
+  str = ARGV.first
+  str = str.dup.force_encoding("BINARY") if str.respond_to? :force_encoding
+  if str =~ /\A_(.*)_\z/ and Gem::Version.correct?($1) then
+    version = $1
+    ARGV.shift
+  end
+end
+
+if Gem.respond_to?(:activate_bin_path)
+  load Gem.activate_bin_path('rack', 'rackup', version)
+else
+  gem "rack", version
+  load Gem.bin_path("rack", "rackup", version)
+end
+</code></pre>
+
+<p>从 <code>rackup</code>文件中我们可以看出当前文件是由<code>RubyGems</code>自动生成, 在文件最后通过<code>load</code>方法加载对应文件中的代码, 从而启动服务. 我们可以在 <code>pry</code>中找到要加载的文件及其代码.</p>
+
+<pre><code class="language-shell">λ gem list "^rack$"
+
+*** LOCAL GEMS ***
+
+rack (2.0.3, 2.0.1, 1.6.8)
+
+λ pry
+[1] pry(main)&gt; Gem.activate_bin_path('rack', 'rackup', '2.0.3')
+=&gt; "/Users/bobo/.rvm/gems/ruby-2.4.2/gems/rack-2.0.3/bin/rackup"
+[2] pry(main)&gt; exit
+
+λ cat /Users/bobo/.rvm/gems/ruby-2.4.2/gems/rack-2.0.3/bin/rackup
+#!/usr/bin/env ruby
+
+require "rack"
+Rack::Server.start
+
+</code></pre>
+
+<blockquote>
+  <p><code>rackup</code>命令定义在 <code>rack</code>工程的 <code>bin/rackup</code>文件中. 通过 <code>rubygems</code>安装后会生成另外一个加载该文件的可执行文件.</p>
+</blockquote>
+
+<p>最后我们找到了加载的文件. <code>.activate_bin_path</code>方法会查找对应的<code>gem</code>当前生效的版本, 并返回文件的路径. 在这个可执行文件中, 只是简单的两行代码</p>
+
+<pre><code class="language-ruby">#!/usr/bin/env ruby
+
+require 'rack'
+
+# 启动一个Web Server
+Rack::Server.start
+</code></pre>
+
+<h3 id="启动-web-server">
+<a id="启动-web-server" class="anchor" href="#%E5%90%AF%E5%8A%A8-web-server" aria-hidden="true"><span class="octicon octicon-link"></span></a>启动 Web Server</h3>
+
+<p>从这里开始, 我们就已经从<code>	rakcup</code>命令的执行进入了<code>rack</code> 的源码.  当前<code>Rack::Server</code>类初始化一个新的实例后, 在新对象上执行了<code>#start</code>方法.</p>
+
+<pre><code class="language-ruby">[1] pry(main)&gt; require 'rack'
+=&gt; true
+[2] pry(main)&gt; $ Rack::Server.start
+
+From: **/gems/rack-2.0.3/lib/rack/server.rb @ line 147:
+Owner: #&lt;Class:Rack::Server&gt;
+Visibility: public
+Number of lines: 3
+
+def self.start(options = nil)
+  new(options).start
+end
+</code></pre>
+
+<h4 id="初始化和配置">
+<a id="初始化和配置" class="anchor" href="#%E5%88%9D%E5%A7%8B%E5%8C%96%E5%92%8C%E9%85%8D%E7%BD%AE" aria-hidden="true"><span class="octicon octicon-link"></span></a>初始化和配置</h4>
+
+<p>在<code>Rack::Server</code>启动过程中初始化一个新的对象, 初始化的过程就包含了整个服务器的配置过程:</p>
+
+<pre><code class="language-ruby">[3] pry(main)&gt; $ Rack::Server#initialize
+
+From: **/gems/rack-2.0.3/lib/rack/server.rb @ line 185:
+Owner: Rack::Server
+Visibility: private
+Number of lines: 13
+
+def initialize(options = nil)
+  @ignore_options = []
+
+  # 直接运行`rackup`时没有传入任何参数, 因此代码跳转到 `else`部分
+  if options
+    @use_default_options = false
+    @options = options
+    @app = options[:app] if options[:app]
+  else
+    argv = defined?(SPEC_ARGV) ? SPEC_ARGV : ARGV
+    @use_default_options = true
+    @options = parse_options(argv)
+  end
+end
+</code></pre>
+
+<p>解析参数部分:</p>
+
+<pre><code class="language-ruby">[4] pry(main)&gt; $ Rack::Server#parse_options
+
+From: **/gems/rack-2.0.3/lib/rack/server.rb @ line 328:
+Owner: Rack::Server
+Visibility: private
+Number of lines: 10
+
+#传入的参数 args == [], 因此`opt_parser.parse!(args)`直接返回 {}
+def parse_options(args)
+  # Don't evaluate CGI ISINDEX parameters.
+  # http://www.meb.uni-bonn.de/docs/cgi/cl.html
+  args.clear if ENV.include?(REQUEST_METHOD)
+
+  # @options = {}
+  @options = opt_parser.parse!(args)
+  
+  # `options`为 `Rack::Server`类中定义的一个实例方法
+  # `@options[:config] = 'config.ru'
+  @options[:config] = ::File.expand_path(options[:config])
+  ENV["RACK_ENV"] = options[:environment]
+  @options
+end
+
+-------------------------------------------------------------------------
+[5] pry(main)&gt; $ Rack::Server#opt_parser
+
+From: /Users/bobo/.rvm/gems/ruby-2.4.2/gems/rack-2.0.3/lib/rack/server.rb @ line 339:
+Owner: Rack::Server
+Visibility: private
+Number of lines: 3
+
+def opt_parser
+  Options.new
+end
+
+-------------------------------------------------------------------------
+[6] pry(main)&gt; $ Rack::Server::Options#parse!
+
+From: /Users/bobo/.rvm/gems/ruby-2.4.2/gems/rack-2.0.3/lib/rack/server.rb @ line 10:
+Owner: Rack::Server::Options
+Visibility: public
+Number of lines: 96
+
+def parse!(args)
+  options = {}
+  opt_parser = OptionParser.new("", 24, '  ') do |opts|
+  opts.banner = "Usage: rackup [ruby options] [rack options] [rackup config]"
+
+  opts.separator ""
+  opts.separator "Ruby options:"
+  # ...
+  options[:config] = args.last if args.last &amp;&amp; !args.last.empty?
+  options
+end
+  
+-------------------------------------------------------------------------
+[7] pry(main)&gt; $ Rack::Server#options
+
+From: **/gems/rack-2.0.3/lib/rack/server.rb @ line 199:
+Owner: Rack::Server
+Visibility: public
+Number of lines: 4
+
+# 由于我们运行`rackup`指令时没有传入任何参数, 因此 `@use_default_options = true`.
+#`options`中方法中继续调用`default_options`
+def options
+  merged_options = @use_default_options ? default_options.merge(@options) : @options
+  merged_options.reject { |k, v| @ignore_options.include?(k) }
+end
+ 
+-------------------------------------------------------------------------    
+[8] pry(main)&gt; $ Rack::Server#default_options
+
+From: **/gems/rack-2.0.3/lib/rack/server.rb @ line 204:
+Owner: Rack::Server
+Visibility: public
+Number of lines: 13
+
+# `default_options`会处理对象本身定义的一些参数, 比如默认的端口号、默认的`config`文件
+# `config`文件就是`rackup`接收的一个文件参数, 文件中的内容就是用来配置`Rack`服务器的代码.
+# 默认情况下名为`config.ru`, 也就是我们在前面写好的那个配置文件
+def default_options
+  environment  = ENV['RACK_ENV'] || 'development'
+  default_host = environment == 'development' ? 'localhost' : '0.0.0.0'
+
+  {
+    :environment =&gt; environment,
+    :pid         =&gt; nil,
+    :Port        =&gt; 9292,
+    :Host        =&gt; default_host,
+    :AccessLog   =&gt; [],
+    :config      =&gt; "config.ru"
+  }
+end
+  
+</code></pre>
+
+<h4 id="包装应用">
+<a id="包装应用" class="anchor" href="#%E5%8C%85%E8%A3%85%E5%BA%94%E7%94%A8" aria-hidden="true"><span class="octicon octicon-link"></span></a>包装应用</h4>
+
+<p>当我们执行了 <code>initialize</code>方法初始化了一个新的实例后, 接下来就会进入<code>#start</code>实例方法启动一个 	<code>WebServer</code>来处理<code>config.ru</code>中定义的应用了:</p>
+
+<pre><code class="language-ruby">[9] pry(main)&gt; $ Rack::Server#start
+
+From: **/gems/rack-2.0.3/lib/rack/server.rb @ line 258:
+Owner: Rack::Server
+Visibility: public
+Number of lines: 41
+
+def start &amp;blk
+  # 删除了多余不重要的代码
+    
+  # Touch the wrapped app, so that the config.ru is loaded before
+  # daemonization (i.e. before chdir, etc).
+  # 通过注释我们可以知晓 `wrapped_app`方法是在启动守护进程之前就加载了 `config.ru`配置文件来创建好最终的应用程序
+  wrapped_app
+
+  server.run wrapped_app, options, &amp;blk
+end
+
+-------------------------------------------------------------------------
+# 首先查看 `Rack::Server#server`中传入的参数
+[10] pry(main)&gt; $ Rack::Server#wrapped_app
+
+From: **/gems/rack-2.0.3/lib/rack/server.rb @ line 353:
+Owner: Rack::Server
+Visibility: private
+Number of lines: 3
+
+# 继续调用 `build_app`方法 以及 `app`方法
+def wrapped_app
+  @wrapped_app ||= build_app app
+end
+
+
+</code></pre>
+
+<p><code>wrapped_app</code>方法实际上需要继续调用两个方法: <code>build_app</code> 、 <code>app</code>.</p>
+
+<p><code>Rack::Server#app</code>方法调用栈比较复杂:</p>
+
+<p><img src="" alt="Rack::Server#app"></p>
+
+<pre><code class="language-ruby">[11] pry(main)&gt; $ Rack::Server#app
+
+From: **/gems/rack-2.0.3/lib/rack/server.rb @ line 218:
+Owner: Rack::Server
+Visibility: public
+Number of lines: 3
+
+def app
+  # 由于我们使用的是默认参数, 因此 `options[:builder]`为nil
+  # 继续调用 `build_app_and_options_from_config`
+  @app ||= options[:builder] ? build_app_from_string : build_app_and_options_from_config
+end
+
+-------------------------------------------------------------------------
+[12] pry(main)&gt; $ Rack::Server#build_app_and_options_from_config
+
+From: **/gems/rack-2.0.3/lib/rack/server.rb @ line 314:
+Owner: Rack::Server
+Visibility: private
+Number of lines: 9
+
+def build_app_and_options_from_config
+  if !::File.exist? options[:config]
+    abort "configuration #{options[:config]} not found"
+  end
+
+  # `parse_file`传入我们的配置文件 `config.ru`
+  app, options = Rack::Builder.parse_file(self.options[:config], opt_parser)
+  @options.merge!(options) { |key, old, new| old }
+  app
+end
+
+-------------------------------------------------------------------------
+[13] pry(main)&gt; $ Rack::Builder.parse_file
+
+From: **/gems/rack-2.0.3/lib/rack/builder.rb @ line 32:
+Owner: #&lt;Class:Rack::Builder&gt;
+Visibility: public
+Number of lines: 15
+
+def self.parse_file(config, opts = Server::Options.new)
+  options = {}
+  if config =~ /\.ru$/
+    cfgfile = ::File.read(config)
+    if cfgfile[/^#\\(.*)/] &amp;&amp; opts
+      options = opts.parse! $1.split(/\s+/)
+    end
+    cfgfile.sub!(/^__END__\n.*\Z/m, '')
+    # 最终我们的程序去调用 `new_from_string`, 参数为 `File.read("config.ru")`
+    app = new_from_string cfgfile, config
+  else
+    require config
+    app = Object.const_get(::File.basename(config, '.rb').split('_').map(&amp;:capitalize).join(''))
+  end
+  return app, options
+end
+
+-------------------------------------------------------------------------
+[14] pry(main)&gt; $ Rack::Builder.new_from_string
+
+From: **/gems/rack-2.0.3/lib/rack/builder.rb @ line 48:
+Owner: #&lt;Class:Rack::Builder&gt;
+Visibility: public
+Number of lines: 4
+
+def self.new_from_string(builder_script, file="(rackup)")
+  eval "Rack::Builder.new {\n" + builder_script + "\n}.to_app",
+    TOPLEVEL_BINDING, file, 0
+end
+</code></pre>
+
+<p>通过<code>Ruby</code>元编程中常用的 <code>eval</code>方法, 将配置文件<code>config.ru</code>的全部内容和两端的字符串拼接起来, 相当于执行下列代码:</p>
+
+<pre><code class="language-ruby">Rack::Builder.new {
+  use WrapWithHtml
+  use WrapWithRedP
+  use ToUpper
+  run Hello.new
+}.to_app
+</code></pre>
+
+<p>是不是是曾相识? 我们在<code>Rack协议及其应用(一)</code>中就手动实现过<code>Rack::Builder</code>类. 上述代码就是存储了所有的中间件以及原始的<code>Rack应用程序</code>, 最后通过<code>#to_app</code>方法返回了一个<code>Rack</code>应用. 稍后我们会分析<code>Rack::Builder</code>的源码</p>
+
+<p>在这之后会使用<code>Rack::Builder#build_app</code>方法将所有的中间件都包括在<code>Rack</code>应用周围.所有的中间件都是一个遵循协议的<code>App</code>, 只不过中间件和<code>App</code>的唯一区别就是中间件会调用初始化时传入的<code>Rack App</code>.</p>
+
+<pre><code class="language-ruby">[15] pry(main)&gt; $ Rack::Server#build_app
+
+From: **/gems/rack-2.0.3/lib/rack/server.rb @ line 343:
+Owner: Rack::Server
+Visibility: private
+Number of lines: 9
+
+def build_app(app)
+  middleware[options[:environment]].reverse_each do |middleware|
+    middleware = middleware.call(self) if middleware.respond_to?(:call)
+    next unless middleware
+    klass, *args = middleware
+    app = klass.new(app, *args)
+  end
+  app
+end
+</code></pre>
+
+<p>经过上述方法, 我们在一个<code>Rack</code> 应用周围一层一层包装上了所有的中间件, 最后调用的中间件在整个调用栈的最外层, 当包装后的应用接收来自外部的请求时, 会按照如下方式运行:</p>
+
+<p><img src="" alt="WRAPPED APP"></p>
+
+<p>请求进来 -&gt; 从最外层的中间件进入, 每个中间件都会处理<code>request</code>, 在<code>#call</code>方法内部调用另外一个中间件或者应用. 当<code>request</code>进入到最初的<code>Rack应用程序</code>后, 程序返回<code>response</code>, 在经过一层一层的中间件处理, 最后返回 <code>HTTP响应</code></p>
+
+<h4 id="中间件的实现分析">
+<a id="中间件的实现分析" class="anchor" href="#%E4%B8%AD%E9%97%B4%E4%BB%B6%E7%9A%84%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90" aria-hidden="true"><span class="octicon octicon-link"></span></a>中间件的实现分析</h4>
+
+<p>在<code>Rack</code>中, 中间件是由两部分代码共同处理的:</p>
+
+<ul>
+  <li>Rack::Builder: 包含能够在<code>config.ru</code>文件中能够使用的<code>DSL</code>方法.</li>
+  <li>Rack::Server: 启动 <code>Web Server</code>
+</li>
+</ul>
+
+<p>当我们使用<code>eval</code>执行<code>config.ru</code>文件中的代码时, 会先初始化一个<code>Builder</code>实例, 然后执行<code>instance_eval</code>运行代码中的所有内容:</p>
+
+<pre><code class="language-ruby">[16] pry(main)&gt; $ Rack::Builder#initialize
+
+From: **/gems/rack-2.0.3/lib/rack/builder.rb @ line 53:
+Owner: Rack::Builder
+Visibility: private
+Number of lines: 4
+
+def initialize(default_app = nil, &amp;block)
+  @use, @map, @run, @warmup = [], nil, default_app, nil
+  instance_eval(&amp;block) if block_given?
+end
+</code></pre>
+
+<p>通过调用<code>instance_eval </code>, <code>config.ru</code>文件中的代码会在当前实例环境下运行, 文件中的<code>#use</code>和<code>#run</code>方法在调用时就会执行<code>Rack::Builder</code>的实例方法:</p>
+
+<pre><code class="language-ruby">[17] pry(main)&gt; $ Rack::Builder#use
+
+From: **/gems/rack-2.0.3/lib/rack/builder.rb @ line 81:
+Owner: Rack::Builder
+Visibility: public
+Number of lines: 7
+
+def use(middleware, *args, &amp;block)
+  if @map
+    mapping, @map = @map, nil
+    @use &lt;&lt; proc { |app| generate_map app, mapping }
+  end
+  @use &lt;&lt; proc { |app| middleware.new(app, *args, &amp;block) }
+end
+      
+def run(app)
+  @run = app
+end
+      
+def to_app
+  app = @map ? generate_map(@run, @map) : @run
+  fail "missing run or map statement" unless app
+  app = @use.reverse.inject(app) { |a,e| e[a] }
+  @warmup.call(app) if @warmup
+  app
+end
+      
+</code></pre>
+
+<p><code>Rack::Builder#use</code>方法会将传入的参数组合成一个接收<code>app</code>作为参数的<code>Proc</code>对象, 然后加入到<code>@use</code>数组中存储起来.</p>
+
+<p><code>Rack::Builder#run</code>方法是存储最原始的<code>Rack应用程序</code>, 将其保存到<code>@run</code>实例变量中.</p>
+
+<p>最后如果我们想要获取当前的<code>Rack::Builder</code>生成的应用, 只需要调用<code>Rack::Builder#to_app</code>方法.值得一提的是<code>to_app</code>代码实现中使用了一个技巧, 可以使用<code>[]</code>来调用 <code>proc/lambda</code>.</p>
+
+<pre><code class="language-ruby"># `app = @use.reverse.inject(app) { |a,e| e[a] }`等价于下列代码
+app = @run
+@use.reverse.each do |middleware|
+  app = middleware.new(app)
+end
+app
+
+e = proc {|app| puts "call: arguments is #{app}"}
+a = 'app'
+e[a]
+# call: arguments is app
+</code></pre>
+
+<p>关于<code>inject</code>:</p>
+
+<blockquote>
+  <p>Combines all elements of enum by applying a binary operation, specified by a block or a symbol that names a method or operator. If you specify a block, then for each element in enum the block is passed an accumulator value (memo) and the element. If you specify a symbol instead, then each element in the collection will be passed to the named method of memo. In either case, the result becomes the new value for memo. At the end of the iteration, the final value of memo is the return value for the method. If you do not explicitly specify an initial value for memo, then the first element of collection is used as the initial value of memo.</p>
+</blockquote>
+
+<p>关于 <code>block</code>:</p>
+
+<blockquote>
+  <p>prc[params,…] Invokes the block, setting the block’s parameters to the values in params using something close to method calling semantics. Generates a warning if multiple values are passed to a proc that expects just one (previously this silently converted the parameters to an array). Note that prc.() invokes prc.call() with the parameters given. It’s a syntax sugar to hide “call”.</p>
+</blockquote>
+
+<p><code>@use.reverse.inject(app) { |a,e| e[a] }</code>运行过程中, 前一轮的<code>e[a]</code>被存储到内存中, 并加载了下一轮的<code>a</code>变量中, 因为 <code>e</code>和<code>a</code>都是<code>proc</code>, 所以<code> e[a]</code>本质上是调用这个代码块. 在这个过程中, 最原始的那个<code>Rack应用程序</code>会被放在最底层, 而<code>middleware</code>会一层一层地套在上面.生成的实例类似于下面的表示:</p>
+
+<pre><code class="language-ruby">use WrapWithHtml
+use WrapWithRedP
+use ToUpper
+run Hello.new
+
+# WrapWithHtml.new(WrapWithRedP.new(ToUpper.new(Hello.new)))
+@use = [WrapWithHtml.new, WrapWithRedP, ToUpper.new]
+@run = Hello.new
+app = @use.reverse.inject(app) { |a,e| e[a] }
+
+# `inject` 中, `e`相当于数组的依次传入的值, `a`相当于每一次迭代返回的值
+# `inject`传入的参数 `app`赋给 `a`
+# 1.1
+a = app = @run = Hello.new
+e =  proc { |app| ToUpper.new(app, *args, &amp;block) }
+result = e[a] = proc { |app| ToUpper.new(app, *args, &amp;block) }.call(a)
+       = ToUpper.new(Hello.new, *args, &amp;block)
+       = ToUpper.new(Hello.new)
+
+# 1.2
+a = result = ToUpper.new(Hello.new)
+e = proc {|app| WrapWithRedP.new(app, *args, &amp;block)}
+result = e[a] = proc {|app| WrapWithRedP.new(app, *args, &amp;block)}.call(a)
+       = WrapWithRedP.new(ToUpper.new(Hello.new))
+
+# 1.3
+a = result = WrapWithRedP.new(ToUpper.new(Hello.new))
+e = proc {|app| WrapWithHtml.new(app, *args, &amp;block)}
+result = e[a] = proc {|app| WrapWithHtml.new(app, *args, &amp;block)}.call(a)
+       = WrapWithHtml.new(WrapWithRedP.new(ToUpper.new(Hello.new)))
+
+</code></pre>
+
+<p><strong>Rack::Builder</strong>类其实就是将非常晦涩的代码, 利用<code>Ruby</code>元编程能力变成清晰可读的<code>DSL</code>, 最终返回了一个最终应用对象.</p>
+
+<p>通过<code>Rack::Builder#to_app</code>生成最终应用将被作为参数传给 <code>Rack::Builder#build_app</code>中. 此方法根据环境选择合适的中间件继续包裹到这个链式调用中:</p>
+
+<pre><code class="language-ruby">[18] pry(main)&gt; $ Rack::Server#build_app
+
+From: **/gems/rack-2.0.3/lib/rack/server.rb @ line 343:
+Owner: Rack::Server
+Visibility: private
+Number of lines: 9
+
+def build_app(app)
+  middleware[options[:environment]].reverse_each do |middleware|
+    middleware = middleware.call(self) if middleware.respond_to?(:call)
+    next unless middleware
+    klass, *args = middleware
+    # 继续包裹 `Rack`默认的一些中间件
+    app = klass.new(app, *args)
+  end
+  app
+end
+
+-------------------------------------------------------------------------
+
+def middleware
+  self.class.middleware
+end
+
+-------------------------------------------------------------------------
+    
+def middleware
+  default_middleware_by_environment
+end
+
+[19] pry(main)&gt; $ Rack::Server.default_middleware_by_environment
+
+From: **/gems/rack-2.0.3/lib/rack/server.rb @ line 229:
+Owner: #&lt;Class:Rack::Server&gt;
+Visibility: public
+Number of lines: 19
+
+def default_middleware_by_environment
+  m = Hash.new {|h,k| h[k] = []}
+  m["deployment"] = [
+    [Rack::ContentLength],
+    [Rack::Chunked],
+    logging_middleware,
+    [Rack::TempfileReaper]
+  ]
+  m["development"] = [
+    [Rack::ContentLength],
+    [Rack::Chunked],
+    logging_middleware,
+    [Rack::ShowExceptions],
+    [Rack::Lint],
+    [Rack::TempfileReaper]
+  ]
+
+  m
+end
+</code></pre>
+
+<p>最终会根据<code>Rack::Server.default_middleware_by_environment</code>中包含了不同环境下默认应该使用的中间件, <code>Rack::Server#build_app</code>会根据情况加载中间件.</p>
+
+<h4 id="选择-web-server">
+<a id="选择-web-server" class="anchor" href="#%E9%80%89%E6%8B%A9-web-server" aria-hidden="true"><span class="octicon octicon-link"></span></a>选择 Web Server</h4>
+
+<p>在<code>Rack::Server#start</code>方法中, 我们通过<code>Rack::Server#wrapped_app</code>方法将应用和中间件打包到一起. 然后执行<code>server.run wrapped_app, options, &amp;blk</code> 来选择合适的 <code>Web Server</code>并启动之.</p>
+
+<pre><code class="language-ruby">[2] pry(main)&gt; $ Rack::Server#server
+
+From: **/gems/rack-2.0.3/lib/rack/server.rb @ line 300:
+Owner: Rack::Server
+Visibility: public
+Number of lines: 12
+
+def server
+  @_server ||= Rack::Handler.get(options[:server])
+  unless @_server
+    @_server = Rack::Handler.default
+    # We already speak FastCGI
+    @ignore_options = [:File, :Port] if @_server.to_s == 'Rack::Handler::FastCGI'
+  end
+  @_server
+end
+</code></pre>
+
+<p>我们在运行<code>rackup</code>命令时, 如果传入了 <code>server</code>选项, 比如:</p>
+
+<pre><code class="language-shell">$ rackup -server Puma
+</code></pre>
+
+<p>就会使用传入的<code>Web Server</code>, 否则就选择默认的<code>Rack::Handler</code></p>
+
+<pre><code class="language-ruby">[5] pry(main)&gt; $ Rack::Handler.default
+
+From: **/gems/rack-2.0.3/lib/rack/handler.rb @ line 46:
+Owner: #&lt;Class:Rack::Handler&gt;
+Visibility: public
+Number of lines: 12
+
+def self.default
+  # Guess.
+  if ENV.include?("PHP_FCGI_CHILDREN")
+    Rack::Handler::FastCGI
+  elsif ENV.include?(REQUEST_METHOD)
+    Rack::Handler::CGI
+  elsif ENV.include?("RACK_HANDLER")
+    self.get(ENV["RACK_HANDLER"])
+  else
+    pick ['puma', 'thin', 'webrick']
+  end
+end
+</code></pre>
+
+<p>默认选择最终会调用<code>pick</code>方法, 在<code>pick</code>方法中通过传入的数据尝试对其进行加载 :</p>
+
+<pre><code class="language-ruby">[6] pry(main)&gt; $ Rack::Handler.pick
+
+From: **/gems/rack-2.0.3/lib/rack/handler.rb @ line 34:
+Owner: #&lt;Class:Rack::Handler&gt;
+Visibility: public
+Number of lines: 11
+# server_names = ['puma', 'thin', 'webrick']
+def self.pick(server_names)
+  server_names = Array(server_names)
+  server_names.each do |server_name|
+    begin
+      return get(server_name.to_s)
+    rescue LoadError, NameError
+    end
+  end
+
+  raise LoadError, "Couldn't find handler for: #{server_names.join(', ')}."
+end
+
+def self.get(server)
+  return unless server
+  server = server.to_s
+
+  unless @handlers.include? server
+    load_error = try_require('rack/handler', server)
+  end
+
+  if klass = @handlers[server]
+    klass.split("::").inject(Object) { |o, x| o.const_get(x) }
+  else
+    const_get(server, false)
+  end
+
+rescue NameError =&gt; name_error
+  raise load_error || name_error
+end
+</code></pre>
+
+<p>​	<code>Rack::Handler.get</code>方法会通过命名规范从对应的文件目录下加载相应的常量. 一部分常量时预先定义在<code>handler.rb</code>文件中, 另外一部分是由各个<code>Web Server</code>的开发者自己定义或者遵循一定的命名规范加载的.</p>
+
+<h4 id="终于启动了">
+<a id="终于启动了" class="anchor" href="#%E7%BB%88%E4%BA%8E%E5%90%AF%E5%8A%A8%E4%BA%86" aria-hidden="true"><span class="octicon octicon-link"></span></a>终于启动了</h4>
+
+<p>当<code>Rack</code> 已经使用中间件对应用进行包装并且选择了对应的<code>WebServer</code>之后, 我们就可以将包装好的应用作为参数传入<code>Rack::Handler::WEBrick.run</code>方法了:</p>
+
+<pre><code class="language-ruby">#这里直接采用最简单的 WEBrick进行分析
+[8] pry(main)&gt; $ Rack::Handler::WEBrick
+
+From: /Users/bobo/.rvm/gems/ruby-2.4.2/gems/rack-2.0.3/lib/rack/handler/webrick.rb @ line 24:
+Class name: Rack::Handler::WEBrick
+Number of lines: 95
+
+class WEBrick &lt; ::WEBrick::HTTPServlet::AbstractServlet
+  def self.run(app, options={})
+    environment  = ENV['RACK_ENV'] || 'development'
+    default_host = environment == 'development' ? 'localhost' : nil
+
+    options[:BindAddress] = options.delete(:Host) || default_host
+    options[:Port] ||= 8080
+    @server = ::WEBrick::HTTPServer.new(options)
+    @server.mount "/", Rack::Handler::WEBrick, app
+    yield @server  if block_given?
+    @server.start
+  end
+</code></pre>
+
+<p>所有遵循<code>Rack协议</code>的<code>Web Server</code>都会实现类似于<code>WEBrick</code>的<code>run</code>方法, 此方法接收三个参数:</p>
+
+<ul>
+  <li>app: 包装好的<code>Rack应用程序</code>
+</li>
+  <li>options: 参数</li>
+  <li>block:  代码块</li>
+</ul>
+
+<p><code>run</code>方法启动一个一个进程来专门处理所有来自用户的<code>HTTP请求</code>. 请求到这一步, 就需要每个<code>Web Server</code> 自己处理了. 后续的文章我会对常见的<code>Web Server</code>分析.</p>
+
+<p>##再论中间件</p>
+
+<h3 id="authenticate">
+<a id="authenticate" class="anchor" href="#authenticate" aria-hidden="true"><span class="octicon octicon-link"></span></a>Authenticate</h3>
+
+<h3 id="cookie">
+<a id="cookie" class="anchor" href="#cookie" aria-hidden="true"><span class="octicon octicon-link"></span></a>Cookie</h3>
+
+
+      <h3>关于图片和转载</h3>
+
+      <a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="知识共享许可协议" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br />本作品采用<a rel="license" href="http://creativecommons.org/licenses/by/4.0/">知识共享署名 4.0 国际许可协议</a>进行许可。
+
+      转载时请注明原文链接，图片在使用时请保留图片中的全部内容，可适当缩放并在引用处附上图片所在的文章链接，图片使用 Sketch 进行绘制。
+
+      <h3>关于评论和留言</h3>
+
+      如果对本文 <a href="/rack-principle">Ruby Rack 协议及其应用(二)</a> 的内容有疑问，请在下面的评论系统中留言，谢谢。
+
+      <blockquote>
+        <p>原文链接：<a href="/rack-principle">Ruby Rack 协议及其应用(二) · 雄关漫道真如铁</a></p>
+
+        <p>Follow: <a href="https://github.com/nju520">nju520 · GitHub</a></p>
+      </blockquote>
+
+    </section>
+
+    <footer class="post-footer">
+
+      <!-- Everything inside the #author tags pulls data from the author -->
+      <!-- #author-->
+
+      
+      <figure class="author-image">
+        <a class="img" href="https://github.com/nju520" style="background-image: url(/assets/images/hacker.png)"><span class="hidden">'s Picture</span></a>
+      </figure>
+      
+
+      <section class="author">
+        <h4><a href="https://github.com/nju520">nju520</a></h4>
+
+        
+        <p> Ruby / Python / JS</p>
+        
+        <div class="author-meta">
+          <span class="author-location icon-location"> Hangzhou, China</span>
+          <span class="author-link icon-link"><a href="http://hwbnju.com"> hwbnju.com</a></span>
+        </div>
+      </section>
+
+      <!-- /author  -->
+
+      <section class="share">
+        <h4>Share this post</h4>
+        <a class="icon-twitter" href="http://twitter.com/share?text=Ruby Rack 协议及其应用(二)&amp;url=http://hwbnju.comrack-principle"
+          onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+          <span class="hidden">Twitter</span>
+        </a>
+        <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://hwbnju.comrack-principle"
+          onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+          <span class="hidden">Facebook</span>
+        </a>
+        <a class="icon-google-plus" href="https://plus.google.com/share?url=http://hwbnju.comrack-principle"
+          onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+          <span class="hidden">Google+</span>
+        </a>
+      </section>
+
+      <div id="gitalk-container"></div>
+      <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+      <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+      <script>
+       const gitalk = new Gitalk({
+         clientID: 'e552ed507a5a4581d8a1',
+         clientSecret: '0abbd4193a0f9b2700936214ff6fda088c665a73',
+         repo: 'bobo-comments',
+         owner: 'nju520',
+         admin: ['nju520'],
+         // labels: ['Gitalk', 'gitment'].concat(["Rack系列","rack","ruby","rails","server"]),
+         // id: location.origin + location.pathname,
+         id: "http://hwbnju.com/rack-principle",
+         distractionFreeMode: false
+       });
+
+       gitalk.render('gitalk-container')
+      </script>
+
+    </footer>
+
+  </article>
+
+</main>
+
+<aside class="read-next">
+
+  <!-- [[! next_post ]] -->
+  
+  <!-- [[! /next_post ]] -->
+  <!-- [[! prev_post ]] -->
+  
+  <a class="read-next-story prev no-cover" href="rack-start">
+    <section class="post">
+      <h2>Ruby Rack 协议及其应用(一)</h2>
+      <p>Rack协议 什么是Rack Rack是Ruby Web服务器和Rack应用程序之间的一个接口 上图给出了一个简单的图示. 当用户的请求抵达Web服务器时, Web服务器就会调用(call)Rack, Rack对请求进行包装, 然后调用Rack应用程序(一般是一个封装好的框架). Rack程序可以方便地利用Rack提供的各种API, 分析请求(request), 进行处理, 返回响应(response). 为什么是Rack Rack提供了一种标准的接口,...</p>
+    </section>
+  </a>
+  
+  <!-- [[! /prev_post ]] -->
+</aside>
+
+<!-- /post -->
+
+
+      <footer class="site-footer clearfix">
+        <section class="copyright"><a href="/">雄关漫道真如铁</a> &copy; 2018</section>
+        <section class="poweredby">Proudly published with <a href="https://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/biomadeira/jasper">Jasper</a></section>
+      </footer>
+    </div>
+    <!-- [[! Ghost outputs important scripts and data with this tag ]] -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <!-- [[! The main JavaScript file for Casper ]] -->
+    <script type="text/javascript" src="/assets/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="/assets/js/index.js"></script>
+    <script type="text/javascript" src="/assets/js/prism.js"></script>
+    <script type="text/javascript" src="/assets/js/toc.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+  </body>
+</html>
