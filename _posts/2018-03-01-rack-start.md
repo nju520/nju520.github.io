@@ -203,7 +203,7 @@ Hello World
 
 从上述请求返回的响应中可以看出, Puma 按照 config.ru文件中的代码对HTTP请求进行了处理
 
-### Rack初探
+## Rack初探
 
 本节探究一下Rack为Rack应用程序提供的几个基础接口和概念, 对Rack源码也解读一下.
 
@@ -632,7 +632,7 @@ end
 
 
 
-##Rack中间件
+## Rack中间件
 
 什么是中间件? 简单讲中间件就是在Ruby Web Server和Rack应用程序之间执行的代码. 
 
@@ -708,8 +708,6 @@ $ http http://localhost:3000/hello
 You say hello
 ===========footer==========
 ~~~
-
-
 
 ### Rack响应的标准
 
@@ -970,6 +968,33 @@ http://localhost:3000/hello -> /favicon.ico
 ************* header ****************
 Hello World
 ===========footer==========
+~~~
+
+
+
+#### config.ru 配置文件
+
+以上两种方式是我们手动实现的中间件装载过程, 实际使用过程中我们可以把装载过程写在`config.ru`配置文件中, 然后运行命令 `rackup config.ru`即可完成中间件的加载和 Web Server的启动
+
+~~~ruby
+# config.ru
+require_relative 'decorator'
+
+use Rack::ContentLength
+use Decorator, header: "******** header **********</br>"
+run lambda { |env| [200, {'Content-Type' => 'text/html'}, ['Hello World']] }
+~~~
+
+
+
+~~~shell
+$ rackup 
+Puma starting in single mode...
+* Version 3.11.2 (ruby 2.4.2-p198), codename: Love Song
+* Min threads: 0, max threads: 16
+* Environment: development
+* Listening on tcp://localhost:9292
+Use Ctrl-C to stop
 ~~~
 
 
