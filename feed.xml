@@ -13,17 +13,33 @@
 		
 			
 				<item>
+					<title>Ruby Rack 协议及其应用(二)</title>
+					
+						<description>&lt;h2 id=&quot;rack实现原理&quot;&gt;Rack实现原理&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Sun, 04 Mar 2018 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/rack-flow
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/rack-flow</guid>
+				</item>
+			
+		
+			
+				<item>
 					<title>Ruby Rack 协议及其应用(一)</title>
 					
 						<description>&lt;h2 id=&quot;rack协议&quot;&gt;Rack协议&lt;/h2&gt;
 
 </description>
 					
-					<pubDate>Sat, 03 Mar 2018 00:00:00 +0800</pubDate>
+					<pubDate>Thu, 01 Mar 2018 00:00:00 +0800</pubDate>
 					<link>
-						http://hwbnju.com/rack
+						http://hwbnju.com/rack-start
 					</link>
-					<guid isPermaLink="true">http://hwbnju.com/rack</guid>
+					<guid isPermaLink="true">http://hwbnju.com/rack-start</guid>
 				</item>
 			
 		
