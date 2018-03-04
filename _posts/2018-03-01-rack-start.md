@@ -1,7 +1,7 @@
 ---
 layout: post
 toc: true
-permalink: /rack
+permalink: /rack-start
 title: Ruby Rack 协议及其应用(一)
 tags: Rack系列  rack  ruby  rails  server
 desc:  Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本系列文章就深入探讨Rack协议的原理以及实现.
@@ -101,7 +101,7 @@ end
 
 我们可以使用Pry在 console中尝试使用Rack:
 
-~~~ruby
+~~~shell
 $ pry
 [7] pry(main)> require 'rack'
 => false
@@ -174,7 +174,7 @@ run Proc.new { |env| ['200', {'Content-Type' => 'text/html'}, ['Hello World']] }
 
 在同一目录下使用 backup 命令就可以启动一个 Web Server 进程:
 
-~~~ruby
+~~~shell
 # 如果文件名恰好为 config.ru, 我们可以省略配置文件直接运行 rackup
 $ rackup config.ru
 
@@ -191,7 +191,7 @@ Use Ctrl-C to stop
 
 使用 http 工具发出请求:
 
-~~~ruby
+~~~shell
 http http:localhost:9292
 
 HTTP/1.1 200 OK
@@ -227,7 +227,7 @@ Rack::Handler::Thin.run app, Port: 3000
 
 这个简单的Rack应用程序会把env的内容都打印出来. 采用 http 发出请求 `http :3000/admin/?name=hwbnju`可以看到如下输出:
 
-~~~~ruby
+~~~~shell
 GATEWAY_INTERFACE => CGI/1.2
 HTTP_ACCEPT => */*
 HTTP_ACCEPT_ENCODING => gzip, deflate
@@ -465,8 +465,6 @@ end
 
 `Rack::Response`提供了对响应的状态、HTTP头和内容进行处理的方便接口
 
-
-
 ##### 响应体
 
 `Request`提供了两种方式来生成响应体:
@@ -541,8 +539,6 @@ Rack::Handler::WEBrick.run app, :Port => 3000
 
 ~~~
 
-
-
 ##### 响应码
 
 我们可以直接存取`Response`的对象来改变状态码. 如果没有任何设置, 状态码就为200.
@@ -552,10 +548,6 @@ Response还提供了一个 `redirect`方法直接进行重定向:
 ~~~ruby
 redirect(target, status = 302)
 ~~~
-
-
-
-
 
 ### 响应头
 
@@ -686,7 +678,9 @@ Rack::Handler::WEBrick.run Decorator.new(app), Port: 3000
 接下来我们就要定义一个 Decorator类, 创建 Decorator实例时传入原始的 rack_app 作为其参数. 这个实例也能够被Rack的Handler调用--显然这个实例也是合法的Rack应用程序. 因此 Decorator类需要一个call方法.
 
 ~~~ruby
+# decorator.rb
 class Decorator
+  # 初始化方法接收一个标准的Rack应用程序参数, 并且可以传入 代码块
   def initialize(app, &block)
     @app = app
     @block = @block
@@ -737,11 +731,12 @@ Rack协议要求Rack应用程序的call方法返回一个数组, 包含三个成
 
 
 
+![中间件架构]()
+
 Web框架的作者可以用中间件的形式实现整个框架. 由于中间件本身也是合法的Rack应用程序, 这就意味着中间件外面还可以包装中间件. 原先需要单片实现的整个框架被分割成多个中间件, 每个中间件只关系自己需要实现的功能. 这样的好处显而易见:
 
 * 每个中间件独立开发, 甚至可以被独立地替换
 * 我们可以用不同方式去组合中间件, 最大程度低满足不同应用程序的需要
-
 
 
 ### 装配中间件
@@ -789,37 +784,199 @@ Rack::Handler::XXX.run app
 headers['Content-Type'] = new_body.bytesize.to_s
 ~~~
 
-Rack自带了很多中间件, 其中一个中间件就是 `Rack::ContentLength`, 它可以自动设置响应中的`Content-Length. 我们可以使用如下方式使用`Rack`自带的中间件:
+Rack自带了很多中间件, 其中一个中间件就是 `Rack::ContentLength`, 它可以自动设置响应中的`Content-Length. 我们可以使用如下方式使用 `Rack` 自带的中间件:
+
+~~~ruby
+#! usr/bin/env ruby
+require 'rack'
+require 'decorator'
+
+app = Builder.new {
+    use Rack::ContentLength
+    use Decorator
+    run lambda {|env| [200, {"Content-Type" => "text/html"}, ["Hello World"]]}
+}.to_app
+
+Rack::Handler::WEBrick.run app, Port: 3000
+
+~~~
+
+~~~ruby
+# decorator.rb
+class Decorator
+  def initialize(app, &block)
+    @app = app
+    @block = @block
+  end
+  
+  def call(env)
+    status, headers, body = @app.call(env)
+    new_body = ""
+    new_body << "===========header==========<br/>"
+    body.each {|str| new_body << str}
+    new_body << "<br/>===========footer=========="
+    # 注释掉下面一行, 采用Rack自带的中间件自动添加头部信息: Content-Length
+    # headers['Content-Length'] = new_body.bytesize.to_s
+    
+    # 最后返回加上头尾信息的新的三元数组
+    [status, headers, [new_body]]
+  end
+end
+~~~
+
+
+
+万事俱备, 只欠东风. 现在我们还是思考如何实现`Builder`.
+
+根据上面的模板, 我们对 `Builder`几个方法要求如下:
+
+* initialize: 签名应该是 initialize(&block). 为了能够让 `use`、`run`这些方法称为DSL语言的**动词**,initialize应该 `initialize_eval`当前实例
+* use: 签名应该是 `use(middleware_class, options, &block). 它应该记录需要创建的中间件以及它们的顺序. 同时还可以保存传入中间件时携带的参数和代码块
+* run: 签名应该为 `run(rack_app)`. 记录原始的`rack应该程序`
+* to_app: 根据`use`和`run`记录的信息创建出最终的应用程序
+
+
+
+#### 简单实现
+
+我们首先通过传统方法来实现`Builder`, 用数组记录所有需要创建的中间件信息, 最后`to_app`时候把它们创建出来
+
+~~~ruby
+#Rack应用构造类
+class Builder
+  def initialize(&block)
+    @middlewares = []
+    self.instance_eval(&block)
+  end
+
+  def use(middleware)
+    @middlewares << middleware
+  end
+
+  def run(app)
+    @app = app
+  end
+
+  def to_app
+    @middlewares.reverse.inject(@app) {|app, middleware| middleware.new(app)}
+  end
+
+end
+~~~
+
+`Builder`类中`to_app`的实现,首先对加入的`middlewares`进行了`reverse`,这是因为对所有使用的中间件, 我们必须持有它们的顺序信息. 第一个被`use`的中间件包在最外面一层, 第二个被`use`的中间件在第二层, 依次类推, 直至包含了原始的`Rack应用程序`. 
+
+
+
+#### 更`Ruby`化的实现
+
+上面传统的方法有一定的局限性. 例如如果我们需要在`use`中间件的过程中带上一些选项, 甚至执行某些代码. `use`描述的是中间件创建的过程, 创建过程需要携带自动的参数, 需要执行某些代码--但是这个创建过程并不是在现在就要被执行, 而是在`to_app`时候被执行.
+
+
+
+**对那些需要在以后执行的代码, Ruby给出了最好的解决答案就是`lambda`**.
+
+~~~ruby
+class Builder
+  def initialize(&block)
+    @middlewares = []
+    self.instance_eval(&block)
+  end
+
+  def use(middleware_class, *options, &block)
+    @middlewares << lambda {|app| middleware_class.new(app, *options, &block)}
+  end
+
+  def run(app)
+    @app = app
+  end
+
+  def to_app
+    @middlewares.reverse.inject(@app) {|app, middleware| middleware.call(app)}
+  end
+end
+
+~~~
+
+`use`方法把中间件的创建过程以`lambda`的方式保存在`@middlewares`数组中, 而中间件的创建过程就是以`app`为参数创建一个最终版的`app`.
+
+我们可以修改之前的`Decorator`, 为其加上参数配置和代码块.
+
+~~~ruby
+#! /usr/bin/env ruby
+require 'rack'
+
+class Decorator
+
+  def initialize(app, *options, &block)
+    @app = app
+    @options = (options[0] || {})
+    @block = block
+  end
+
+  def call(env)
+    # body is an instance of Array
+    status, headers, body = @app.call(env)
+    @block.call if @block
+
+    new_body = ""
+    new_body << (@options[:header] || "===========header==========<br/>")
+    body.each {|str| new_body << str}
+    new_body << (@options[:footer] || "<br/>===========footer==========")
+    [status, headers, [new_body]]
+  end
+end
+
+~~~
+
+ 
+
+最后修改一下我们的运行程序, 为`Decorator`添加参数和代码块
+
+~~~ruby
+# my_app.rb
+# !/usr/bin/env ruby
+
+require 'rack'
+require_relative 'builder'
+require_relative 'decorator'
+
+app = Builder.new {
+  use Rack::ContentLength
+  use Decorator, header: '************* header ****************<br/>'
+  run lambda { |env| [200, {'Content-Type' => 'text/html'}, ['Hello World']] }
+}.to_app
+
+Rack::Handler::WEBrick.run app, Port: 3000
+	
+~~~
+
+运行程序, 我们可以看到如下输出:
+
+~~~shell
+$ ./my_app.rb
+λ ruby my_app.rb
+[2018-03-04 09:57:04] INFO  WEBrick 1.3.1
+[2018-03-04 09:57:04] INFO  ruby 2.4.2 (2017-09-14) [x86_64-darwin17]
+[2018-03-04 09:57:04] INFO  WEBrick::HTTPServer#start: pid=32569 port=3000
+::1 - - [04/Mar/2018:09:57:07 CST] "GET /hello HTTP/1.1" 200 85
+- -> /hello
+::1 - - [04/Mar/2018:09:58:59 CST] "GET /hello HTTP/1.1" 200 85
+- -> /hello
+::1 - - [04/Mar/2018:09:58:59 CST] "GET /favicon.ico HTTP/1.1" 200 85
+http://localhost:3000/hello -> /favicon.ico
+
+
+************* header ****************
+Hello World
+===========footer==========
+~~~
 
 
 
 
 
+以上主要对`Rack`进行了简单的介绍, 并且自行实现了中间件的构造和装载代码. 
 
-
-
-
-## Rack实现原理
-
-### 源码解读
-
-
-
-### 自行实现
-
-
-
-## 再论中间件
-
-### Authenticate
-
-### Cookie
-
-
-
-## Rack与Rails
-
-
-
-## Rack与Web Server
+下一篇着重研究`Rack`源码, 以及Web Server的启动过程
 
