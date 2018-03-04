@@ -7,7 +7,7 @@ tags: Rack系列  rack  ruby  rails  server
 desc:  Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本系列文章就深入探讨Rack协议的原理以及实现.
 ---
 
-## Rack实现原理
+## Rack实现分析
 
 ### 创建应用程序
 
@@ -99,7 +99,7 @@ Use Ctrl-C to stop
 
 首先我们可以通过 `where`命令来查找当前`rackup`指令的执行路径并打印文件代码:
 
-~~~shell
+~~~ruby
 $ where rackup
 /Users/bobo/.rvm/gems/ruby-2.4.2/bin/rackup
 
@@ -809,6 +809,7 @@ class WEBrick < ::WEBrick::HTTPServlet::AbstractServlet
     yield @server  if block_given?
     @server.start
   end
+end
 ~~~
 
 
@@ -823,10 +824,291 @@ class WEBrick < ::WEBrick::HTTPServlet::AbstractServlet
 
 
 
+以上主要从`rackup`命令开始, 研究`Rack`源码, 从初始化配置、包裹中间件、中间件实现, 到选择`Web Server`,  最后启动`Web Server`. 我觉得研究源码一定要过滤掉一些不重要的代码(比如说参数处理, 异常处理)等.另外一点就是可以手动实现源码的一些类或者模块, 这样能够对源码有更深的认识.
 
 
-##再论中间件
 
-### Authenticate
 
-### Cookie
+
+## 再论中间件
+
+上面主要是从`rackup	`命令一步一步研究源码,  对中间件的实现和使用都有所了解. 我们可以在`config.ru`中配置中间件, 这对`Ruby on Rails`、`Sinatra`等框架都是通用的. 
+
+* `Ruby on Rails`通过`config.middleware`来配置中间件, 可以在`application.rb`或者`enviroment/<enviroment>.rb`文件中进行配置
+* `Sinatra`配置中间件很简单, 直接在`Rack` 应用中使用`use`配置
+
+**在`config.ru`中配置的中间件处在`中间件栈`的上层, 在`Web 框架`中配置的中间件在`中间件栈`下层**. 
+
+用户的请求自上而下通过`中间件栈`,任何一个中间件都可以终止用户请求而不向下传递.
+
+
+
+下面来分析`Rack`自带的两个中间件: `Auth`以及 `Session`
+
+### Auth
+
+`Auth`中间件可以用来做`HTTP鉴权(authentication and authorization)`. 我们拿 `Sidekiq Web` 鉴权为例
+
+~~~ruby
+# route.rb
+Sidekiq::Web.use(Rack::Auth::Basic) do |user, password|
+  [user, password] == [ENV['SIDEKIQ_NAME'], ENV['SIDEKIQ_PASS']]
+end
+~~~
+
+`Auth`作为`Rack`自带的中间件, `Rack::Auth::Basic`本身的实现就在`rack`的源码中, 因此可以直接使用.
+
+配置了中间件后, `Sidekiq Web`不需要做任何修改就被保护起来. 这个认证中间件实现起来也很简单, 如果我们以后要自己完成一个中间件的话, 可以参考一下`Auth`的实现.
+
+
+
+`Auth`的源码主要由以下几个模块构成:
+
+~~~ruby
+module Rack
+  module Auth
+    class Basic < AbstractHandler
+    
+      def call(env)
+      #...
+      end
+      
+      class Request < Auth::AbstractRequest
+      end
+    end
+    
+    class AbstractHandler
+    
+      def initialize(app, realm = nil, &authenticator)
+      #...
+      end
+    end
+    
+    class AbstractRequest
+    end
+  end
+end
+~~~
+
+
+
+`Rack::Auth::Basic`作为一个中间件, 肯定会实现 `initialize`方法以及`call`方法
+
+* initialize: 接收一个`app`应用程序作为参数, 一般来说`app`也是符合规范的`Rack中间件`. 
+* call: 接收`env(环境参数)`, 处理之后交给下一个中间件继续处理
+
+我们还是采用`pry`来一步一步研究`Auth`的源码
+
+~~~ruby
+[1] pry(main)> $ Rack::Auth::Basic#initialize
+
+From: **/gems/rack-2.0.3/lib/rack/auth/abstract/handler.rb @ line 11:
+Owner: Rack::Auth::AbstractHandler
+Visibility: private
+Number of lines: 3
+
+def initialize(app, realm=nil, &authenticator)
+  @app, @realm, @authenticator = app, realm, authenticator
+end
+~~~
+
+`initialize`接收三个参数:
+
+* app: 符合规范的一个`Rack`中间件或者应用程序
+* realm: 鉴权领域
+* authenticator: 代码块, 里面包含我们对用户输入的`username`以及`password`处理逻辑
+
+~~~ruby
+[1] pry(main)> $ Rack::Auth::Basic#call
+
+From: **/gems/rack-2.0.3/lib/rack/auth/basic.rb @ line 15:
+Owner: Rack::Auth::Basic
+Visibility: public
+Number of lines: 15
+
+def call(env)
+  auth = Basic::Request.new(env)
+  return unauthorized unless auth.provided?
+  return bad_request unless auth.basic?
+  if valid?(auth)
+    env['REMOTE_USER'] = auth.username
+    return @app.call(env)
+  end
+  unauthorized
+end
+~~~
+
+`Rack::Auth::Basic#call`方法调用, 首先创建了一个 `Rack::Auth::Basic::Request`实例
+
+~~~ruby
+# return unauthorized unless auth.provided?
+[3] pry(main)> $ Rack::Auth::Basic::Request#initialize
+
+From: **/gems/rack-2.0.3/lib/rack/auth/abstract/request.rb @ line 7:
+Owner: Rack::Auth::AbstractRequest
+Visibility: private
+Number of lines: 3
+
+def initialize(env)
+  @env = env
+end
+
+~~~
+
+
+
+我们采用`http`工具从命令行请求:
+
+~~~powershell
+λ http http://localhost:3000/sidekiq
+HTTP/1.1 401 Unauthorized
+Cache-Control: no-cache
+Content-Length: 0
+Content-Type: text/plain
+Set-Cookie: rack.session=BAh7xOD**0d983cc; path=/; HttpOnly
+Set-Cookie: _arc_warden_session=U3FMN3**216a9; path=/; HttpOnly
+Vary: Origin
+WWW-Authenticate: Basic realm=""
+X-Content-Type-Options: nosniff
+X-Request-Id: c2d9eccd-0ba5-4bb7-9777-ef664e7da88f
+X-Runtime: 0.007275
+
+~~~
+
+由于没有携带任何`Auth`认证, 因此服务器返回`401`.
+
+从返回的信息中我们还可以发现`realm`. 由于我们设置`Sidekiq Web`时没有添加`realm`, 所以返回时`realm=""`
+
+~~~ruby
+WWW-Authenticate: Basic realm=""
+~~~
+
+> realm 用来描述进行保护的区域，或者指代保护的范围。它可以是类似于 "Access to the staging site" 的消息，这样用户就可以知道他们正在试图访问哪一空间。
+
+
+
+`Rack::Auth::Basic`根据客户的传来的信息头判断是否携带了`Basic Auth`. 如果用户的请求`request` 中没有我们规定的`Auth`, 就会返回`unauthorized`
+
+~~~ruby
+# return bad_request unless auth.basic?
+[4] pry(main)> $ Rack::Auth::Basic::Request#provided?
+
+From: **/gems/rack-2.0.3/lib/rack/auth/abstract/request.rb @ line 15:
+Owner: Rack::Auth::AbstractRequest
+Visibility: public
+Number of lines: 3
+
+def provided?
+  !authorization_key.nil? && valid?
+end
+
+# 按照CGI的方式，HTTP客户端请求的header都会被冠以“HTTP_”前缀、全部大写、保存在env里，
+# 因此Authorization就成了HTTP_AUTHORIZATION
+AUTHORIZATION_KEYS = ['HTTP_AUTHORIZATION', 'X-HTTP_AUTHORIZATION', 'X_HTTP_AUTHORIZATION']
+
+def authorization_key
+  @authorization_key ||= AUTHORIZATION_KEYS.detect { |key| @env.has_key?(key) }
+end
+
+def valid?
+  !@env[authorization_key].nil?
+end
+
+--------------------------------------------------------------------------
+[5] pry(main)> $ Rack::Auth::Basic#unauthorized
+
+From: **/gems/rack-2.0.3/lib/rack/auth/abstract/handler.rb @ line 18:
+Owner: Rack::Auth::AbstractHandler
+Visibility: private
+Number of lines: 8
+
+# HTTP server通过通过WWW-Authenticate header指定Auth的方法
+def unauthorized(www_authenticate = challenge)
+  return [ 401,
+    { CONTENT_TYPE => 'text/plain',
+      CONTENT_LENGTH => '0',
+      'WWW-Authenticate' => www_authenticate.to_s },
+    []
+  ]
+end
+
+def challenge
+  'Basic realm="%s"' % realm
+end
+~~~
+
+
+
+接下来判断客户端传来的认证方式是否为`Basic Auth`
+
+~~~ruby
+[6] pry(main)> $ Rack::Auth::Basic::Request#basic?
+
+From: **/gems/rack-2.0.3/lib/rack/auth/basic.rb @ line 43:
+Owner: Rack::Auth::Basic::Request
+Visibility: public
+Number of lines: 3
+
+def basic?
+  "basic" == scheme
+end
+
+def scheme
+  @scheme ||= parts.first && parts.first.downcase
+end
+
+# Authorization: Basic m************
+def parts
+  @parts ||= @env[authorization_key].split(' ', 2)
+end
+~~~
+
+如果前两步的验证都通过的话, 就需要处理我们传入的`block`逻辑部分了:
+
+~~~ruby
+[7] pry(main)> $ Rack::Auth::Basic#valid?
+
+From: **/gems/rack-2.0.3/lib/rack/auth/basic.rb @ line 38:
+Owner: Rack::Auth::Basic
+Visibility: private
+Number of lines: 3
+
+def valid?(auth)
+  @authenticator.call(*auth.credentials)
+end
+
+# 解析得到 username password
+def credentials
+  @credentials ||= params.unpack("m*").first.split(/:/, 2)
+end
+
+def params
+  @params ||= parts.last
+end
+
+# Authorization: Basic m************
+def parts
+  @parts ||= @env[authorization_key].split(' ', 2)
+end
+~~~
+
+至此一个简单的`Basic Auth`已经完成.
+
+我们可以通过`http`工具验证一下:
+
+~~~shell
+λ http :3000/sidekiq --auth username:password
+HTTP/1.1 200 OK
+Cache-Control: no-cache
+Content-Language: en
+Content-Length: 8101
+Content-Type: text/html
+Set-Cookie: rack.session=BAh7CEkiD3**0ab564cc1e76c; path=/; HttpOnly
+Set-Cookie: _arc_warden_session=aE41bldqOH**a1f7f8d; path=/; HttpOnly
+Vary: Origin
+X-Content-Type-Options: nosniff
+X-Frame-Options: SAMEORIGIN
+X-Request-Id: 0b19d49c-422d-4d26-ad21-847b78d36e40
+X-Runtime: 1.467317
+X-XSS-Protection: 1; mode=block
+~~~
