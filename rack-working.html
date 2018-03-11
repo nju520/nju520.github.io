@@ -39,7 +39,7 @@
 
 <meta property="og:description" content="Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本系列文章就深入探讨Rack协议的原理以及实现." />
 
-<meta property="og:url" content="http://hwbnju.com/rack-principle" />
+<meta property="og:url" content="http://hwbnju.com/rack-working" />
 <meta property="og:image" content="" />
 
 <meta name="twitter:card" content="summary_large_image" />
@@ -47,7 +47,7 @@
 
 <meta name="twitter:description" content="Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本系列文章就深入探讨Rack协议的原理以及实现." />
 
-<meta name="twitter:url" content="http://hwbnju.com/rack-principle" />
+<meta name="twitter:url" content="http://hwbnju.com/rack-working" />
 <meta name="twitter:image:src" content="" />
 
 <script type="application/ld+json">
@@ -55,7 +55,7 @@
   "@context": "http://schema.org",
   "@type": "Website",
   "publisher": "nju520",
-  "url": "http://hwbnju.com/rack-principle",
+  "url": "http://hwbnju.com/rack-working",
   "image": "",
   "description": "Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本系列文章就深入探讨Rack协议的原理以及实现."
   }
@@ -947,7 +947,7 @@ end
 <pre><code class="language-ruby">#这里直接采用最简单的 WEBrick进行分析
 [8] pry(main)&gt; $ Rack::Handler::WEBrick
 
-From: /Users/bobo/.rvm/gems/ruby-2.4.2/gems/rack-2.0.3/lib/rack/handler/webrick.rb @ line 24:
+From: **/gems/rack-2.0.3/lib/rack/handler/webrick.rb @ line 24:
 Class name: Rack::Handler::WEBrick
 Number of lines: 95
 
@@ -1260,10 +1260,10 @@ X-XSS-Protection: 1; mode=block
 
       <h3>关于评论和留言</h3>
 
-      如果对本文 <a href="/rack-principle">Ruby Rack 协议及其应用(二)</a> 的内容有疑问，请在下面的评论系统中留言，谢谢。
+      如果对本文 <a href="/rack-working">Ruby Rack 协议及其应用(二)</a> 的内容有疑问，请在下面的评论系统中留言，谢谢。
 
       <blockquote>
-        <p>原文链接：<a href="/rack-principle">Ruby Rack 协议及其应用(二) · 雄关漫道真如铁</a></p>
+        <p>原文链接：<a href="/rack-working">Ruby Rack 协议及其应用(二) · 雄关漫道真如铁</a></p>
 
         <p>Follow: <a href="https://github.com/nju520">nju520 · GitHub</a></p>
       </blockquote>
@@ -1297,15 +1297,15 @@ X-XSS-Protection: 1; mode=block
 
       <section class="share">
         <h4>Share this post</h4>
-        <a class="icon-twitter" href="http://twitter.com/share?text=Ruby Rack 协议及其应用(二)&amp;url=http://hwbnju.comrack-principle"
+        <a class="icon-twitter" href="http://twitter.com/share?text=Ruby Rack 协议及其应用(二)&amp;url=http://hwbnju.comrack-working"
           onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
           <span class="hidden">Twitter</span>
         </a>
-        <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://hwbnju.comrack-principle"
+        <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://hwbnju.comrack-working"
           onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
           <span class="hidden">Facebook</span>
         </a>
-        <a class="icon-google-plus" href="https://plus.google.com/share?url=http://hwbnju.comrack-principle"
+        <a class="icon-google-plus" href="https://plus.google.com/share?url=http://hwbnju.comrack-working"
           onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
           <span class="hidden">Google+</span>
         </a>
@@ -1323,7 +1323,7 @@ X-XSS-Protection: 1; mode=block
          admin: ['nju520'],
          // labels: ['Gitalk', 'gitment'].concat(["Rack系列","rack","ruby","rails","server"]),
          // id: location.origin + location.pathname,
-         id: "http://hwbnju.com/rack-principle",
+         id: "http://hwbnju.com/rack-working",
          distractionFreeMode: false
        });
 
@@ -1339,6 +1339,13 @@ X-XSS-Protection: 1; mode=block
 <aside class="read-next">
 
   <!-- [[! next_post ]] -->
+  
+  <a class="read-next-story no-cover" href="rack-webrick">
+    <section class="post">
+      <h2>WEBrick 源码分析</h2>
+      <p>`WEBrick`是`Rack`自带的一个 `Web Server`, 历史悠久, 代码量一共才 4000多行. 本文就从源码入手, 解读 `WEBrick`实现原理, 并从进程和线程的角度来分析 `WEBrick` 的优缺点. ## 源码分析 我们知道...</p>
+    </section>
+  </a>
   
   <!-- [[! /next_post ]] -->
   <!-- [[! prev_post ]] -->

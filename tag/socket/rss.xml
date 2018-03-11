@@ -1,0 +1,1004 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    
+    <title>hwbnju.com</title>
+    
+    <link>http://hwbnju.com</link>
+    <description>nju520's Blog</description>
+    <language>en-uk</language>
+    <managingEditor> nju520</managingEditor>
+    <atom:link href="rss" rel="self" type="application/rss+xml" />
+    
+<item>
+  <title>WEBrick 源码分析</title>
+  <link>//rack-webrick</link>
+  <author>nju520</author>
+  <pubDate>2018-03-09T00:00:00+08:00</pubDate>
+  <guid>//rack-webrick</guid>
+  <description><![CDATA[
+  <p><code>WEBrick</code>是<code>Rack</code>自带的一个 <code>Web Server</code>, 历史悠久, 代码量一共才 4000多行. 本文就从源码入手, 解读 <code>WEBrick</code>实现原理, 并从进程和线程的角度来分析 <code>WEBrick</code> 的优缺点.</p>
+
+<h2 id="源码分析">源码分析</h2>
+
+<p>我们知道 <code>WEBrick</code>是<code>Rack</code>自带的 <code>WEB Server</code>,  它的<code>Handler</code>是在<code>Rack</code>中实现的, 它的运行也是从这个<code>Handler</code>开始的.</p>
+
+<pre><code class="language-ruby">[2] pry(main)&gt; $ Rack::Handler::WEBrick.run
+
+From: **/gems/rack-2.0.3/lib/rack/handler/webrick.rb @ line 25:
+Owner: #&lt;Class:Rack::Handler::WEBrick&gt;
+Visibility: public
+Number of lines: 11
+
+def self.run(app, options={})
+  environment  = ENV['RACK_ENV'] || 'development'
+  default_host = environment == 'development' ? 'localhost' : nil
+
+  options[:BindAddress] = options.delete(:Host) || default_host
+  options[:Port] ||= 8080
+  @server = ::WEBrick::HTTPServer.new(options)
+  @server.mount "/", Rack::Handler::WEBrick, app
+  yield @server  if block_given?
+  @server.start
+end
+</code></pre>
+
+<p>我在 <code>Rack</code>协议以及应用中介绍<code>Rack</code>的实现原理时, 最终就调用到上述<code>run</code>方法. 我们就从此方法开始解读<code>WEBrick</code>的源码.</p>
+
+<p>在<code>run</code>方法中, 先处理传入的一些参数比如 <code>host</code> <code>port</code> <code>enviroment</code>. 在这之后会使用<code>WEBrick</code>提供的<code>HTTPServer</code>创建一个 <code>server</code>实例.  <code>@server</code>实例会调用<code>mount</code>在根路由上挂载应用程序<code>app</code>和 <code>Rack::Handler::WEBrick</code>. 最后调用 <code>#start</code>方法启动服务器.</p>
+
+<h3 id="初始化服务器">初始化服务器</h3>
+
+<p><code>HTTPServer</code>初始化分为两个阶段, 首先是调用父类的 <code>initialize</code>方法, 进行一些配置; 然后是其本身的初始化. 在<code>HTTPServer</code>构造器中, 会配置当前服务器能够处理的 <code>HTTP</code>版本并出示还一个新的<code>MountTable</code>实例.</p>
+
+<pre><code class="language-ruby">[2] pry(main)&gt; require 'webrick'
+=&gt; true
+[3] pry(main)&gt; $ WEBrick::HTTPServer#initialize
+
+From: **/lib/ruby/2.4.0/webrick/httpserver.rb @ line 46:
+Owner: WEBrick::HTTPServer
+Visibility: private
+Number of lines: 19
+
+  class HTTPServer &lt; ::WEBrick::GenericServer
+	#...
+    def initialize(config={}, default=Config::HTTP)
+      # 调用父类 `GenericServer` 初始化方法
+      super(config, default)
+      @http_version = HTTPVersion::convert(@config[:HTTPVersion])
+
+      #创建一个 `MountTable`实例
+      @mount_tab = MountTable.new
+      if @config[:DocumentRoot]
+        mount("/", HTTPServlet::FileHandler, @config[:DocumentRoot],
+              @config[:DocumentRootOptions])
+      end
+
+      unless @config[:AccessLog]
+        @config[:AccessLog] = [
+          [ $stderr, AccessLog::COMMON_LOG_FORMAT ],
+          [ $stderr, AccessLog::REFERER_LOG_FORMAT ]
+        ]
+      end
+
+      @virtual_hosts = Array.new
+    end
+  end
+</code></pre>
+
+<p><code>WEBrick::HTTPServer</code>父类<code>WEBrick::GenericServer</code>中初始化用于监听端口号的 <code>socket</code>连接:</p>
+
+<pre><code class="language-ruby">From: **/lib/ruby/2.4.0/webrick/server.rb @ line 89:
+Owner: WEBrick::GenericServer
+Visibility: private
+Number of lines: 26
+
+#.方法有删减, 去除一些不必要的配置
+def initialize(config={}, default=Config::General)
+  @config = default.dup.update(config)
+  @status = :Stop
+  @config[:Logger] ||= Log::new
+  @logger = @config[:Logger]
+
+  
+  @listeners = []
+  unless @config[:DoNotListen]
+    if @config[:Listen]
+      warn(":Listen option is deprecated; use GenericServer#listen")
+    end
+    # 在此创建一系列的 `listeners`
+    listen(@config[:BindAddress], @config[:Port])
+    if @config[:Port] == 0
+      @config[:Port] = @listeners[0].addr[1]
+    end
+  end
+end
+
+##
+# Adds listeners from +address+ and +port+ to the server.  See
+# WEBrick::Utils::create_listeners for details.
+
+def listen(address, port)
+  @listeners += Utils::create_listeners(address, port)
+end
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+[8] pry(main)&gt; $ WEBrick::Utils.create_listeners
+
+From: **/lib/ruby/2.4.0/webrick/utils.rb @ line 61:
+Owner: #&lt;Class:WEBrick::Utils&gt;
+Visibility: public
+Number of lines: 13
+
+def create_listeners(address, port)
+  unless port
+    raise ArgumentError, "must specify port"
+  end
+  # 创建一组 `socket`
+  sockets = Socket.tcp_server_sockets(address, port)
+  sockets = sockets.map {|s|
+    s.autoclose = false
+    # 为文件描述符`s.fileno`创建一个新的 `TCPServer`实例
+    ts = TCPServer.for_fd(s.fileno)
+    # 关闭 当前 `socket`
+    s.close
+    ts
+  }
+  return sockets
+end
+</code></pre>
+
+<p>每一个服务器在初始化期间都会创建一系列的<code>listeners</code>用于监听地址和端口号组成的元组.</p>
+
+<p><code>Socket#tcp_server_scokets</code>会创建一组<code>scoket</code>, 实际上返回两个套接字, 一个可以通过<code>IPV4</code>连接, 一个可以通过<code>IPV6</code>连接,两者都在同一个端口上进行侦听. 通过<code>TCPServer.for_fd</code>	我们又基于<code>socket#fileno</code>创建了 <code>TCPServer</code> 的实例. 最后<code>create_listeners</code>返回数组形式的<code>TCPServer</code>实例.</p>
+
+<h3 id="挂载应用">挂载应用</h3>
+
+<p>在使用<code>WEBrick</code>启动服务的时候, 第二个阶段就是将<code>Handler</code>和<code>Rack应用程序</code>挂载到根路由下</p>
+
+<pre><code class="language-ruby">@server.mount "/", Rack::Handler::WEBrick, app
+</code></pre>
+
+<p><code>WEBrick::HTTPServer#mount</code>方法非常简单. 在<code>初始化服务器</code>阶段我们曾创建了一个<code>MountTable</code>的实例, 这一步只是将传入的多个参数放到这个表中:</p>
+
+<pre><code class="language-ruby">[9] pry(main)&gt; $ WEBrick::HTTPServer#mount
+
+From: **/lib/ruby/2.4.0/webrick/httpserver.rb @ line 155:
+Owner: WEBrick::HTTPServer
+Visibility: public
+Number of lines: 4
+
+def mount(dir, servlet, *options)
+  @logger.debug(sprintf("%s is mounted on %s.", servlet.inspect, dir))
+  @mount_tab[dir] = [ servlet, options ]
+end
+
+mount '/', Rack::Handler::WEBrick, app
+mount '/admin', Rack::Hanlder::WEBrick, admin_app
+mount '/worker', Rack::Handler::WEBrick, worker_app
+</code></pre>
+
+<p><code>MountTable</code>实际上是一个包含从路由到<code>Rack 应用App</code>的映射表</p>
+
+<p><img src="MountTable" alt="映射" /></p>
+
+<p>当初始化 <code>MountTable</code>时会调用<code>MountTable#compile</code>方法. <code>MountTable</code>会将表中的所有键按照加入顺序的逆序拼接成一个如下的正则表达式用来匹配传入的路由:</p>
+
+<pre><code class="language-ruby">^(/|/admin|/user)(?=/|$)
+</code></pre>
+
+<p>上述正则表达式在使用时如果匹配到了指定的路由就会返回<code>$&amp;</code>和<code>$</code>两部分.</p>
+
+<ul>
+  <li><code>$&amp;</code>: 匹配的整个文本</li>
+  <li><code>$</code>匹配文本后面的字符串</li>
+</ul>
+
+<pre><code class="language-ruby">[12] pry(main)&gt; $ WEBrick::HTTPServer::MountTable#initialize
+
+From: **/lib/ruby/2.4.0/webrick/httpserver.rb @ line 234:
+Owner: WEBrick::HTTPServer::MountTable
+Visibility: private
+Number of lines: 4
+
+def initialize
+  @tab = Hash.new
+  compile
+end
+
+def compile
+  k = @tab.keys
+  k.sort!
+  k.reverse!
+  k.collect!{|path| Regexp.escape(path) }
+  @scanner = Regexp.new("^(" + k.join("|") +")(?=/|$)")
+end
+</code></pre>
+
+<h3 id="启动服务器">启动服务器</h3>
+
+<p>在<code>Rack::Handler::WEBrick</code>中的<code>.run</code>方法第一阶段进行<code>@server</code>的初始化工作, 并将<code>Handler</code>挂载到根路由上, 最后执行	<code>#start</code>方法启动服务器:</p>
+
+<pre><code class="language-ruby">From: **/lib/ruby/2.4.0/webrick/server.rb @ line 152:
+Owner: WEBrick::GenericServer
+Visibility: public
+Number of lines: 64
+
+##
+# Starts the server and runs the +block+ for each connection.  This method
+# does not return until the server is stopped from a signal handler or
+# another thread using #stop or #shutdown.
+# 方法有删减, 主要是移除日志打印
+def start(&amp;block)
+  raise ServerError, "already started." if @status != :Stop
+
+  setup_shutdown_pipe
+
+  server_type.start{
+    @logger.info "#{self.class}#start: pid=#{$$} port=#{@config[:Port]}"
+    @status = :Running
+    # 执行回调
+    call_callback(:StartCallback)
+
+    shutdown_pipe = @shutdown_pipe
+
+    thgroup = ThreadGroup.new
+    begin
+      while @status == :Running
+        begin
+          sp = shutdown_pipe[0]
+          # 监听一组`Socket`
+          if svrs = IO.select([sp, *@listeners])
+            # for_reading TCPSocket
+            svrs[0].each{|svr|
+              @tokens.pop          # blocks while no token is there.
+              # accept 连接
+              if sock = accept_client(svr)
+                # 开启新的线程处理请求
+                th = start_thread(sock, &amp;block)
+                th[:WEBrickThread] = true
+                thgroup.add(th)
+              else
+                @tokens.push(nil)
+              end
+            }
+          end
+        rescue Errno::EBADF, Errno::ENOTSOCK, IOError =&gt; ex
+          # if the listening socket was closed in GenericServer#shutdown,
+          # IO::select raise it.
+        rescue StandardError =&gt; ex
+          msg = "#{ex.class}: #{ex.message}\n\t#{ex.backtrace[0]}"
+          @logger.error msg
+        rescue Exception =&gt; ex
+          @logger.fatal ex
+          raise
+        end
+      end
+    ensure
+      cleanup_shutdown_pipe(shutdown_pipe)
+      cleanup_listener
+      @status = :Shutdown
+      @logger.info "going to shutdown ..."
+      # 管理线程
+      thgroup.list.each{|th| th.join if th[:WEBrickThread] }
+      call_callback(:StopCallback)
+      @logger.info "#{self.class}#start done."
+      @status = :Stop
+    end
+  }
+end
+
+</code></pre>
+
+<p>上述代码包括处理服务器的关闭, 接收 <code>socket</code>请求, 我们可以把接收并处理<code>socket</code>请求抽象出来</p>
+
+<pre><code class="language-ruby">def start(&amp;block)
+  raise ServerError, "already started." if @status != :Stop
+
+  @status = :Running
+  begin
+    while @status == :Running
+      begin
+        if svrs = IO.select([*@listeners], nil, nil, 2.0)
+          svrs[0].each{ |svr|
+            sock = accept_client(svr)
+            start_thread(sock, &amp;block)
+          }
+        end
+      rescue Errno::EBADF, Errno::ENOTSOCK, IOError, StandardError =&gt; ex
+      rescue Exception =&gt; ex
+        raise
+      end
+    end
+  ensure
+    cleanup_listener
+    @status = :Stop
+  end
+end
+</code></pre>
+
+<p>关键部分为 <code>IO.select</code>. <code>IO.select</code>方法对一组<code>Socket</code>进行监听, 当有消息需要处理时就依次执行<code>#accept_client</code>和<code>#start_thread</code>两个方法处理来自客户端的请求.</p>
+
+<pre><code class="language-ruby">From: **/lib/ruby/2.4.0/webrick/server.rb @ line 254:
+Owner: WEBrick::GenericServer
+Visibility: private
+Number of lines: 14
+
+def accept_client(svr)
+  sock = nil
+  begin
+    sock = svr.accept
+    sock.sync = true
+    Utils::set_non_blocking(sock)
+  rescue Errno::ECONNRESET, Errno::ECONNABORTED,
+         Errno::EPROTO, Errno::EINVAL
+  rescue StandardError =&gt; ex
+    msg = "#{ex.class}: #{ex.message}\n\t#{ex.backtrace[0]}"
+    @logger.error msg
+  end
+  return sock
+end
+</code></pre>
+
+<p><code>WEBrick::GenericServer#accept_client</code>方法中调用<code>accept</code> 获得一个<code>TCP</code>客户端的<code>Socket</code>,通过设置<code>set_non_blocking</code>将该<code>Socket</code>变为非阻塞的, 最后在方法末尾返回创建的<code>Socket</code>.</p>
+
+<pre><code class="language-ruby">From: **/lib/ruby/2.4.0/webrick/server.rb @ line 278:
+Owner: WEBrick::GenericServer
+Visibility: private
+Number of lines: 32
+#代码有删减, 移除日志打印、异常处理等
+def start_thread(sock, &amp;block)
+  Thread.start{
+    begin
+      Thread.current[:WEBrickSocket] = sock
+      # 回调
+      call_callback(:AcceptCallback, sock)
+      # 处理请求
+      block ? block.call(sock) : run(sock)
+    ensure
+      @tokens.push(nil)
+      Thread.current[:WEBrickSocket] = nil
+      sock.close
+    end
+  }
+end
+</code></pre>
+
+<p><code>WEBrick::GenericServer#start_thread</code>方法会开启一个新的线程, 在此线程中处理<code>HTTP 请求</code></p>
+
+<h3 id="处理请求">处理请求</h3>
+
+<p>处理<code>HTTP</code> 请求的逻辑并不是由通过服务器<code>GenericServer</code>处理, 它只处理通用的逻辑. 对于<code>HTTP</code>请求的处理都是在<code>HTTPServer#run</code>方法中完成:</p>
+
+<pre><code class="language-ruby">From: **/lib/ruby/2.4.0/webrick/httpserver.rb @ line 69:
+Owner: WEBrick::HTTPServer
+Visibility: public
+Number of lines: 52
+
+# 代码有删减, 移除日志打印和一些异常处理和回调处理
+def run(sock)
+  while true
+    res = HTTPResponse.new(@config)
+    req = HTTPRequest.new(@config)
+    server = self
+    begin
+      timeout = @config[:RequestTimeout]
+      while timeout &gt; 0
+        break if sock.to_io.wait_readable(0.5)
+        break if @status != :Running
+        timeout -= 0.5
+      end
+      raise HTTPStatus::EOFError if timeout &lt;= 0 || @status != :Running
+      raise HTTPStatus::EOFError if sock.eof?
+      # 解析请求
+      req.parse(sock)
+      res.request_method = req.request_method
+      res.request_uri = req.request_uri
+      res.request_http_version = req.http_version
+      res.keep_alive = req.keep_alive?
+      # 处理响应
+      # 此方法中就会涉及我们之前分析的`Rack`以及`Middleware`
+      server.service(req, res)
+    ensure
+      if req.request_line
+        if req.keep_alive? &amp;&amp; res.keep_alive?
+          req.fixup()
+        end
+        # 发送响应
+        res.send_response(sock)
+        server.access_log(@config, req, res)
+      end
+    end
+    break if @http_version &lt; "1.1"
+    break unless req.keep_alive?
+    break unless res.keep_alive?
+  end
+end
+</code></pre>
+
+<p><code>WEBrick::HTTPServer#run</code>主要工作涉及三个方面:</p>
+
+<ul>
+  <li>等待监听的<code>Socket</code>变成 <code>readable</code></li>
+  <li>执行<code>#parse</code>方法解析<code>Socket</code>上的数据</li>
+  <li>最后调用<code>#service</code>方法完成处理请求的响应</li>
+</ul>
+
+<p>我们依次解读:</p>
+
+<h4 id="监听-socket">监听 <code>Socket</code></h4>
+
+<pre><code class="language-ruby">sock.to_io.wait_readable
+</code></pre>
+
+<h4 id="解析-request">解析 <code>request</code></h4>
+
+<p>调用<code>parse</code>对请求<code>request</code>进行解析:</p>
+
+<pre><code class="language-ruby">From: **/lib/ruby/2.4.0/webrick/httprequest.rb @ line 192:
+Owner: WEBrick::HTTPRequest
+Visibility: public
+Number of lines: 47
+
+def parse(socket=nil)
+  @socket = socket
+  begin
+    @peeraddr = socket.respond_to?(:peeraddr) ? socket.peeraddr : []
+    @addr = socket.respond_to?(:addr) ? socket.addr : []
+  rescue Errno::ENOTCONN
+    raise HTTPStatus::EOFError
+  end
+
+  read_request_line(socket)
+  
+  return if @request_method == "CONNECT"
+  return if @unparsed_uri == "*"
+
+  begin
+    setup_forwarded_info
+    # 设置一些 实例属性, 为后续处理请求做准备
+    @request_uri = parse_uri(@unparsed_uri)
+    @path = HTTPUtils::unescape(@request_uri.path)
+    @path = HTTPUtils::normalize_path(@path)
+    @host = @request_uri.host
+    @port = @request_uri.port
+    @query_string = @request_uri.query
+    @script_name = ""
+    @path_info = @path.dup
+  rescue
+    raise HTTPStatus::BadRequest, "bad URI `#{@unparsed_uri}'."
+  end
+
+  if /close/io =~ self["connection"]
+    @keep_alive = false
+  elsif /keep-alive/io =~ self["connection"]
+    @keep_alive = true
+  elsif @http_version &lt; "1.1"
+    @keep_alive = false
+  else
+    @keep_alive = true
+  end
+end
+</code></pre>
+
+<p>上述代码主要是对<code>HTTP</code>请求的解析, 具体内容还要参阅源码.</p>
+
+<h4 id="处理-service">处理 <code>service</code></h4>
+
+<p>在处理完<code>HTTP请求</code>之后, 就可以执行<code>#service</code>来响应该<code>HTTP请求</code>了:</p>
+
+<pre><code class="language-ruby">From: **/lib/ruby/2.4.0/webrick/httpserver.rb @ line 125:
+Owner: WEBrick::HTTPServer
+Visibility: public
+Number of lines: 17
+
+# 移除 OPTIONS 请求的逻辑代码
+def service(req, res)
+
+  servlet, options, script_name, path_info = search_servlet(req.path)
+  raise HTTPStatus::NotFound, "`#{req.path}' not found." unless servlet
+  req.script_name = script_name
+  req.path_info = path_info
+  # 返回一个 `servlet`实例
+  si = servlet.get_instance(self, *options)
+  @logger.debug(format("%s is invoked.", si.class.name))
+  # 调用实例的 `service`
+  si.service(req, res)
+end
+
+def search_servlet(path)
+  script_name, path_info = @mount_tab.scan(path)
+  servlet, options = @mount_tab[script_name]
+  if servlet
+    [ servlet, options, script_name, path_info ]
+  end
+end
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[29] pry(main)&gt; $ WEBrick::HTTPServer::MountTable#scan
+
+From: **/lib/ruby/2.4.0/webrick/httpserver.rb @ line 258:
+Owner: WEBrick::HTTPServer::MountTable
+Visibility: public
+Number of lines: 4
+
+def scan(path)
+  @scanner =~ path
+  [ $&amp;, $' ]
+end
+</code></pre>
+
+<p>通过调用<code>search_servlet</code>定位到之前注册的<code>Handler</code>以及<code>Rack应用程序</code>.</p>
+
+<p>得到了<code>Handler</code>之后, 通过<code>get_instance</code>获得一个新的实例, 随后又调用了该<code>Rack::Handler::WEBrick</code>的<code>service</code>方法:</p>
+
+<pre><code class="language-ruby">From: **/gems/rack-2.0.3/lib/rack/handler/webrick.rb @ line 57:
+Owner: Rack::Handler::WEBrick
+Visibility: public
+Number of lines: 61
+
+def service(req, res)
+  res.rack = true
+  # 将 `request`的 `meta_vars`赋值给 `env`(环境变量)
+  env = req.meta_vars
+  env.delete_if { |k, v| v.nil? }
+
+  # 请求携带的内容
+  rack_input = StringIO.new(req.body.to_s)
+  rack_input.set_encoding(Encoding::BINARY)
+
+  # 更新 env
+  env.update(
+    RACK_VERSION      =&gt; Rack::VERSION,
+    RACK_INPUT        =&gt; rack_input,
+    RACK_ERRORS       =&gt; $stderr,
+    RACK_MULTITHREAD  =&gt; true,
+    RACK_MULTIPROCESS =&gt; false,
+    RACK_RUNONCE      =&gt; false,
+    RACK_URL_SCHEME   =&gt; ["yes", "on", "1"].include?(env[HTTPS]) ? "https" : "http",
+    RACK_IS_HIJACK    =&gt; true,
+    RACK_HIJACK       =&gt; lambda { raise NotImplementedError, "only partial hijack is supported."},
+    RACK_HIJACK_IO    =&gt; nil
+  )
+
+  env[HTTP_VERSION] ||= env[SERVER_PROTOCOL]
+  env[QUERY_STRING] ||= ""
+  unless env[PATH_INFO] == ""
+    path, n = req.request_uri.path, env[SCRIPT_NAME].length
+    env[PATH_INFO] = path[n, path.length-n]
+  end
+  env[REQUEST_PATH] ||= [env[SCRIPT_NAME], env[PATH_INFO]].join
+
+  # 关键部分: Rack应用 接收 env 返回一个三元数组
+  status, headers, body = @app.call(env)
+  begin
+    res.status = status.to_i
+    io_lambda = nil
+    headers.each { |k, vs|
+      if k == RACK_HIJACK
+        io_lambda = vs
+      elsif k.downcase == "set-cookie"
+        res.cookies.concat vs.split("\n")
+      else
+        # Since WEBrick won't accept repeated headers,
+        # merge the values per RFC 1945 section 4.2.
+        res[k] = vs.split("\n").join(", ")
+      end
+    }
+
+    if io_lambda
+      rd, wr = IO.pipe
+      res.body = rd
+      res.chunked = true
+      io_lambda.call wr
+    elsif body.respond_to?(:to_path)
+      res.body = ::File.open(body.to_path, 'rb')
+    else
+      # 将 body中的数据依次加入到 `res.body`中
+      body.each { |part|
+        res.body &lt;&lt; part
+      }
+    end
+  ensure
+    body.close  if body.respond_to? :close
+  end
+end
+</code></pre>
+
+<p>上述代码主要完成以下几个工作:</p>
+
+<ul>
+  <li>构建<code>Rack应用</code>的环境变量<code>env</code>.</li>
+  <li>调用<code>#call</code> 返回一个三元数组: [status, headers, body]</li>
+  <li>对返回的三个元素进行处理, 填充此次请求的 <code>response</code></li>
+</ul>
+
+<h4 id="发送-响应">发送 响应</h4>
+
+<p>我们的 <code>response</code>构造成功后, 下一步就要将数据发送给请求的客户端</p>
+
+<pre><code class="language-ruby">From: lib/webrick/httpserver.rb @ line 69:
+Owner: WEBrick::HTTPServer
+
+def run(sock)
+  while true
+    res = HTTPResponse.new(@config)
+    req = HTTPRequest.new(@config)
+    server = self
+    begin
+      # ...
+    ensure
+      # 发送响应
+      res.send_response(sock) if req.request_line
+    end
+  end
+end
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[35] pry(main)&gt; $ WEBrick::HTTPResponse#send_response
+From: **/lib/ruby/2.4.0/webrick/httpresponse.rb @ line 205:
+Owner: WEBrick::HTTPResponse
+Visibility: public
+Number of lines: 13
+
+def send_response(socket)
+  begin
+    setup_header()
+    # 发送头部数据
+    send_header(socket)
+    # 发送 body 数据
+    send_body(socket)
+  rescue Errno::EPIPE, Errno::ECONNRESET, Errno::ENOTCONN =&gt; ex
+    @logger.debug(ex)
+    @keep_alive = false
+  rescue Exception =&gt; ex
+    @logger.error(ex)
+    @keep_alive = false
+  end
+end
+
+def setup_header
+  # 处理 chunked 的请求
+  app_chunking = rack &amp;&amp; @header['transfer-encoding'] == 'chunked'
+  @chunked = app_chunking if app_chunking
+  _rack_setup_header
+  @chunked = false if app_chunking
+end
+
+
+def send_header(socket) # :nodoc:
+  if @http_version.major &gt; 0
+    data = status_line()
+    @header.each{|key, value|
+      tmp = key.gsub(/\bwww|^te$|\b\w/){ $&amp;.upcase }
+      data &lt;&lt; "#{tmp}: #{value}" &lt;&lt; CRLF
+    }
+    @cookies.each{|cookie|
+      data &lt;&lt; "Set-Cookie: " &lt;&lt; cookie.to_s &lt;&lt; CRLF
+    }
+    data &lt;&lt; CRLF
+    # 最终调用 _write_data 写入数据
+    _write_data(socket, data)
+  end
+end
+
+
+def send_body(socket) # :nodoc:
+  if @body.respond_to? :readpartial then
+    send_body_io(socket)
+  else
+    send_body_string(socket)
+  end
+end
+    
+    
+</code></pre>
+
+<p>上述所有的 <code>send_*</code>方法最终都会调用 <code>_write_data</code>, 往 <code>socket</code>中写入数据</p>
+
+<pre><code class="language-ruby">From: **/lib/ruby/2.4.0/webrick/httpresponse.rb @ line 464:
+Owner: WEBrick::HTTPResponse
+Visibility: private
+Number of lines: 3
+
+def _write_data(socket, data)
+  socket &lt;&lt; data
+end
+</code></pre>
+
+<p>至此, 我们的 <code>Web Server</code>经过以下几步完成一个客户端请求的处理</p>
+
+<ul>
+  <li>
+    <p>解析<code>HTTP请求</code></p>
+  </li>
+  <li>
+    <p>调用<code>Rack应用程序</code></p>
+  </li>
+  <li>
+    <p>构造<code>Response</code></p>
+  </li>
+  <li>
+    <p>向 <code>Socket</code>写入数据</p>
+
+    <p>​</p>
+  </li>
+</ul>
+
+<h2 id="拓展知识">拓展知识</h2>
+
+<h3 id="ioselect">IO.select</h3>
+
+<blockquote>
+  <p>连接复用是指同时处理多个活动套接字. 这里并不是指并行处理, 也和多线程无关.</p>
+</blockquote>
+
+<p>我们可以使用<code>IO.select</code>来处理多个<code>TCP</code>连接:</p>
+
+<pre><code class="language-ruby">connections = [&lt;TCPSocket&gt;, &lt;TCPSocket&gt;, &lt;TCPSocket&gt;]
+
+loop do
+  ready = IO.select(connections)
+  readable_connections = ready[0]
+  readable_connections.each do |conn|
+    data = conn.readpartial(4096)
+    process(data)
+  end
+end
+</code></pre>
+
+<p><code>IO.select</code>的作用就是接受若干个<code>IO</code>对象, 然后告知哪一个可以进行读写, 这样我们就不必一直<code>retry</code>.</p>
+
+<p><code>IO.select</code>是一个同步方法调用. 按照它的设计来使用就会造成阻塞, 直到传入的<code>IO</code>对象状态发生变化, 此时它会立刻返回.  如果多个对象状态发生变化, 那么全部都通过嵌套数组立刻返回.</p>
+
+<p>来看一下 <code>IO.slect</code>的参数:</p>
+
+<pre><code class="language-ruby">IO.select(read_array[, write_array[, error_array[, timeout]]] )
+</code></pre>
+
+<ul>
+  <li>read_array: 希望从中读取的<code>IO</code> 对象数组</li>
+  <li>write_array:  希望进行写入的<code>IO</code>对象数组</li>
+  <li>error_array: 在异常条件下使用的<code>IO</code>对象数组</li>
+  <li>timeout: 超时时间(秒). 它可以避免<code>IO.select</code>永久地阻塞下去</li>
+</ul>
+
+<p><code>IO.select</code>返回一个三元数组:</p>
+
+<ul>
+  <li>可以进行无拥塞读取的<code>IO</code>对象数组</li>
+  <li>可以进行无拥塞写入的<code>IO</code>对象数组</li>
+  <li>适用异常条件的对象数组</li>
+</ul>
+
+<p><code>IO.select</code>来自<code>Ruby</code>的核心代码库. 它是<code>Ruby</code>中进行连接复用的唯一手段. 大多数现代操作系统都支持多种复用方法, <code>select</code>几乎总是这些方法最古老, 也是使用最少的那个.</p>
+
+<p><code>IO.select</code>在少数情况下表现还不错, 但是其性能同它所监视的连接数呈线性关系. 监视的连接数越多, 性能就越差. 而且<code>select(2)</code>系统受到<code>FD_SETSIZE</code>的限制. <code>select</code>无法对编号大于<code>FD_SETSIZE</code>的文件描述符进行监视.</p>
+
+<p><code>Linux</code>的<code>epoll</code>以及<code>BSD</code>的<code>kqueue</code>的系统调用比<code>select</code>效果会更好, 功能更先进. 像<code>EventMachine</code>这种高性能联网工具在可能的情况下更倾向于使用<code>epoll</code>或者<code>kqueue</code>.</p>
+
+<h3 id="ruby-thread">Ruby Thread</h3>
+
+<blockquote>
+  <p>每个正在系统上运行的程序都是一个进程.</p>
+
+  <p>每个进程包含一到多个线程.</p>
+</blockquote>
+
+<p>线程是程序中一个单一的顺序控制流程, 在单个程序同时运行时运行多个线程完成不同的工作, 称为多线程.</p>
+
+<p><code>Ruby</code>中我们可以通过<code>Thread</code>类来创建多线程, <code>Ruby</code>的多线程是一个轻量级的, 可以以高效的方式来实现并行.</p>
+
+<h4 id="创建多线程">创建多线程</h4>
+
+<pre><code class="language-ruby"># 主线程 1 
+# 创建子线程
+Thread.new {
+  # 子线程的执行代码
+}
+
+# 主线程1 执行代码
+</code></pre>
+
+<h4 id="线程的生命周期">线程的生命周期</h4>
+
+<ol>
+  <li>线程的创建可以使用<code>Thread.new</code>、 <code>Thread.start</code> 、 <code>Thread.fork</code> 三个方法</li>
+  <li>创建线程后无需启动, 线程会自动执行</li>
+  <li><code>Thread</code>类定义了一些方法来操纵线程, 线程执行<code>Thread.new</code>中的代码块</li>
+  <li>线程代码块中最后一个语句是线程的值, 可以通过线程的方法来调用. 如果线程执行完毕, 则返回线程值, 否则不返回, 知道线程执行完毕</li>
+  <li><code>Thread.current</code>方法返回当前线程对象, <code>Thread.main</code>返回主线程.</li>
+  <li>通过<code>Thread.join</code>方法来执行线程, 这个方法就会挂起主线程, 直到当前子线程执行完毕</li>
+</ol>
+
+<p>线程的五种状态</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>线程状态</th>
+      <th>返回值</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Runnable</td>
+      <td>run</td>
+    </tr>
+    <tr>
+      <td>Sleeping</td>
+      <td>Sleeeping</td>
+    </tr>
+    <tr>
+      <td>Aborting</td>
+      <td>aborting</td>
+    </tr>
+    <tr>
+      <td>Terminated normally</td>
+      <td>false</td>
+    </tr>
+    <tr>
+      <td>Terminated with exception</td>
+      <td>nil</td>
+    </tr>
+    <tr>
+      <td> </td>
+      <td> </td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="线程的同步控制">线程的同步控制</h4>
+
+<ul>
+  <li>通过<code>Metex</code>类实现线程同步</li>
+  <li>监管数据交交接的<code>Queue</code>类实现线程同步</li>
+  <li>使用<code>ConditionVariable</code>实现同步控制</li>
+</ul>
+
+<ol>
+  <li>
+    <p>通过<code>Metex</code>类实现线程同步</p>
+
+    <p>如果多个线程时钟同时需要访问一个程序变量, 我们可以使用<code>lock</code>锁定此变量</p>
+  </li>
+  <li>
+    <p>监管数据交接的<code>Queue</code>类实现线程同步</p>
+
+    <p><code>Queue</code>类就是表示一个支持线程的队列, 能够同步对队列末尾进行访问. 不同的线程可以使用同一个队列, 而不用担心这个队列中的数据是否能够同步.</p>
+  </li>
+  <li>
+    <p>使用<code>ConditionablVariable</code>实现同步控制</p>
+
+    <p>这样可以在一些致命的资源竞争部分挂起线程直至油可用的资源为止</p>
+
+    <pre><code class="language-ruby">#encoding:gbk
+require "thread"
+puts "thread synchronize by ConditionVariable"
+
+mutex = Mutex.new
+resource = ConditionVariable.new
+
+a = Thread.new {
+  mutex.synchronize {
+    # 这个线程目前需要resource这个资源
+    resource.wait(mutex) 
+    puts "get resource"
+  }
+}
+
+b = Thread.new {
+  mutex.synchronize {
+    #线程b完成对resourece资源的使用并释放resource
+    resource.signal
+  }
+}
+
+a.join
+puts "complete"
+</code></pre>
+
+    <p><code>mutex</code>是声明的一个资源, 然后通过<code>ConditionVariable</code>来控制申请和释放资源.</p>
+
+    <p><code>b</code>线程完成了某些工作之后释放资源<code>resource.signal</code>, 这样<code>a</code>线程就可以获得一个<code>mutex</code>资源然后执行</p>
+  </li>
+</ol>
+
+<h4 id="线程常用方法">线程常用方法</h4>
+
+<h5 id="类方法">类方法</h5>
+
+<table>
+  <thead>
+    <tr>
+      <th>Thread.abort_on_exception</th>
+      <th>如果设置为<code>true</code>, 一旦某线程因异常而终止时, 整个解释器就会被中断</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Thread.current</td>
+      <td>返回当前运行中的线程</td>
+    </tr>
+    <tr>
+      <td>Thread.new {|args| balabal}</td>
+      <td>生成新线程时携带传入的参数</td>
+    </tr>
+    <tr>
+      <td>Thread.pass</td>
+      <td>将线程的运行权交给其他线程, 不会改变运行中的线程状态, 而是将控制权交给其他可运行的线程</td>
+    </tr>
+    <tr>
+      <td>Thread.stop</td>
+      <td>将当前线程挂起, 直到其他线程使用 run 再次唤醒当前线程</td>
+    </tr>
+    <tr>
+      <td> </td>
+      <td> </td>
+    </tr>
+  </tbody>
+</table>
+
+<h5 id="线程实例方法">线程实例方法</h5>
+
+<table>
+  <thead>
+    <tr>
+      <th>thread[name]=</th>
+      <th>设置线程内 <code>name</code>对应的固有数据的值</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>thread.run</td>
+      <td>重新启动被挂起的线程,与<code>wakeup</code>不同的是, 它将立即进行线程的切换</td>
+    </tr>
+    <tr>
+      <td>thread.wakeup</td>
+      <td>将被挂起(stop)的线程的状态改为可执行(run)状态</td>
+    </tr>
+    <tr>
+      <td>thread.join</td>
+      <td>挂起当前线程(一般在主线程中调用, 子线程均正常运行结束后主线程再重新启动)</td>
+    </tr>
+    <tr>
+      <td> </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td> </td>
+      <td> </td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="io-模型">IO 模型</h2>
+
+<p>通过解读 <code>WEBrick</code>源码, 我们已经熟悉了整个 <code>Web Server</code>的工作原理.</p>
+
+<p>当我们启动一个 <code>Web Server</code>服务时只会启动一个进程, 该进程会在指定的 <code>ip</code>和 <code>port</code>上使用 <code>IO.select</code>监听来自用户的所有 <code>HTTP请求</code>.</p>
+
+<p><img src="" alt="WEB SERVER " /></p>
+
+<p>当<code>IO.select</code>接收到来自用户的请求时, 会为每一个请求创建一个新的线程 <code>Thread.new</code> 并在新的线程中对 <code>HTTP</code>请求进行处理.</p>
+
+<p>由于 <code>WEBrick</code>在运行时只会启动一个进程, 没有其他的守护进程, 所以它不够健壮, 无法在发送问题时重启持续对外界提供服务.</p>
+
+<p>虽然 <code>WEBrick</code>有一些性能问题, 但是作为 <code>Ruby</code>自带的<code>Web Server</code>, 无论是开发还是学习都是值得研究的.</p>
+
+<h2 id="总结">总结</h2>
+
+<p><code>WEBrick</code>是<code>Ruby</code>内置的<code>Web Server</code>, 目前主要使用在<code>开发</code>环境下, 在生产环境下开发者往往选择性能更好, 更健壮的 <code>Unicorn</code>和 <code>Puma</code>. 现在研究<code>WEBrick</code>的源码和实现可以帮助我们熟悉<code>Ruby Web Server</code>具备的基本功能以及<code>Web Server</code>处理请求的基本流程. 在这之后, 我们就可以继续深入分析更复杂的<code>Web Server</code>, 更复杂的<code>IO</code>模型了.</p>
+
+<h2 id="reference">Reference</h2>
+
+
+  ]]></description>
+</item>
+
+
+  </channel>
+</rss>
