@@ -1,7 +1,7 @@
 ---
 layout: post
 toc: true
-permalink: /rack-principle
+permalink: /rack-working
 title: Ruby Rack 协议及其应用(二)
 tags: Rack系列  rack  ruby  rails  server
 desc:  Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本系列文章就深入探讨Rack协议的原理以及实现.
@@ -793,7 +793,7 @@ end
 #这里直接采用最简单的 WEBrick进行分析
 [8] pry(main)> $ Rack::Handler::WEBrick
 
-From: /Users/bobo/.rvm/gems/ruby-2.4.2/gems/rack-2.0.3/lib/rack/handler/webrick.rb @ line 24:
+From: **/gems/rack-2.0.3/lib/rack/handler/webrick.rb @ line 24:
 Class name: Rack::Handler::WEBrick
 Number of lines: 95
 
