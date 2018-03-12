@@ -7,7 +7,7 @@ tags: rack webrick socket thread
 desc: WEBrick是 Ruby 最古老的一款 Web Server, 本文就从源码入手, 解读 WEBrick的实现原理, 从线程和进程的角度分析 WEBrick的优缺点.  
 ---
 
-`WEBrick`是`Rack`自带的一个 `Web Server`, 历史悠久, 代码量一共才 4000多行. 本文就从源码入手, 解读 `WEBrick`实现原理, 并从进程和线程的角度来分析 `WEBrick` 的优缺点.
+`WEBrick`是`Rack`自带的一个 `Web Server`, 历史悠久, 代码量一共才 4000多行. 本文就从源码入手, 解读 `WEBrick`实现原理, 并从多线程和`IO`的角度来分析 `WEBrick` 的优缺点.
 
 
 
