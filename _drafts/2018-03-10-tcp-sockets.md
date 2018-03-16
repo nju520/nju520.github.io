@@ -473,13 +473,222 @@ end
 
 ~~~
 
-上面的代码会使服务器
+运行客户端命令
+
+~~~shell
+$ tail -f /var/log/system.log | nc localhost 4481
+~~~
+
+
+
+上面的代码会使服务器在`netcat`命令运行的同时, 以`1KB`为单位打印数据.
+
+
+
+#### 阻塞的本质
+
+`read`调用会一直阻塞, 直到获取了完整长度的数据为止. 如果读取了一部分数据, 但是不足`1KB`,那么`read`会一直阻塞, 直至获得完整的`1KB`数据为止.
+
+  采用这种方法实际上有可能导致死锁. 如果服务器试图从连接中读取`1KB`的数据, 而客户端只发送了`500B`就不再发送了, 那么服务器就会一直傻等着那没有发送的`500B`.
+
+######   我们可以采用两种方式补救:
+
+* 客户端发送完`500B`后再发送一个`EOF`
+* 服务器采用部分读取的方式
+
+
+
+##### EOF 事件
+
+当在连接上调用`read`并接收到`EOF`事件时, 我们就可以断定不会再有数据, 可以停止读取了. 
+
+> EOF: end of file(文件结尾). 记住一句话: 在`Unix`世界中, 一切皆是文件.
+
+`EOF`并不代表某种字符序列, 他可以使用`shutdown`或者`close`来表明自己不需要再写入任何数据, 这就会导致一个`EOF`事件被发送给在另一端进行读操作的进程. 这样读数据的进程就知道不会再有数据到达了.
+
+  我们从头审视并解决上一小节的问题: 如果服务器希望接收`1KB`的数据, 而客户端只发了`500B`.
+
+一种改进方法就是客户端发送`500B`, 然后再发送一个`EOF` 事件. 服务器接收到该事件后就停止读取, 即使是还未接收够`1KB`.
+
+> EOF 代表不再有数据到达了. 
+>
+> 当我调用`File#read`时, 它会一直进行数据读取, 直到没有数据为止. 一旦读完整个文件, 它会接收到一个`EOF`事件并返回已读取到的数据
+
+
+
+##### 部分读取
+
+上面的方式多少有些偷懒: 当我调用`read`时, 在返回数据之前它会一直等待, 直到获得所需要的最小长度或者是`EOF`. 还有另外一种读取方式: `readpartial`.
+
+`readpartial`并不会阻塞, 而是立刻返回可用的数据.调用`readpartial`需要传入一直整数, 来指定最大的长度
+
+
+
+### 套接字写操作
+
+套接字写操作和读操作类似
+
+~~~ruby
+require 'socket'
+
+Socket.tcp_server_loop(4481) do |conn|
+  puts conn.readpartial(100)
+  conn.write('Welcome')
+  conn.close
+end
+
+~~~
+
+
 
 
 
 ## 第一个客户端 & 服务器
 
+前面几个小节讲述了`Socket` 建立以及读写操作等内容. 是时候运用我们所学知识来编写一个网络服务器和客户端了.
 
 
-## 后续
 
+### 服务器
+
+就服务器而言, 我打算编写一种全新的`NoSQL`解决方案, 它将作为`Ruby`散列表之上的一个网络层, 我们称之为 `CloudHash`.
+
+~~~ruby
+# 服务器端
+
+# 接收客户端发来的请求
+# SET key value => 设置 hash[key] = value
+# GET key       => 返回 hash[key]
+require 'socket'
+
+module CloudHash
+  class Server
+
+    def initialize(port)
+      @server = TCPServer.new(port)
+      @storage = {}
+      puts "Listening on port: #{@server.local_address.ip_port}"
+    end
+
+    def run
+      Socket.accept_loop(@server) do |conn|
+        handle(conn)
+        conn.close
+      end
+    end
+
+    def handle(conn)
+      # 从连接中读取指令, 直到读到 `EOF` 为止
+      request = conn.read
+
+      conn.write process(request)
+    end
+
+    # SET key value
+    # GET key
+    def process(request)
+      command, key, value = request.split
+      case command.upcase
+      when 'SET'
+        @storage[key] = value
+      when 'GET'
+        @storage[key]
+      end
+    end
+
+  end
+end
+server = CloudHash::Server.new(4481)
+
+server.run
+
+~~~
+
+
+
+### 客户端
+
+~~~ruby
+# 客户端
+
+require 'socket'
+
+module CloudHash
+  class Client
+    class << self
+      attr_accessor :host, :port
+
+      def get(key)
+        request "GET #{key}"
+      end
+
+      def set(key, value)
+        request "SET #{key} #{value}"
+      end
+
+      def request(string)
+        # 为每一个请求操作创建一个新的 `socket` 连接
+        @client = TCPSocket.new(host, port)
+        @client.write(string)
+
+        #客户端发送完请求后可以关闭写操作
+        @client.close_write
+
+        # 客户端读取服务器响应, 直到读取到 `EOF` 为止
+        @client.read
+      end
+
+    end
+  end
+end
+
+CloudHash::Client.host = 'localhost'
+CloudHash::Client.port = 4481
+
+puts CloudHash::Client.set 'language', 'Ruby'
+puts CloudHash::Client.set 'age', '25'
+puts CloudHash::Client.get 'language'
+puts CloudHash::Client.get 'age'
+
+~~~
+
+
+
+### 运行
+
+~~~shell
+$ ruby server.rb
+
+$ ruby client.rb
+~~~
+
+
+
+我们使用网络`API`将`Ruby`散列表进行了包装, 不过仅仅是涵盖了简单的读写器而已. 
+
+
+
+总的来说, `CloudHash`还是比较简陋. 比如说我们的客户端必须为每一个发送的请求发起一个新的连接. 
+
+如果我想连续发送一批请求, 那么每个请求都会占用一个连接. 它处理一条来自客户端套接字命令, 然后关闭.
+
+
+
+建立连接会产生不小的开销, 我们完成可以让`CloudHash`在同一个连接上处理多个请求.
+
+我们的`CloudHash`有很多地方可以改进:
+
+* 客户端/服务器可以使用不需要发送`EOF` 来分隔消息的` DRY协议`进行通信. 这样可以在单个连接上发送多个请求, 而服务器依旧可以依次处理每个客户端连接.
+* 可以加入某种形式的并发来解决大量请求
+
+
+
+
+
+
+
+## 再会
+
+
+
+本篇文章主要讲述了`Socket`的基础知识, 并实现了一个`Ruby Hash`  网络服务器. 我会在接下来的两篇文章继续阐述 `Socket`编程.
