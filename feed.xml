@@ -13,6 +13,22 @@
 		
 			
 				<item>
+					<title>TCP Socket 编程 -- 网络架构模式</title>
+					
+						<description>&lt;p&gt;前面的两篇&lt;code&gt;TCP Socket&lt;/code&gt;系列文章涵盖了&lt;code&gt;TCP Socket&lt;/code&gt;的基础知识和必备技能, 接下来的部分我们将转向最佳实践和真实案例.&lt;/p&gt;
+
+</description>
+					
+					<pubDate>Thu, 15 Mar 2018 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/tcp-scokets-arch
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/tcp-scokets-arch</guid>
+				</item>
+			
+		
+			
+				<item>
 					<title>WEBrick 源码分析</title>
 					
 						<description>&lt;p&gt;&lt;code&gt;WEBrick&lt;/code&gt;是&lt;code&gt;Rack&lt;/code&gt;自带的一个 &lt;code&gt;Web Server&lt;/code&gt;, 历史悠久, 代码量一共才 4000多行. 本文就从源码入手, 解读 &lt;code&gt;WEBrick&lt;/code&gt;实现原理, 并从多线程和&lt;code&gt;IO&lt;/code&gt;的角度来分析 &lt;code&gt;WEBrick&lt;/code&gt; 的优缺点.&lt;/p&gt;
