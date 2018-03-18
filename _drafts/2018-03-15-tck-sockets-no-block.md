@@ -2,7 +2,7 @@
 layout: post
 toc: true
 permalink: /tcp-scokets-no-block
-title: TCP Socket 编程
+title: TCP Socket 编程 -- 非阻塞式 IO
 tags: TCP socket Ruby 
 desc: 网络请求的瓶颈一般来自于 `IO`
 ---
@@ -215,14 +215,77 @@ ready = IO.select(for_reading, for_writing, for_writing)
 
 
 
+#### 高性能复用
 
-
-
-## 消息划分
+`IO.select`来自`Ruby`的核心代码库. 它是在`Ruby`中进行复用的唯一手段. 大多数现代操作系统支持多种复用方法.  `select`几乎总是最古老的, 也是用的最少的那个.
 
 
 
 ## 超时
+
+
+
+超时其实就是忍耐. 你愿意在套接字连接上等待多长时间呢?套接字读取呢? 套接字写入呢?
+
+所有这些答案都视你的忍耐力而定. 高性能网络程序通常都不愿意等待那些没完没了的操作.
+
+
+
+ `Ruby`有自己自带的`timeout`库, 它提供了一种通用的超时机制, 但是操作系统也有一套针对套接字的超时机制, 效果更好而且更直观.
+
+虽然操作系统提供了自带的套接字超时处理机制, 可以通过套接字选项`SNDTIMEO`以及`RCVTIMO`进行设置. 不过自`Ruby1.9`之后, 这个特性就不能再使用了. 由于`Ruby`在有线程存在时对于阻塞式`IO`所采用的处理方式. 它将`poll`相关的套接字进行了包装, 这样操作系统自带的套接字超时就没有优势了. 
+
+
+
+还是请我们的老朋友`IO.select`出场. 之前我们知道了如何使用`IO.select`, 现在来看一下最后一个参数的使用:
+
+~~~ruby
+require 'socket'
+require 'timeout'
+
+# 超时时间设置为 5 秒
+timeout = 5
+
+Socket.tcp_server_loop(4481) do |conn|
+  begin
+    # 发起一个初始化 read 
+    # 因为要求套接字上有被请求的数据, 有数据可读时可以避免使用 select
+    conn.read_nonblock(1024 * 4)
+  rescue Errno::EAGAIN
+    # 监视是否可读
+    if IO.select([conn], nil, nil, timeout)
+      # IO.select 会将套接字返回, 我们可以打印出来看一下, 不返回 nil 就意味着套接字可读
+      puts conn.read_nonblock(1024 * 4)
+      retry
+    else
+      # 否则就会 raise 一个 Timeout::Error 
+      raise Timeout::Error
+    end
+  end
+
+  conn.close
+end
+
+~~~
+
+
+
+运行我们之前使用的指令:
+
+~~~shell
+tail -f /var/log/system.log | nc localhost 4481		
+~~~
+
+如果系统日志没有, 并且套接字等待的时间超过我们设定的`timeout`, 程序就会`raise`一个`Timeout::Error`.
+
+~~~ruby
+read_timeout.rb:15:in `rescue in block in <main>': Timeout::Error (Timeout::Error)
+	from read_timeout.rb:8:in `block in <main>'
+~~~
+
+
+
+这些基于超时的`IO.select`机制使用广泛, 甚至在`Ruby`的标准库中也能看到, 它们比操作系统自带的套接字超时处理机制的稳定性更高.
 
 
 
