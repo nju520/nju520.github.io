@@ -215,7 +215,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <li class="toc-entry toc-h2"><a href="#io-模型">IO 模型</a></li>
 <li class="toc-entry toc-h2"><a href="#总结">总结</a></li>
 <li class="toc-entry toc-h2"><a href="#reference">Reference</a></li>
-</ul><p><code>WEBrick</code>是<code>Rack</code>自带的一个 <code>Web Server</code>, 历史悠久, 代码量一共才 4000多行. 本文就从源码入手, 解读 <code>WEBrick</code>实现原理, 并从进程和线程的角度来分析 <code>WEBrick</code> 的优缺点.</p>
+</ul><p><code>WEBrick</code>是<code>Rack</code>自带的一个 <code>Web Server</code>, 历史悠久, 代码量一共才 4000多行. 本文就从源码入手, 解读 <code>WEBrick</code>实现原理, 并从多线程和<code>IO</code>的角度来分析 <code>WEBrick</code> 的优缺点.</p>
 
 <h2 id="源码分析">
 <a id="源码分析" class="anchor" href="#%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90" aria-hidden="true"><span class="octicon octicon-link"></span></a>源码分析</h2>

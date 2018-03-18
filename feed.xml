@@ -15,7 +15,7 @@
 				<item>
 					<title>WEBrick 源码分析</title>
 					
-						<description>&lt;p&gt;&lt;code&gt;WEBrick&lt;/code&gt;是&lt;code&gt;Rack&lt;/code&gt;自带的一个 &lt;code&gt;Web Server&lt;/code&gt;, 历史悠久, 代码量一共才 4000多行. 本文就从源码入手, 解读 &lt;code&gt;WEBrick&lt;/code&gt;实现原理, 并从进程和线程的角度来分析 &lt;code&gt;WEBrick&lt;/code&gt; 的优缺点.&lt;/p&gt;
+						<description>&lt;p&gt;&lt;code&gt;WEBrick&lt;/code&gt;是&lt;code&gt;Rack&lt;/code&gt;自带的一个 &lt;code&gt;Web Server&lt;/code&gt;, 历史悠久, 代码量一共才 4000多行. 本文就从源码入手, 解读 &lt;code&gt;WEBrick&lt;/code&gt;实现原理, 并从多线程和&lt;code&gt;IO&lt;/code&gt;的角度来分析 &lt;code&gt;WEBrick&lt;/code&gt; 的优缺点.&lt;/p&gt;
 
 </description>
 					
