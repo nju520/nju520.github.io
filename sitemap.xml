@@ -17,6 +17,10 @@
 <lastmod>2018-03-15T00:00:00+08:00</lastmod>
 </url>
 <url>
+<loc>http://hwbnju.com/sidekiq</loc>
+<lastmod>2018-03-18T00:00:00+08:00</lastmod>
+</url>
+<url>
 <loc>http://hwbnju.com/</loc>
 </url>
 <url>
@@ -60,5 +64,14 @@
 </url>
 <url>
 <loc>http://hwbnju.com/tag/Reactor/</loc>
+</url>
+<url>
+<loc>http://hwbnju.com/tag/Sidekiq/</loc>
+</url>
+<url>
+<loc>http://hwbnju.com/tag/workers/</loc>
+</url>
+<url>
+<loc>http://hwbnju.com/tag/Redis/</loc>
 </url>
 </urlset>

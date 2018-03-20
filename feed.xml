@@ -13,6 +13,22 @@
 		
 			
 				<item>
+					<title>Sidekiq 异步任务调度与执行</title>
+					
+						<description>&lt;p&gt;sidekiq 是 Ruby 中一款非常优秀的后台任务处理软件, 其本身提供的API十分简洁, 源代码也易于阅读, 没有太多花哨的代码. Sidekiq 将 Redis 的各种数据结构用得都起到好处, 我们可以通过 Sidekiq 加深对 Redis 的印象以及学习如何恰当高效地结合 Redis 实现业务逻辑.本篇文章从 Sidekiq 的启动开始,详细解读 Sidekiq 的异步任务调度和执行.  除此之外, 我还会介绍中间件机制以及在此基础上实现的任务重试机制.&lt;/p&gt;
+
+</description>
+					
+					<pubDate>Sun, 18 Mar 2018 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/sidekiq
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/sidekiq</guid>
+				</item>
+			
+		
+			
+				<item>
 					<title>TCP Socket 编程 -- 网络架构模式</title>
 					
 						<description>&lt;p&gt;前面的两篇&lt;code&gt;TCP Socket&lt;/code&gt;系列文章涵盖了&lt;code&gt;TCP Socket&lt;/code&gt;的基础知识和必备技能, 接下来的部分我们将转向最佳实践和真实案例.&lt;/p&gt;
