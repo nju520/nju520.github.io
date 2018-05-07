@@ -55,6 +55,7 @@ namespace :site do
     sh "cd #{Dir.pwd}/#{CONFIG["destination"]}"
     push(args.message, DESTINATION_BRANCH)
 
+    sh "cd .."
     # return to source branch
     sh "git checkout #{SOURCE_BRANCH}"
   end
