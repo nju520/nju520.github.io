@@ -600,25 +600,43 @@ app = @use.reverse.inject(app) { |a,e| e[a] }
 # 1.1
 a = app = @run = Hello.new
 e =  proc { |app| ToUpper.new(app, *args, &block) }
-result = e[a] = proc { |app| ToUpper.new(app, *args, &block) }.call(a)
+result1 = e[a] = proc { |app| ToUpper.new(app, *args, &block) }.call(a)
        = ToUpper.new(Hello.new, *args, &block)
        = ToUpper.new(Hello.new)
 
 # 1.2
 a = result = ToUpper.new(Hello.new)
 e = proc {|app| WrapWithRedP.new(app, *args, &block)}
-result = e[a] = proc {|app| WrapWithRedP.new(app, *args, &block)}.call(a)
+result2 = e[a] = proc {|app| WrapWithRedP.new(app, *args, &block)}.call(a)
        = WrapWithRedP.new(ToUpper.new(Hello.new))
 
 # 1.3
 a = result = WrapWithRedP.new(ToUpper.new(Hello.new))
 e = proc {|app| WrapWithHtml.new(app, *args, &block)}
-result = e[a] = proc {|app| WrapWithHtml.new(app, *args, &block)}.call(a)
+result3 = e[a] = proc {|app| WrapWithHtml.new(app, *args, &block)}.call(a)
        = WrapWithHtml.new(WrapWithRedP.new(ToUpper.new(Hello.new)))
 
 ~~~
 
 **Rack::Builder**类其实就是将非常晦涩的代码, 利用`Ruby`元编程能力变成清晰可读的`DSL`, 最终返回了一个最终应用对象.
+
+
+
+当一个请求到来时, 我们的Web Server`就会`call`我们的`Rack应用,传入环境变量`env`作为参数.
+
+`env`变量首先进入最外层的中间件处理, 通过处理之后传入下一层的中间件, 如此层层递进, 最终进入我们的`原始应用程序`. 
+
+原始应用程序接收传入的`env`, 然后根据内部逻辑处理之后, 返回一个三元数组
+
+~~~ruby
+[status, header, [body]]
+~~~
+
+此三元数组继续传递给倒数第一个中间件, 经过其处理之后,再将处理过后的中间件传递给上一层.经过层层传递, 我们的三元数组经过最外层的中间件处理之后就返回 `response`给我们的`Web Server`.
+
+`Web Server`将我们应用框架返回的`response`包装成`HTTP响应`, 发给客户端.
+
+
 
 
 

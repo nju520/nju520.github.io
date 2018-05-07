@@ -99,6 +99,10 @@ end
 
 
 
+**我们可以任务当一个请求来临时, `Rack`应用会调用`call`方法, 参数为`env`, 经过应用的处理之后, 返回我们构造好的 `response`**
+
+
+
 我们可以使用Pry在 console中尝试使用Rack:
 
 ~~~shell
@@ -673,6 +677,12 @@ Rack::Handler::WEBrick.run Decorator.new(app), :Port => 3000
 
 ~~~ruby
 Rack::Handler::WEBrick.run Decorator.new(app), Port: 3000
+
+# 相当于调用了 
+# (Decorator.new(app)).call(env)
+# decorator.call(env)
+# 上述方法内部先调用 @app的 call(env)
+# 再对返回的三元数组进行处理之后, 返回新的三元数组
 ~~~
 
 接下来我们就要定义一个 Decorator类, 创建 Decorator实例时传入原始的 rack_app 作为其参数. 这个实例也能够被Rack的Handler调用--显然这个实例也是合法的Rack应用程序. 因此 Decorator类需要一个call方法.
@@ -708,6 +718,10 @@ $ http http://localhost:3000/hello
 You say hello
 ===========footer==========
 ~~~
+
+
+
+
 
 ### Rack响应的标准
 

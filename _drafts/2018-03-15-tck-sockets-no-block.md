@@ -7,6 +7,8 @@ tags: TCP socket Ruby
 desc: 网络请求的瓶颈一般来自于 `IO`
 ---
 
+
+
 ## 非阻塞式 `IO`
 
 
