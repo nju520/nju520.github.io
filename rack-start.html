@@ -308,6 +308,8 @@ end
 
 <p>最后的body响应体是一个由多个响应内容组成的数组, Rack使用的Web Server会将body中几个部分连接到一起最后拼成一个完整的HTTP响应后返回.</p>
 
+<p><strong>我们可以任务当一个请求来临时, <code>Rack</code>应用会调用<code>call</code>方法, 参数为<code>env</code>, 经过应用的处理之后, 返回我们构造好的 <code>response</code></strong></p>
+
 <p>我们可以使用Pry在 console中尝试使用Rack:</p>
 
 <pre><code class="language-shell">$ pry
@@ -875,6 +877,12 @@ Rack::Handler::WEBrick.run Decorator.new(app), :Port =&gt; 3000
 <p>最后一行我们采用的是</p>
 
 <pre><code class="language-ruby">Rack::Handler::WEBrick.run Decorator.new(app), Port: 3000
+
+# 相当于调用了 
+# (Decorator.new(app)).call(env)
+# decorator.call(env)
+# 上述方法内部先调用 @app的 call(env)
+# 再对返回的三元数组进行处理之后, 返回新的三元数组
 </code></pre>
 
 <p>接下来我们就要定义一个 Decorator类, 创建 Decorator实例时传入原始的 rack_app 作为其参数. 这个实例也能够被Rack的Handler调用–显然这个实例也是合法的Rack应用程序. 因此 Decorator类需要一个call方法.</p>

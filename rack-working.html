@@ -764,25 +764,38 @@ app = @use.reverse.inject(app) { |a,e| e[a] }
 # 1.1
 a = app = @run = Hello.new
 e =  proc { |app| ToUpper.new(app, *args, &amp;block) }
-result = e[a] = proc { |app| ToUpper.new(app, *args, &amp;block) }.call(a)
+result1 = e[a] = proc { |app| ToUpper.new(app, *args, &amp;block) }.call(a)
        = ToUpper.new(Hello.new, *args, &amp;block)
        = ToUpper.new(Hello.new)
 
 # 1.2
 a = result = ToUpper.new(Hello.new)
 e = proc {|app| WrapWithRedP.new(app, *args, &amp;block)}
-result = e[a] = proc {|app| WrapWithRedP.new(app, *args, &amp;block)}.call(a)
+result2 = e[a] = proc {|app| WrapWithRedP.new(app, *args, &amp;block)}.call(a)
        = WrapWithRedP.new(ToUpper.new(Hello.new))
 
 # 1.3
 a = result = WrapWithRedP.new(ToUpper.new(Hello.new))
 e = proc {|app| WrapWithHtml.new(app, *args, &amp;block)}
-result = e[a] = proc {|app| WrapWithHtml.new(app, *args, &amp;block)}.call(a)
+result3 = e[a] = proc {|app| WrapWithHtml.new(app, *args, &amp;block)}.call(a)
        = WrapWithHtml.new(WrapWithRedP.new(ToUpper.new(Hello.new)))
 
 </code></pre>
 
 <p><strong>Rack::Builder</strong>类其实就是将非常晦涩的代码, 利用<code>Ruby</code>元编程能力变成清晰可读的<code>DSL</code>, 最终返回了一个最终应用对象.</p>
+
+<p>当一个请求到来时, 我们的Web Server<code>就会</code>call<code>我们的</code>Rack应用,传入环境变量<code>env</code>作为参数.</p>
+
+<p><code>env</code>变量首先进入最外层的中间件处理, 通过处理之后传入下一层的中间件, 如此层层递进, 最终进入我们的<code>原始应用程序</code>.</p>
+
+<p>原始应用程序接收传入的<code>env</code>, 然后根据内部逻辑处理之后, 返回一个三元数组</p>
+
+<pre><code class="language-ruby">[status, header, [body]]
+</code></pre>
+
+<p>此三元数组继续传递给倒数第一个中间件, 经过其处理之后,再将处理过后的中间件传递给上一层.经过层层传递, 我们的三元数组经过最外层的中间件处理之后就返回 <code>response</code>给我们的<code>Web Server</code>.</p>
+
+<p><code>Web Server</code>将我们应用框架返回的<code>response</code>包装成<code>HTTP响应</code>, 发给客户端.</p>
 
 <p>通过<code>Rack::Builder#to_app</code>生成最终应用将被作为参数传给 <code>Rack::Builder#build_app</code>中. 此方法根据环境选择合适的中间件继续包裹到这个链式调用中:</p>
 
