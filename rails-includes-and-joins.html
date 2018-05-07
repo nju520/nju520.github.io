@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- [[! Document Settings ]] -->
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- [[! Page Meta ]] -->
+    <title>
+      
+        Rails includes and joins
+      
+    </title>
+    
+    <meta name="description" content="在Rails中有三种方式可以预加载数据, 另外还有两种方式直接加载关联表数据.有时候我们会得到一个非常小而精悍的SQL, 有时候却是一个非常大的SQL. 本篇文章主要阐述一下 Rails中惰性加载数据以及加载关联表数据." />
+    
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="/assets/images/favicon.ico" >
+
+    <!-- [[! Styles'n'Scripts ]] -->
+    <link rel="stylesheet" type="text/css" href="/assets/css/screen.css" />
+    <link rel="stylesheet" type="text/css"
+      href="//fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400" />
+
+    <link rel="stylesheet" type="text/css" href="/assets/css/prism.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/toc.css" />
+
+    <!-- [[! Ghost outputs important style and meta data with this tag ]] -->
+    <link rel="canonical" href="/" />
+<meta name="referrer" content="origin" />
+<link rel="next" href="/page2/" />
+
+<meta property="og:site_name" content="雄关漫道真如铁" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Rails includes and joins" />
+
+<meta property="og:description" content="在Rails中有三种方式可以预加载数据, 另外还有两种方式直接加载关联表数据.有时候我们会得到一个非常小而精悍的SQL, 有时候却是一个非常大的SQL. 本篇文章主要阐述一下 Rails中惰性加载数据以及加载关联表数据." />
+
+<meta property="og:url" content="http://hwbnju.com/rails-includes-and-joins" />
+<meta property="og:image" content="" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Rails includes and joins" />
+
+<meta name="twitter:description" content="在Rails中有三种方式可以预加载数据, 另外还有两种方式直接加载关联表数据.有时候我们会得到一个非常小而精悍的SQL, 有时候却是一个非常大的SQL. 本篇文章主要阐述一下 Rails中惰性加载数据以及加载关联表数据." />
+
+<meta name="twitter:url" content="http://hwbnju.com/rails-includes-and-joins" />
+<meta name="twitter:image:src" content="" />
+
+<script type="application/ld+json">
+  {
+  "@context": "http://schema.org",
+  "@type": "Website",
+  "publisher": "nju520",
+  "url": "http://hwbnju.com/rails-includes-and-joins",
+  "image": "",
+  "description": "在Rails中有三种方式可以预加载数据, 另外还有两种方式直接加载关联表数据.有时候我们会得到一个非常小而精悍的SQL, 有时候却是一个非常大的SQL. 本篇文章主要阐述一下 Rails中惰性加载数据以及加载关联表数据."
+  }
+</script>
+
+<meta name="generator" content="Jekyll 3.0.0" />
+<link rel="alternate" type="application/rss+xml" title="雄关漫道真如铁" href="/feed.xml" />
+
+    <!-- Add Google Analytics  -->
+    <!-- Google Analytics Tracking code -->
+<script>
+ (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+ })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ ga('create', 'UA-114647632-1', 'auto');
+ ga('send', 'pageview', location.pathname);
+
+</script>
+
+<!-- Baidu Analytics  Manager -->
+<script>
+ var _hmt = _hmt || [];
+ (function() {
+   var hm = document.createElement("script");
+   hm.src = "https://hm.baidu.com/hm.js?e9208862845c46a0f79e7828f495e407";
+   var s = document.getElementsByTagName("script")[0];
+   s.parentNode.insertBefore(hm, s);
+ })();
+</script>
+
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-PWFC85B');</script>
+  <!-- End Google Tag Manager -->
+
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-114647632-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-114647632-1');
+</script>
+
+  </head>
+  <body class=" post-template nav-closed">
+    <!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PWFC85B"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+
+    <div class="nav">
+  <h3 class="nav-title">Home</h3>
+  <a href="#" class="nav-close">
+    <span class="hidden">Close</span>
+  </a>
+  <ul>
+    <li class="nav-home " role="presentation"><a href="/">Home</a></li>
+    <!-- <li class="nav-about " role="presentation"><a href="/about">About</a></li>
+    <li class="nav-author " role="presentation"><a href="/author/casper">Author</a></li> -->
+    <li class="nav-ios " role="presentation"><a href="/tag/iOS">iOS</a></li>
+    <li class="nav-mvc " role="presentation"><a href="/tag/MVC">MVC</a></li>
+    <li class="nav-server " role="presentation"><a href="/tag/server">Server</a></li>
+    <li class="nav-ruby " role="presentation"><a href="/tag/ruby">Ruby</a></li>
+  </ul>
+  <a class="subscribe-button icon-feed" href="/feed.xml">Subscribe</a>
+</div>
+<span class="nav-cover"></span>
+
+
+    <div class="site-wrapper">
+
+      <!-- [[! Everything else gets inserted here ]] -->
+      <!-- < default -->
+
+<!-- The comment above "< default" means - insert everything in this file into -->
+<!-- the [body] of the default.hbs template, which contains our header/footer. -->
+
+<!-- Everything inside the #post tags pulls data from the post -->
+<!-- #post -->
+
+<header class="main-header post-head no-cover">
+  <nav class="main-nav overlay clearfix">
+    <a class="back-button icon-arrow-left" href="/">Home</a>
+    <a class="menu-button icon-menu" href="#"><span class="word">Menu</span></a>
+  </nav>
+</header>
+
+<main class="content" role="main">
+
+  <article class="post">
+
+    <header class="post-template post-header">
+      <h1 class="post-title">Rails includes and joins</h1>
+      <section class="post-meta">
+        <time class="post-date" datetime="2018-04-26">26 Apr 2018</time>
+        <!-- <a href='/'>nju520</a> -->
+        <!-- [[tags prefix=" on "]] -->
+        
+        
+        <a href='/tag/rails'>rails</a>
+        
+        <a href='/tag/mysql'>mysql</a>
+        
+        <a href='/tag/includes'>includes</a>
+        
+        <a href='/tag/preload'>preload</a>
+        
+        <a href='/tag/eager_load'>eager_load</a>
+        
+        <a href='/tag/joins'>joins</a>
+        
+        <a href='/tag/left_outer_joins'>left_outer_joins</a>
+        
+        
+      </section>
+    </header>
+
+    <section class="post-content">
+
+      <ul class="section-nav">
+<li class="toc-entry toc-h2"><a href="#联结表">联结表</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#joins-使用方式">JOINS 使用方式</a>
+<ul>
+<li class="toc-entry toc-h4"><a href="#直接使用-joins">直接使用 joins</a></li>
+<li class="toc-entry toc-h4"><a href="#多个关联的联结">多个关联的联结</a></li>
+<li class="toc-entry toc-h4"><a href="#单层嵌套关联的联结">单层嵌套关联的联结</a></li>
+<li class="toc-entry toc-h4"><a href="#多层嵌套关联的联结">多层嵌套关联的联结</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h3"><a href="#为联结表指明条件">为联结表指明条件</a></li>
+<li class="toc-entry toc-h3"><a href="#left_outer_joins">LEFT_OUTER_JOINS</a></li>
+<li class="toc-entry toc-h3"><a href="#联结表返回的对象">联结表返回的对象</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#惰性加载eager-load">惰性加载(eager load)</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#加载形式">加载形式</a>
+<ul>
+<li class="toc-entry toc-h4"><a href="#及早加载多个关联对象">及早加载多个关联对象</a></li>
+<li class="toc-entry toc-h4"><a href="#嵌套关联的散列">嵌套关联的散列</a></li>
+<li class="toc-entry toc-h4"><a href="#为关联的及早加载指明条件">为关联的及早加载指明条件</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h3"><a href="#eager_load-and-preload-is-what">eager_load and preload is What?</a>
+<ul>
+<li class="toc-entry toc-h4"><a href="#preload">preload</a></li>
+<li class="toc-entry toc-h4"><a href="#eager_load">eager_load</a></li>
+<li class="toc-entry toc-h4"><a href="#includes">includes</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h3"><a href="#总结">总结</a></li>
+</ul>
+</li>
+</ul><p>在使用 Rails ActiveRecord期间,我们经常使用 <code>includes</code>来预加载数据, 使用 <code>joins</code>来生成联接表. 但是有时候我们会生成一个小而精悍的SQL, 有时候却得到一个巨大的SQL. 与此同时, Rails中存在 <code>preload</code>、 <code>eager_load</code>、<code>includes</code>等三种形式来预加载数据,  存在 <code>joins</code>、<code>left_outer_joins</code>来生成联接表. 深入研究它们的使用场景和差异会让我们使用 ActiveRecord 处理数据时更加得心应手.</p>
+
+<h2 id="联结表">
+<a id="联结表" class="anchor" href="#%E8%81%94%E7%BB%93%E8%A1%A8" aria-hidden="true"><span class="octicon octicon-link"></span></a>联结表</h2>
+
+<blockquote>
+  <p>文章的很多内容参考 Rails Guide 以及 Rails API, 毕竟官方的文档是我们学习的最大源泉.</p>
+</blockquote>
+
+<p>ActiveRecord提供了<code>joins</code>以及 <code>left_outer_joins</code>(<code>left_joins</code>)用来指明生成的SQL语句中的<code>JOIN</code>子句.</p>
+
+<ul>
+  <li>
+<code>joins</code>: 用于生成<code>INNER JOIN</code>查询或者定制查询.</li>
+  <li>
+<code>left_outer_joins</code>: 用于 <code>LEFT OUTER JOIN</code>查询.</li>
+</ul>
+
+<p>我们有多种方式使用<code>joins</code>:</p>
+
+<h3 id="joins-使用方式">
+<a id="joins-使用方式" class="anchor" href="#joins-%E4%BD%BF%E7%94%A8%E6%96%B9%E5%BC%8F" aria-hidden="true"><span class="octicon octicon-link"></span></a>JOINS 使用方式</h3>
+
+<h4 id="直接使用-joins">
+<a id="直接使用-joins" class="anchor" href="#%E7%9B%B4%E6%8E%A5%E4%BD%BF%E7%94%A8-joins" aria-hidden="true"><span class="octicon octicon-link"></span></a>直接使用 <code>joins</code>
+</h4>
+
+<p>我们使用频率最高的莫过于直接使用<code>joins</code>来生成一个联结表.</p>
+
+<pre><code class="language-ruby">class User &lt; ApplicationRecord
+  has_many :orders
+end
+
+class Order &lt; ApplicationRecord
+  belongs_to :user
+end
+
+[2] pry(main)&gt; User.joins(:orders)
+  User Load (93.3ms)  SELECT `users`.* FROM `users` INNER JOIN `orders` ON `orders`.`user_id` = `users`.`id` WHERE `users`.`deleted_at` IS NULL
+</code></pre>
+
+<p>上述查询的意思就是把所有包含了订单的用户作为一个<code>User</code>对象返回.</p>
+
+<p>Warning:  <strong>如果多个订单属于同一个用户, 那么这个用户会在<code>User</code>对象中出现多次.要想让每个用户只出现一次, 可以使用</strong>:</p>
+
+<pre><code class="language-ruby">User.joins(:orders).distinct
+
+User.joins(:orders).count # =&gt; 14899
+User.joins(:orders).distinct.count # =&gt; 389
+</code></pre>
+
+<p>上面的示例是关联对象和被关联对象的关系为<code>一对多</code>. 如果它们的关系为<code>多对一</code>、<code>一对一</code>, 那情况如何呢?</p>
+
+<pre><code class="language-ruby">Order.joins(:user).count == Order.joins(:user).distinct.count
+</code></pre>
+
+<p>如果关联对象和被关联对象的关系为 <code>多对一</code>, 生成的订单对象只会出现一次.</p>
+
+<h4 id="多个关联的联结">
+<a id="多个关联的联结" class="anchor" href="#%E5%A4%9A%E4%B8%AA%E5%85%B3%E8%81%94%E7%9A%84%E8%81%94%E7%BB%93" aria-hidden="true"><span class="octicon octicon-link"></span></a>多个关联的联结</h4>
+
+<p>如果关联的对象不止一个的话, 我们可以使用多个关联的联结.</p>
+
+<blockquote>
+  <p>示例对象来自 Rails Guide</p>
+</blockquote>
+
+<pre><code class="language-ruby">class Category &lt; ApplicationRecord
+  has_many :articles
+end
+ 
+class Article &lt; ApplicationRecord
+  belongs_to :category
+  has_many :comments
+  has_many :tags
+end
+ 
+class Comment &lt; ApplicationRecord
+  belongs_to :article
+  has_one :guest
+end
+ 
+class Guest &lt; ApplicationRecord
+  belongs_to :comment
+end
+ 
+class Tag &lt; ApplicationRecord
+  belongs_to :article
+end
+</code></pre>
+
+<pre><code class="language-ruby">Article.joins(:category, :comments)
+
+# =&gt; SELECT articles.* FROM articles
+  INNER JOIN categories ON articles.category_id = categories.id
+  INNER JOIN comments ON comments.article_id = articles.id
+</code></pre>
+
+<p>上述查询的意思就是把属于某个分类的并至少拥有一个评论的文章作为一个<code>Article</code>对象返回.</p>
+
+<p>与之前一样, 拥有多个评论的文章会在<code>Article</code>对象中出现多次.</p>
+
+<h4 id="单层嵌套关联的联结">
+<a id="单层嵌套关联的联结" class="anchor" href="#%E5%8D%95%E5%B1%82%E5%B5%8C%E5%A5%97%E5%85%B3%E8%81%94%E7%9A%84%E8%81%94%E7%BB%93" aria-hidden="true"><span class="octicon octicon-link"></span></a>单层嵌套关联的联结</h4>
+
+<pre><code class="language-ruby">Article.joins(comments: :guest)
+# =&gt; Article.joins({comments: :guest})
+
+# =&gt; SELECT articles.* from articles 
+INNER JOIN comments ON comments.article_id = articles.id
+INNER JOIN guest    ON guest.comment_id = comments.id
+</code></pre>
+
+<p>上述查询的意思是把所有拥有访客评论的文章作为一个<code>Article</code>对象返回.</p>
+
+<h4 id="多层嵌套关联的联结">
+<a id="多层嵌套关联的联结" class="anchor" href="#%E5%A4%9A%E5%B1%82%E5%B5%8C%E5%A5%97%E5%85%B3%E8%81%94%E7%9A%84%E8%81%94%E7%BB%93" aria-hidden="true"><span class="octicon octicon-link"></span></a>多层嵌套关联的联结</h4>
+
+<pre><code class="language-ruby">Category.joins(articles: [{comments: :guest}, :tags])
+
+# =&gt; SELECT categories.* from categories 
+INNER JOIN articles ON articles.category_id = categories.id
+INNER JOIN comments ON comments.article_id  = articles.id
+INNER JOIN guests   ON guests.comment_id    = comments.id
+INNER JOIN tags     ON tags.article_id		= artciles.id
+</code></pre>
+
+<p>上述查询的意思是把所有包含文章的分类作为一个<code>Category</code>对象返回, 其中这些文章都拥有访客评论并且带有标签.</p>
+
+<p>上述的联结查询中<code>comments</code>和<code>tags</code>与<code>articles</code>是直接关联的, 因为它们属于同一个数组的元素.</p>
+
+<p><code>tags</code>是通过<code>comments</code>与<code>articles</code>关联, 因此 <code>comments</code>与<code>tags</code>是在一个<code>Hash</code>中.</p>
+
+<h3 id="为联结表指明条件">
+<a id="为联结表指明条件" class="anchor" href="#%E4%B8%BA%E8%81%94%E7%BB%93%E8%A1%A8%E6%8C%87%E6%98%8E%E6%9D%A1%E4%BB%B6" aria-hidden="true"><span class="octicon octicon-link"></span></a>为联结表指明条件</h3>
+
+<p>我们使用联结表的主要目的就是过滤出我们需要的对象集合, 有时候仅仅依靠管理表来过滤出所需的对象集合还是远远不够的. 此时我们就需要为联结表指明条件. 有两种方式可以实现联结表指明条件:</p>
+
+<ul>
+  <li>普通的SQL语句</li>
+  <li>散列条件</li>
+</ul>
+
+<pre><code class="language-ruby"># 1.普通的SQL字符串
+time_range = (Time.now.midnight - 1.day)..Time.now.midnight
+Client.joins(:orders).where('orders.created_at' =&gt; time_range)
+
+# =&gt; SELECT clients.* from clients 
+INNER JOIN orders ON orders.client_id = cliens.id
+WHERE orders.created_at BETWEEN '2018-04-30 16:00:00' AND '2018-05-01 16:00:00'
+
+# 2. 散列条件
+time_range = (Time.now.midnight - 1.day)..Time.now.midnight
+Client.joins(:orders).where(orders: { created_at: time_range })
+</code></pre>
+
+<h3 id="left_outer_joins">
+<a id="left_outer_joins" class="anchor" href="#left_outer_joins" aria-hidden="true"><span class="octicon octicon-link"></span></a>LEFT_OUTER_JOINS</h3>
+
+<p>Rails 5提供了<code>left_outer_joins</code>来实现左外联结.</p>
+
+<p>如果你觉得<code>left_outer_joins</code>方法太长, 没关系,你可以使用<code>left_joins</code>.</p>
+
+<p>左外联结一般用来选择一组记录, 不管他们是否具有关联记录.</p>
+
+<pre><code class="language-ruby">User.left_outer_joins(:orders).distinct.select('users.name AS name, orders.number AS number)
+
+# =&gt; SELECT DISTINCT users.name AS name, orders.number AS number
+LEFT OUTER JOIN orders ON orders.user_id = users.id
+</code></pre>
+
+<h3 id="联结表返回的对象">
+<a id="联结表返回的对象" class="anchor" href="#%E8%81%94%E7%BB%93%E8%A1%A8%E8%BF%94%E5%9B%9E%E7%9A%84%E5%AF%B9%E8%B1%A1" aria-hidden="true"><span class="octicon octicon-link"></span></a>联结表返回的对象</h3>
+
+<p>以上我们讲述了 Rails 中 <code>joins</code>以及<code>left_outer_joins</code>的使用.</p>
+
+<p>一般来说, 联结表的意义是用来过滤集合, 并不会加载关联的对象. 另外, 如果在联结表中加入了查询条件, 将会根据添加的查询条件对联结表进行过滤.</p>
+
+<p>PS: <strong>如果只使用 <code>joins</code>或者<code>left_outer_joins</code>, 并不会生成一张大的联结表, 只有在使用了预加载时, 才有可能生成大的联结表.</strong></p>
+
+<h2 id="惰性加载eager-load">
+<a id="惰性加载eager-load" class="anchor" href="#%E6%83%B0%E6%80%A7%E5%8A%A0%E8%BD%BDeager-load" aria-hidden="true"><span class="octicon octicon-link"></span></a>惰性加载(eager load)</h2>
+
+<p>Rails 中使用ORM常见的一种问题就是当我们查询对象以及关联对象时遇到的<code>N+1</code>.</p>
+
+<p>解决的方案也很简单, 就是使用<code>includes</code>:</p>
+
+<pre><code class="language-ruby">users = User.includes(:orders).limit(10)
+
+users.each do |user|
+  puts user.order.number
+end
+
+# SELECT * FROM users LIMIT 10
+# SELECT orders.* FROM orders WHERE (orders.user_id IN (1,2,3,4,5,6,7,8,9,10))
+</code></pre>
+
+<p>上述代码只会生成两条SQL语句, 也就是两条<code>SELECT</code>查询语句.</p>
+
+<h3 id="加载形式">
+<a id="加载形式" class="anchor" href="#%E5%8A%A0%E8%BD%BD%E5%BD%A2%E5%BC%8F" aria-hidden="true"><span class="octicon octicon-link"></span></a>加载形式</h3>
+
+<h4 id="及早加载多个关联对象">
+<a id="及早加载多个关联对象" class="anchor" href="#%E5%8F%8A%E6%97%A9%E5%8A%A0%E8%BD%BD%E5%A4%9A%E4%B8%AA%E5%85%B3%E8%81%94%E5%AF%B9%E8%B1%A1" aria-hidden="true"><span class="octicon octicon-link"></span></a>及早加载多个关联对象</h4>
+
+<p>与<code>joins</code>类似, 我们可以及早加载多个关联对象</p>
+
+<pre><code class="language-ruby">Article.includes(:cateogry, :comments)
+</code></pre>
+
+<p>上述代码会加载所有文章、所有文章关联的分析以及每篇文章的分类</p>
+
+<h4 id="嵌套关联的散列">
+<a id="嵌套关联的散列" class="anchor" href="#%E5%B5%8C%E5%A5%97%E5%85%B3%E8%81%94%E7%9A%84%E6%95%A3%E5%88%97" aria-hidden="true"><span class="octicon octicon-link"></span></a>嵌套关联的散列</h4>
+
+<pre><code class="language-ruby">Category.includes(articles: [{comments: :guest}, :tags]).find(1)
+</code></pre>
+
+<p>上述代码会查询 ID 为1的分类, 并及早加载所有关联的文章、这些文章的标签以及评论, 还有这些评论关联的访客.</p>
+
+<h4 id="为关联的及早加载指明条件">
+<a id="为关联的及早加载指明条件" class="anchor" href="#%E4%B8%BA%E5%85%B3%E8%81%94%E7%9A%84%E5%8F%8A%E6%97%A9%E5%8A%A0%E8%BD%BD%E6%8C%87%E6%98%8E%E6%9D%A1%E4%BB%B6" aria-hidden="true"><span class="octicon octicon-link"></span></a>为关联的及早加载指明条件</h4>
+
+<p>我们可以像<code>joins</code>那样为及早加载指明条件.</p>
+
+<p><strong>加上条件之后, 就会生成一张大的联结表(LEFT OUTER JOIN)</strong></p>
+
+<pre><code class="language-ruby">Article.includes(:comments).where(comments: {visible: true})
+
+# 
+SELECT "articles"."id" AS t0_r0, ... "comments"."updated_at" AS t1_r5 FROM "articles" LEFT OUTER JOIN "comments" ON "comments"."article_id" = "articles"."id" WHERE (comments.visible = 1)
+</code></pre>
+
+<p>上述代码会生成使用<code>LEFT OUTER JOIN</code>子句的SQL语句. 我们之前讨论的<code>joins</code>则会生成<code>INNER JOIN</code>子句的SQL语句.</p>
+
+<p>PS: 上述的<code>where</code>条件为散列值, 如果换成SQL字符串的话, 就必须在代码末端加上<code>references</code>.</p>
+
+<pre><code class="language-ruby">Article.includes(:comments).where('comments.visible = ?', true).references(:comments)
+</code></pre>
+
+<p>通过<code>references</code>我们显式指明了<code>where</code>查询语句中使用的关联对象.</p>
+
+<h3 id="eager_load-and-preload-is-what">
+<a id="eager_load-and-preload-is-what" class="anchor" href="#eager_load-and-preload-is-what" aria-hidden="true"><span class="octicon octicon-link"></span></a>eager_load and preload is What?</h3>
+
+<p>很多文章在介绍 <code>includes</code> 及早加载关联对象时都会涉及到<code>eager_load</code>以及<code>preload</code>. 本节我们就来看一下这两种预加载关联对象的方式.</p>
+
+<h4 id="preload">
+<a id="preload" class="anchor" href="#preload" aria-hidden="true"><span class="octicon octicon-link"></span></a>preload</h4>
+
+<p>我们直接看官方的文档说明:</p>
+
+<blockquote>
+  <p>Preload: Allowing preloading of args, in the same way that includes does</p>
+
+  <p>User.preload(:posts)</p>
+
+  <p>SELECT users.* FROM users</p>
+
+  <p>SELECT posts.* FROM posts WHERE posts.user_id IN (1,2,3)</p>
+</blockquote>
+
+<p>也就是说, <code>preload</code>在不加其他条件的情况下就等于<code>includes</code>.</p>
+
+<p>查询结果是生成两条独立的<code>SELECT</code>语句.</p>
+
+<p>如果我们在<code>preload</code>后面指明关联对象的查询条件, 就会报错. 因为 <code>perload</code>只负责加载对象和关联对象, 并没有联结关联对象.</p>
+
+<h4 id="eager_load">
+<a id="eager_load" class="anchor" href="#eager_load" aria-hidden="true"><span class="octicon octicon-link"></span></a>eager_load</h4>
+
+<blockquote>
+  <p>Forces eager loading by performing a LEFT OUTER JOIN on args:</p>
+
+  <p>User.eager_load(:posts)</p>
+
+  <p>SELECT users.id AS to_ro, users.name AS to_r1,…,posts.id AS t1_r0</p>
+
+  <p>FROM users LEFT OUTER  JOIN posts ON posts.user_id = users.id</p>
+</blockquote>
+
+<p><code>eager_load</code>只会产生一个<code>LEFT OUTER JOIN</code>查询语句, 并且会将关联对象加载到内存中(虽然从生成的语句中只是一个大的联结表查询, 实际上关联的对象的确被加载到了内存中).</p>
+
+<p><code>eager_load</code>就相当于使用了<code>references</code>的<code>includes</code>. 也就是指明的条件是关联对象中的字段时, Rails会生成<code>LEFT OUTER JOIN</code>语句.</p>
+
+<h4 id="includes">
+<a id="includes" class="anchor" href="#includes" aria-hidden="true"><span class="octicon octicon-link"></span></a>includes</h4>
+
+<p>Rails 很聪明地帮我们选择到底是使用<code>preload</code>还是 <code>eager_load</code>.</p>
+
+<p>我们要做的就是加载关联对象的时候使用<code>includes</code>即可.</p>
+
+<blockquote>
+  <p>Why not simply call <code>eager_load</code> instead of the whole <code>query.includes(:user).references(:user)</code> piece? Why not simply call <code>preload</code> instead of <code>includes</code> (without its personal stalker), which is much more intent revealing?</p>
+</blockquote>
+
+<h3 id="总结">
+<a id="总结" class="anchor" href="#%E6%80%BB%E7%BB%93" aria-hidden="true"><span class="octicon octicon-link"></span></a>总结</h3>
+
+<ul>
+  <li>
+<code>preload</code>、 <code>eager_load</code>、<code>includes</code>都是用于惰性加载.</li>
+  <li>
+<code>preload</code>: 总是采用两条独立的查询语句来加载对象和关联对象. 它的后面不能指明关联对象的查询条件.</li>
+  <li>eager_load: 通过<code>LEFT OUTER JOIN</code>来加载关联. 它后面可以指明关联对象的查询条件</li>
+  <li>
+    <p>includes: Rails 4 之前的版本, <code>includes</code>是可以很聪明地判断到底使用哪种策略: eager loading or preloading. 但是在Rails 4之后的版本, <code>includes</code>只会使用<code>preload</code>预加载关联对象, 除非使用了<code>references</code>显式指明要使用<code>LEFT OUTER JOIN</code>去加载关联对象.</p>
+  </li>
+  <li>
+<code>joins</code>和三种惰性加载方法不同. 使用 <code>inner joins</code>只会过滤数据并不会加载关联. 它和<code>includes</code>有三点不同:
+    <ul>
+      <li>联结方式不同: <code>joins</code>使用的的联结方式为<code>INNER JOIN</code>. 而 <code>eager_load</code>采用的是<code>LEFT OUTER JOIN</code>.</li>
+      <li>目的不同:  <code>joins</code>目的就是通过联结来过滤需要的记录集合, 它不会主动地加载关联对象, 因此无法避免 N+1次查询问题.</li>
+      <li>当我们使用<code>joins</code>用来过滤对象而并不需要关联对象的字段时, <code>joins</code>完全符合我们的要求.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>参考文章:</p>
+
+<p>https://goiabada.blog/to-join-or-not-to-join-an-act-of-includes-f6728fcefea3</p>
+
+
+
+      <h3>关于图片和转载</h3>
+
+      <a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="知识共享许可协议" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br />本作品采用<a rel="license" href="http://creativecommons.org/licenses/by/4.0/">知识共享署名 4.0 国际许可协议</a>进行许可。
+
+      转载时请注明原文链接，图片在使用时请保留图片中的全部内容，可适当缩放并在引用处附上图片所在的文章链接，图片使用 Sketch 进行绘制。
+
+      <h3>关于评论和留言</h3>
+
+      如果对本文 <a href="/rails-includes-and-joins">Rails includes and joins</a> 的内容有疑问，请在下面的评论系统中留言，谢谢。
+
+      <blockquote>
+        <p>原文链接：<a href="/rails-includes-and-joins">Rails includes and joins · 雄关漫道真如铁</a></p>
+
+        <p>Follow: <a href="https://github.com/nju520">nju520 · GitHub</a></p>
+      </blockquote>
+
+    </section>
+
+    <footer class="post-footer">
+
+      <!-- Everything inside the #author tags pulls data from the author -->
+      <!-- #author-->
+
+      
+      <figure class="author-image">
+        <a class="img" href="https://github.com/nju520" style="background-image: url(/assets/images/hacker.png)"><span class="hidden">'s Picture</span></a>
+      </figure>
+      
+
+      <section class="author">
+        <h4><a href="https://github.com/nju520">nju520</a></h4>
+
+        
+        <p> Ruby / Python / JS</p>
+        
+        <div class="author-meta">
+          <span class="author-location icon-location"> Hangzhou, China</span>
+          <span class="author-link icon-link"><a href="http://hwbnju.com"> hwbnju.com</a></span>
+        </div>
+      </section>
+
+      <!-- /author  -->
+
+      <section class="share">
+        <h4>Share this post</h4>
+        <a class="icon-twitter" href="http://twitter.com/share?text=Rails includes and joins&amp;url=http://hwbnju.comrails-includes-and-joins"
+          onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+          <span class="hidden">Twitter</span>
+        </a>
+        <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://hwbnju.comrails-includes-and-joins"
+          onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+          <span class="hidden">Facebook</span>
+        </a>
+        <a class="icon-google-plus" href="https://plus.google.com/share?url=http://hwbnju.comrails-includes-and-joins"
+          onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+          <span class="hidden">Google+</span>
+        </a>
+      </section>
+
+      <div id="gitalk-container"></div>
+      <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+      <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+      <script>
+       const gitalk = new Gitalk({
+         clientID: 'e552ed507a5a4581d8a1',
+         clientSecret: '0abbd4193a0f9b2700936214ff6fda088c665a73',
+         repo: 'bobo-comments',
+         owner: 'nju520',
+         admin: ['nju520'],
+         // labels: ['Gitalk', 'gitment'].concat(["rails","mysql","includes","preload","eager_load","joins","left_outer_joins"]),
+         // id: location.origin + location.pathname,
+         id: "http://hwbnju.com/rails-includes-and-joins",
+         distractionFreeMode: false
+       });
+
+       gitalk.render('gitalk-container')
+      </script>
+
+    </footer>
+
+  </article>
+
+</main>
+
+<aside class="read-next">
+
+  <!-- [[! next_post ]] -->
+  
+  <!-- [[! /next_post ]] -->
+  <!-- [[! prev_post ]] -->
+  
+  <a class="read-next-story prev no-cover" href="sidekiq">
+    <section class="post">
+      <h2>Sidekiq 异步任务调度与执行</h2>
+      <p>sidekiq 是 Ruby 中一款非常优秀的后台任务处理软件, 其本身提供的API十分简洁, 源代码也易于阅读, 没有太多花哨的代码. Sidekiq 将 Redis 的各种数据结构用得都起到好处, 我们可以通过 Sidekiq 加深对 Redis...</p>
+    </section>
+  </a>
+  
+  <!-- [[! /prev_post ]] -->
+</aside>
+
+<!-- /post -->
+
+
+      <footer class="site-footer clearfix">
+        <section class="copyright"><a href="/">雄关漫道真如铁</a> &copy; 2018</section>
+        <section class="poweredby">Proudly published with <a href="https://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/biomadeira/jasper">Jasper</a></section>
+      </footer>
+    </div>
+    <!-- [[! Ghost outputs important scripts and data with this tag ]] -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <!-- [[! The main JavaScript file for Casper ]] -->
+    <script type="text/javascript" src="/assets/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="/assets/js/index.js"></script>
+    <script type="text/javascript" src="/assets/js/prism.js"></script>
+    <script type="text/javascript" src="/assets/js/toc.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+  </body>
+</html>

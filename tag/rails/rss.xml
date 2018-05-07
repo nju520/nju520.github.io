@@ -12,6 +12,314 @@
     <atom:link href="rss" rel="self" type="application/rss+xml" />
     
 <item>
+  <title>Rails includes and joins</title>
+  <link>//rails-includes-and-joins</link>
+  <author>nju520</author>
+  <pubDate>2018-04-26T00:00:00+08:00</pubDate>
+  <guid>//rails-includes-and-joins</guid>
+  <description><![CDATA[
+  <p>在使用 Rails ActiveRecord期间,我们经常使用 <code>includes</code>来预加载数据, 使用 <code>joins</code>来生成联接表. 但是有时候我们会生成一个小而精悍的SQL, 有时候却得到一个巨大的SQL. 与此同时, Rails中存在 <code>preload</code>、 <code>eager_load</code>、<code>includes</code>等三种形式来预加载数据,  存在 <code>joins</code>、<code>left_outer_joins</code>来生成联接表. 深入研究它们的使用场景和差异会让我们使用 ActiveRecord 处理数据时更加得心应手.</p>
+
+<h2 id="联结表">联结表</h2>
+
+<blockquote>
+  <p>文章的很多内容参考 Rails Guide 以及 Rails API, 毕竟官方的文档是我们学习的最大源泉.</p>
+</blockquote>
+
+<p>ActiveRecord提供了<code>joins</code>以及 <code>left_outer_joins</code>(<code>left_joins</code>)用来指明生成的SQL语句中的<code>JOIN</code>子句.</p>
+
+<ul>
+  <li><code>joins</code>: 用于生成<code>INNER JOIN</code>查询或者定制查询.</li>
+  <li><code>left_outer_joins</code>: 用于 <code>LEFT OUTER JOIN</code>查询.</li>
+</ul>
+
+<p>我们有多种方式使用<code>joins</code>:</p>
+
+<h3 id="joins-使用方式">JOINS 使用方式</h3>
+
+<h4 id="直接使用-joins">直接使用 <code>joins</code></h4>
+
+<p>我们使用频率最高的莫过于直接使用<code>joins</code>来生成一个联结表.</p>
+
+<pre><code class="language-ruby">class User &lt; ApplicationRecord
+  has_many :orders
+end
+
+class Order &lt; ApplicationRecord
+  belongs_to :user
+end
+
+[2] pry(main)&gt; User.joins(:orders)
+  User Load (93.3ms)  SELECT `users`.* FROM `users` INNER JOIN `orders` ON `orders`.`user_id` = `users`.`id` WHERE `users`.`deleted_at` IS NULL
+</code></pre>
+
+<p>上述查询的意思就是把所有包含了订单的用户作为一个<code>User</code>对象返回.</p>
+
+<p>Warning:  <strong>如果多个订单属于同一个用户, 那么这个用户会在<code>User</code>对象中出现多次.要想让每个用户只出现一次, 可以使用</strong>:</p>
+
+<pre><code class="language-ruby">User.joins(:orders).distinct
+
+User.joins(:orders).count # =&gt; 14899
+User.joins(:orders).distinct.count # =&gt; 389
+</code></pre>
+
+<p>上面的示例是关联对象和被关联对象的关系为<code>一对多</code>. 如果它们的关系为<code>多对一</code>、<code>一对一</code>, 那情况如何呢?</p>
+
+<pre><code class="language-ruby">Order.joins(:user).count == Order.joins(:user).distinct.count
+</code></pre>
+
+<p>如果关联对象和被关联对象的关系为 <code>多对一</code>, 生成的订单对象只会出现一次.</p>
+
+<h4 id="多个关联的联结">多个关联的联结</h4>
+
+<p>如果关联的对象不止一个的话, 我们可以使用多个关联的联结.</p>
+
+<blockquote>
+  <p>示例对象来自 Rails Guide</p>
+</blockquote>
+
+<pre><code class="language-ruby">class Category &lt; ApplicationRecord
+  has_many :articles
+end
+ 
+class Article &lt; ApplicationRecord
+  belongs_to :category
+  has_many :comments
+  has_many :tags
+end
+ 
+class Comment &lt; ApplicationRecord
+  belongs_to :article
+  has_one :guest
+end
+ 
+class Guest &lt; ApplicationRecord
+  belongs_to :comment
+end
+ 
+class Tag &lt; ApplicationRecord
+  belongs_to :article
+end
+</code></pre>
+
+<pre><code class="language-ruby">Article.joins(:category, :comments)
+
+# =&gt; SELECT articles.* FROM articles
+  INNER JOIN categories ON articles.category_id = categories.id
+  INNER JOIN comments ON comments.article_id = articles.id
+</code></pre>
+
+<p>上述查询的意思就是把属于某个分类的并至少拥有一个评论的文章作为一个<code>Article</code>对象返回.</p>
+
+<p>与之前一样, 拥有多个评论的文章会在<code>Article</code>对象中出现多次.</p>
+
+<h4 id="单层嵌套关联的联结">单层嵌套关联的联结</h4>
+
+<pre><code class="language-ruby">Article.joins(comments: :guest)
+# =&gt; Article.joins({comments: :guest})
+
+# =&gt; SELECT articles.* from articles 
+INNER JOIN comments ON comments.article_id = articles.id
+INNER JOIN guest    ON guest.comment_id = comments.id
+</code></pre>
+
+<p>上述查询的意思是把所有拥有访客评论的文章作为一个<code>Article</code>对象返回.</p>
+
+<h4 id="多层嵌套关联的联结">多层嵌套关联的联结</h4>
+
+<pre><code class="language-ruby">Category.joins(articles: [{comments: :guest}, :tags])
+
+# =&gt; SELECT categories.* from categories 
+INNER JOIN articles ON articles.category_id = categories.id
+INNER JOIN comments ON comments.article_id  = articles.id
+INNER JOIN guests   ON guests.comment_id    = comments.id
+INNER JOIN tags     ON tags.article_id		= artciles.id
+</code></pre>
+
+<p>上述查询的意思是把所有包含文章的分类作为一个<code>Category</code>对象返回, 其中这些文章都拥有访客评论并且带有标签.</p>
+
+<p>上述的联结查询中<code>comments</code>和<code>tags</code>与<code>articles</code>是直接关联的, 因为它们属于同一个数组的元素.</p>
+
+<p><code>tags</code>是通过<code>comments</code>与<code>articles</code>关联, 因此 <code>comments</code>与<code>tags</code>是在一个<code>Hash</code>中.</p>
+
+<h3 id="为联结表指明条件">为联结表指明条件</h3>
+
+<p>我们使用联结表的主要目的就是过滤出我们需要的对象集合, 有时候仅仅依靠管理表来过滤出所需的对象集合还是远远不够的. 此时我们就需要为联结表指明条件. 有两种方式可以实现联结表指明条件:</p>
+
+<ul>
+  <li>普通的SQL语句</li>
+  <li>散列条件</li>
+</ul>
+
+<pre><code class="language-ruby"># 1.普通的SQL字符串
+time_range = (Time.now.midnight - 1.day)..Time.now.midnight
+Client.joins(:orders).where('orders.created_at' =&gt; time_range)
+
+# =&gt; SELECT clients.* from clients 
+INNER JOIN orders ON orders.client_id = cliens.id
+WHERE orders.created_at BETWEEN '2018-04-30 16:00:00' AND '2018-05-01 16:00:00'
+
+# 2. 散列条件
+time_range = (Time.now.midnight - 1.day)..Time.now.midnight
+Client.joins(:orders).where(orders: { created_at: time_range })
+</code></pre>
+
+<h3 id="left_outer_joins">LEFT_OUTER_JOINS</h3>
+
+<p>Rails 5提供了<code>left_outer_joins</code>来实现左外联结.</p>
+
+<p>如果你觉得<code>left_outer_joins</code>方法太长, 没关系,你可以使用<code>left_joins</code>.</p>
+
+<p>左外联结一般用来选择一组记录, 不管他们是否具有关联记录.</p>
+
+<pre><code class="language-ruby">User.left_outer_joins(:orders).distinct.select('users.name AS name, orders.number AS number)
+
+# =&gt; SELECT DISTINCT users.name AS name, orders.number AS number
+LEFT OUTER JOIN orders ON orders.user_id = users.id
+</code></pre>
+
+<h3 id="联结表返回的对象">联结表返回的对象</h3>
+
+<p>以上我们讲述了 Rails 中 <code>joins</code>以及<code>left_outer_joins</code>的使用.</p>
+
+<p>一般来说, 联结表的意义是用来过滤集合, 并不会加载关联的对象. 另外, 如果在联结表中加入了查询条件, 将会根据添加的查询条件对联结表进行过滤.</p>
+
+<p>PS: <strong>如果只使用 <code>joins</code>或者<code>left_outer_joins</code>, 并不会生成一张大的联结表, 只有在使用了预加载时, 才有可能生成大的联结表.</strong></p>
+
+<h2 id="惰性加载eager-load">惰性加载(eager load)</h2>
+
+<p>Rails 中使用ORM常见的一种问题就是当我们查询对象以及关联对象时遇到的<code>N+1</code>.</p>
+
+<p>解决的方案也很简单, 就是使用<code>includes</code>:</p>
+
+<pre><code class="language-ruby">users = User.includes(:orders).limit(10)
+
+users.each do |user|
+  puts user.order.number
+end
+
+# SELECT * FROM users LIMIT 10
+# SELECT orders.* FROM orders WHERE (orders.user_id IN (1,2,3,4,5,6,7,8,9,10))
+</code></pre>
+
+<p>上述代码只会生成两条SQL语句, 也就是两条<code>SELECT</code>查询语句.</p>
+
+<h3 id="加载形式">加载形式</h3>
+
+<h4 id="及早加载多个关联对象">及早加载多个关联对象</h4>
+
+<p>与<code>joins</code>类似, 我们可以及早加载多个关联对象</p>
+
+<pre><code class="language-ruby">Article.includes(:cateogry, :comments)
+</code></pre>
+
+<p>上述代码会加载所有文章、所有文章关联的分析以及每篇文章的分类</p>
+
+<h4 id="嵌套关联的散列">嵌套关联的散列</h4>
+
+<pre><code class="language-ruby">Category.includes(articles: [{comments: :guest}, :tags]).find(1)
+</code></pre>
+
+<p>上述代码会查询 ID 为1的分类, 并及早加载所有关联的文章、这些文章的标签以及评论, 还有这些评论关联的访客.</p>
+
+<h4 id="为关联的及早加载指明条件">为关联的及早加载指明条件</h4>
+
+<p>我们可以像<code>joins</code>那样为及早加载指明条件.</p>
+
+<p><strong>加上条件之后, 就会生成一张大的联结表(LEFT OUTER JOIN)</strong></p>
+
+<pre><code class="language-ruby">Article.includes(:comments).where(comments: {visible: true})
+
+# 
+SELECT "articles"."id" AS t0_r0, ... "comments"."updated_at" AS t1_r5 FROM "articles" LEFT OUTER JOIN "comments" ON "comments"."article_id" = "articles"."id" WHERE (comments.visible = 1)
+</code></pre>
+
+<p>上述代码会生成使用<code>LEFT OUTER JOIN</code>子句的SQL语句. 我们之前讨论的<code>joins</code>则会生成<code>INNER JOIN</code>子句的SQL语句.</p>
+
+<p>PS: 上述的<code>where</code>条件为散列值, 如果换成SQL字符串的话, 就必须在代码末端加上<code>references</code>.</p>
+
+<pre><code class="language-ruby">Article.includes(:comments).where('comments.visible = ?', true).references(:comments)
+</code></pre>
+
+<p>通过<code>references</code>我们显式指明了<code>where</code>查询语句中使用的关联对象.</p>
+
+<h3 id="eager_load-and-preload-is-what">eager_load and preload is What?</h3>
+
+<p>很多文章在介绍 <code>includes</code> 及早加载关联对象时都会涉及到<code>eager_load</code>以及<code>preload</code>. 本节我们就来看一下这两种预加载关联对象的方式.</p>
+
+<h4 id="preload">preload</h4>
+
+<p>我们直接看官方的文档说明:</p>
+
+<blockquote>
+  <p>Preload: Allowing preloading of args, in the same way that includes does</p>
+
+  <p>User.preload(:posts)</p>
+
+  <p>SELECT users.* FROM users</p>
+
+  <p>SELECT posts.* FROM posts WHERE posts.user_id IN (1,2,3)</p>
+</blockquote>
+
+<p>也就是说, <code>preload</code>在不加其他条件的情况下就等于<code>includes</code>.</p>
+
+<p>查询结果是生成两条独立的<code>SELECT</code>语句.</p>
+
+<p>如果我们在<code>preload</code>后面指明关联对象的查询条件, 就会报错. 因为 <code>perload</code>只负责加载对象和关联对象, 并没有联结关联对象.</p>
+
+<h4 id="eager_load">eager_load</h4>
+
+<blockquote>
+  <p>Forces eager loading by performing a LEFT OUTER JOIN on args:</p>
+
+  <p>User.eager_load(:posts)</p>
+
+  <p>SELECT users.id AS to_ro, users.name AS to_r1,…,posts.id AS t1_r0</p>
+
+  <p>FROM users LEFT OUTER  JOIN posts ON posts.user_id = users.id</p>
+</blockquote>
+
+<p><code>eager_load</code>只会产生一个<code>LEFT OUTER JOIN</code>查询语句, 并且会将关联对象加载到内存中(虽然从生成的语句中只是一个大的联结表查询, 实际上关联的对象的确被加载到了内存中).</p>
+
+<p><code>eager_load</code>就相当于使用了<code>references</code>的<code>includes</code>. 也就是指明的条件是关联对象中的字段时, Rails会生成<code>LEFT OUTER JOIN</code>语句.</p>
+
+<h4 id="includes">includes</h4>
+
+<p>Rails 很聪明地帮我们选择到底是使用<code>preload</code>还是 <code>eager_load</code>.</p>
+
+<p>我们要做的就是加载关联对象的时候使用<code>includes</code>即可.</p>
+
+<blockquote>
+  <p>Why not simply call <code>eager_load</code> instead of the whole <code>query.includes(:user).references(:user)</code> piece? Why not simply call <code>preload</code> instead of <code>includes</code> (without its personal stalker), which is much more intent revealing?</p>
+</blockquote>
+
+<h3 id="总结">总结</h3>
+
+<ul>
+  <li><code>preload</code>、 <code>eager_load</code>、<code>includes</code>都是用于惰性加载.</li>
+  <li><code>preload</code>: 总是采用两条独立的查询语句来加载对象和关联对象. 它的后面不能指明关联对象的查询条件.</li>
+  <li>eager_load: 通过<code>LEFT OUTER JOIN</code>来加载关联. 它后面可以指明关联对象的查询条件</li>
+  <li>
+    <p>includes: Rails 4 之前的版本, <code>includes</code>是可以很聪明地判断到底使用哪种策略: eager loading or preloading. 但是在Rails 4之后的版本, <code>includes</code>只会使用<code>preload</code>预加载关联对象, 除非使用了<code>references</code>显式指明要使用<code>LEFT OUTER JOIN</code>去加载关联对象.</p>
+  </li>
+  <li><code>joins</code>和三种惰性加载方法不同. 使用 <code>inner joins</code>只会过滤数据并不会加载关联. 它和<code>includes</code>有三点不同:
+    <ul>
+      <li>联结方式不同: <code>joins</code>使用的的联结方式为<code>INNER JOIN</code>. 而 <code>eager_load</code>采用的是<code>LEFT OUTER JOIN</code>.</li>
+      <li>目的不同:  <code>joins</code>目的就是通过联结来过滤需要的记录集合, 它不会主动地加载关联对象, 因此无法避免 N+1次查询问题.</li>
+      <li>当我们使用<code>joins</code>用来过滤对象而并不需要关联对象的字段时, <code>joins</code>完全符合我们的要求.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>参考文章:</p>
+
+<p>https://goiabada.blog/to-join-or-not-to-join-an-act-of-includes-f6728fcefea3</p>
+
+
+  ]]></description>
+</item>
+
+<item>
   <title>Ruby Rack 协议及其应用(二)</title>
   <link>//rack-working</link>
   <author>nju520</author>

@@ -35,7 +35,7 @@
 
 <meta property="og:site_name" content="雄关漫道真如铁" />
 <meta property="og:type" content="website" />
-<meta property="og:title" content="雄关漫道真如铁" />
+<meta property="og:title" content="" />
 
 <meta property="og:description" content="" />
 
@@ -43,7 +43,7 @@
 <meta property="og:image" content="assets/images/header-bg.jpg" />
 
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="雄关漫道真如铁" />
+<meta name="twitter:title" content="" />
 
 <meta name="twitter:description" content="" />
 
@@ -121,7 +121,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <span class="hidden">Close</span>
   </a>
   <ul>
-    <li class="nav-home  nav-current" role="presentation"><a href="/">Home</a></li>
+    <li class="nav-home " role="presentation"><a href="/">Home</a></li>
     <!-- <li class="nav-about " role="presentation"><a href="/about">About</a></li>
     <li class="nav-author " role="presentation"><a href="/author/casper">Author</a></li> -->
     <li class="nav-ios " role="presentation"><a href="/tag/iOS">iOS</a></li>
@@ -137,31 +137,34 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="site-wrapper">
 
       <!-- [[! Everything else gets inserted here ]] -->
-      <!-- < default -->
+      <!-- < default}} -->
 <!-- The tag above means - insert everything in this file into the [body] of the default.hbs template -->
 
-<!-- The big featured header  -->
-<header class="main-header "
-        style="background-image: url(/assets/images/header-bg.jpg) ">
-    <nav class="main-nav overlay clearfix">
-        <a class="blog-logo" href="/"><img src="/assets/images/bobo.png" alt="Blog Logo" /></a>
-        <!-- <a class="rss-button icon-feed" href="/feed.xml"><span class="word">Subscribe</span></a> -->
-        <a class="menu-button icon-menu" href="#"><span class="word">Menu</span></a>
-      </nav>
-    <div class="vertical">
-        <div class="main-header-content inner">
-            <h1 class="page-title">雄关漫道真如铁</h1>
-            <h2 class="page-description">nju520's Blog</h2>
-        </div>
+<!-- If we have a tag cover, display that - else blog cover - else nothing -->
+<header class="main-header tag-head " style="background-image: url(/assets/images/header-bg.jpg) ">
+  <nav class="main-nav overlay clearfix">
+    <a class="blog-logo" href="/"><img src="/assets/images/bobo.png" alt="Blog Logo" /></a>
+    
+    <a class="menu-button icon-menu" href="#"><span class="word">Menu</span></a>
+    
+  </nav>
+  <div class="vertical">
+    <div class="main-header-content inner">
+      <h1 class="page-title">preload</h1>
+      <h2 class="page-description">
+        
+        A 1-post collection
+        
+      </h2>
     </div>
-    <a class="scroll-down icon-arrow-left" href="#content" data-offset="-45"><span class="hidden">Scroll Down</span></a>
+  </div>
 </header>
 
 <!-- The main content area on the homepage -->
 <main id="content" class="content" role="main">
 
-    <!-- The tag below includes the post loop - partials/loop.hbs -->
-    <!-- Previous/next page links - only displayed on page 2+ -->
+  <!-- The tag below includes the post loop - partials/loop.hbs -->
+  <!-- Previous/next page links - only displayed on page 2+ -->
 <div class="extra-pagination inner">
   
   <nav class="pagination" role="pagination">
@@ -202,138 +205,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <a href='/tag/left_outer_joins'>left_outer_joins</a>
     
     <time class="post-date" datetime="2018-04-26">26 Apr 2018</time>
-  </footer>
-</article>
-
-<article class="post">
-  <header class="post-header">
-    <h2 class="post-title"><a href="/sidekiq">Sidekiq 异步任务调度与执行</a></h2>
-  </header>
-  <section class="post-excerpt">
-    
-    <p>sidekiq 是 Ruby 中一款非常优秀的后台任务处理软件, 其本身提供的API十分简洁, 源代码也易于阅读, 没有太多花哨的代码. Sidekiq 将 Redis 的各种数据结构用得都起到好处, 我们可以通过 Sidekiq 加深对 Redis 的印象以及学习如何恰当高效地结合 Redis 实现业务逻辑.本篇文章从 Sidekiq 的启动开始,详细解读 Sidekiq 的异步任务调度和执行. <a class="read-more" href="/sidekiq">&raquo;</a></p>
-    
-  </section>
-  <footer class="post-meta">
-    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
-    
-    <a href='/tag/Ruby'>Ruby</a>
-    
-    <a href='/tag/Sidekiq'>Sidekiq</a>
-    
-    <a href='/tag/workers'>workers</a>
-    
-    <a href='/tag/Redis'>Redis</a>
-    
-    <time class="post-date" datetime="2018-03-18">18 Mar 2018</time>
-  </footer>
-</article>
-
-<article class="post">
-  <header class="post-header">
-    <h2 class="post-title"><a href="/tcp-scokets-arch">TCP Socket 编程 -- 网络架构模式</a></h2>
-  </header>
-  <section class="post-excerpt">
-    
-    <p>本篇文件会详细介绍架构网络应用程序的常见方式. 如何处理并发? 如何处理错误? 处理缓慢的客户端的最好的方法是什么? 如何最有效地利用资源?这类问题都能在本篇文章中找到答案. <a class="read-more" href="/tcp-scokets-arch">&raquo;</a></p>
-    
-  </section>
-  <footer class="post-meta">
-    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
-    
-    <a href='/tag/TCP'>TCP</a>
-    
-    <a href='/tag/socket'>socket</a>
-    
-    <a href='/tag/Ruby'>Ruby</a>
-    
-    <a href='/tag/process'>process</a>
-    
-    <a href='/tag/prefork'>prefork</a>
-    
-    <a href='/tag/thread'>thread</a>
-    
-    <a href='/tag/threadpool'>threadpool</a>
-    
-    <a href='/tag/Reactor'>Reactor</a>
-    
-    <time class="post-date" datetime="2018-03-15">15 Mar 2018</time>
-  </footer>
-</article>
-
-<article class="post">
-  <header class="post-header">
-    <h2 class="post-title"><a href="/rack-webrick">WEBrick 源码分析</a></h2>
-  </header>
-  <section class="post-excerpt">
-    
-    <p>WEBrick是 Ruby 最古老的一款 Web Server, 本文就从源码入手, 解读 WEBrick的实现原理, 从线程和进程的角度分析 WEBrick的优缺点. <a class="read-more" href="/rack-webrick">&raquo;</a></p>
-    
-  </section>
-  <footer class="post-meta">
-    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
-    
-    <a href='/tag/rack'>rack</a>
-    
-    <a href='/tag/webrick'>webrick</a>
-    
-    <a href='/tag/socket'>socket</a>
-    
-    <a href='/tag/thread'>thread</a>
-    
-    <time class="post-date" datetime="2018-03-09">09 Mar 2018</time>
-  </footer>
-</article>
-
-<article class="post">
-  <header class="post-header">
-    <h2 class="post-title"><a href="/rack-working">Ruby Rack 协议及其应用(二)</a></h2>
-  </header>
-  <section class="post-excerpt">
-    
-    <p>Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本系列文章就深入探讨Rack协议的原理以及实现. <a class="read-more" href="/rack-working">&raquo;</a></p>
-    
-  </section>
-  <footer class="post-meta">
-    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
-    
-    <a href='/tag/Rack系列'>Rack系列</a>
-    
-    <a href='/tag/rack'>rack</a>
-    
-    <a href='/tag/ruby'>ruby</a>
-    
-    <a href='/tag/rails'>rails</a>
-    
-    <a href='/tag/server'>server</a>
-    
-    <time class="post-date" datetime="2018-03-04">04 Mar 2018</time>
-  </footer>
-</article>
-
-<article class="post">
-  <header class="post-header">
-    <h2 class="post-title"><a href="/rack-start">Ruby Rack 协议及其应用(一)</a></h2>
-  </header>
-  <section class="post-excerpt">
-    
-    <p>Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本系列文章就深入探讨Rack协议的原理以及实现. <a class="read-more" href="/rack-start">&raquo;</a></p>
-    
-  </section>
-  <footer class="post-meta">
-    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
-    
-    <a href='/tag/Rack系列'>Rack系列</a>
-    
-    <a href='/tag/rack'>rack</a>
-    
-    <a href='/tag/ruby'>ruby</a>
-    
-    <a href='/tag/rails'>rails</a>
-    
-    <a href='/tag/server'>server</a>
-    
-    <time class="post-date" datetime="2018-03-01">01 Mar 2018</time>
   </footer>
 </article>
 

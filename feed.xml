@@ -13,6 +13,22 @@
 		
 			
 				<item>
+					<title>Rails includes and joins</title>
+					
+						<description>&lt;p&gt;在使用 Rails ActiveRecord期间,我们经常使用 &lt;code&gt;includes&lt;/code&gt;来预加载数据, 使用 &lt;code&gt;joins&lt;/code&gt;来生成联接表. 但是有时候我们会生成一个小而精悍的SQL, 有时候却得到一个巨大的SQL. 与此同时, Rails中存在 &lt;code&gt;preload&lt;/code&gt;、 &lt;code&gt;eager_load&lt;/code&gt;、&lt;code&gt;includes&lt;/code&gt;等三种形式来预加载数据,  存在 &lt;code&gt;joins&lt;/code&gt;、&lt;code&gt;left_outer_joins&lt;/code&gt;来生成联接表. 深入研究它们的使用场景和差异会让我们使用 ActiveRecord 处理数据时更加得心应手.&lt;/p&gt;
+
+</description>
+					
+					<pubDate>Thu, 26 Apr 2018 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/rails-includes-and-joins
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/rails-includes-and-joins</guid>
+				</item>
+			
+		
+			
+				<item>
 					<title>Sidekiq 异步任务调度与执行</title>
 					
 						<description>&lt;p&gt;sidekiq 是 Ruby 中一款非常优秀的后台任务处理软件, 其本身提供的API十分简洁, 源代码也易于阅读, 没有太多花哨的代码. Sidekiq 将 Redis 的各种数据结构用得都起到好处, 我们可以通过 Sidekiq 加深对 Redis 的印象以及学习如何恰当高效地结合 Redis 实现业务逻辑.本篇文章从 Sidekiq 的启动开始,详细解读 Sidekiq 的异步任务调度和执行.  除此之外, 我还会介绍中间件机制以及在此基础上实现的任务重试机制.&lt;/p&gt;
