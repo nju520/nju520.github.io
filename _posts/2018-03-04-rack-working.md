@@ -239,7 +239,7 @@ def parse_options(args)
 
   # @options = {}
   @options = opt_parser.parse!(args)
-  
+
   # `options`为 `Rack::Server`类中定义的一个实例方法
   # `@options[:config] = 'config.ru'
   @options[:config] = ::File.expand_path(options[:config])
@@ -278,7 +278,7 @@ def parse!(args)
   options[:config] = args.last if args.last && !args.last.empty?
   options
 end
-  
+
 -------------------------------------------------------------------------
 [7] pry(main)> $ Rack::Server#options
 
@@ -293,7 +293,7 @@ def options
   merged_options = @use_default_options ? default_options.merge(@options) : @options
   merged_options.reject { |k, v| @ignore_options.include?(k) }
 end
- 
+
 -------------------------------------------------------------------------    
 [8] pry(main)> $ Rack::Server#default_options
 
@@ -318,7 +318,7 @@ def default_options
     :config      => "config.ru"
   }
 end
-  
+
 ~~~
 
 #### 包装应用
@@ -335,7 +335,7 @@ Number of lines: 41
 
 def start &blk
   # 删除了多余不重要的代码
-    
+
   # Touch the wrapped app, so that the config.ru is loaded before
   # daemonization (i.e. before chdir, etc).
   # 通过注释我们可以知晓 `wrapped_app`方法是在启动守护进程之前就加载了 `config.ru`配置文件来创建好最终的应用程序
@@ -493,7 +493,7 @@ end
 
 在`Rack`中, 中间件是由两部分代码共同处理的:
 
-* Rack::Builder: 包含能够在`config.ru`文件中能够使用的`DSL`方法. 
+* Rack::Builder: 包含能够在`config.ru`文件中能够使用的`DSL`方法.
 * Rack::Server: 启动 `Web Server`
 
 
@@ -531,11 +531,11 @@ def use(middleware, *args, &block)
   end
   @use << proc { |app| middleware.new(app, *args, &block) }
 end
-      
+
 def run(app)
   @run = app
 end
-      
+
 def to_app
   app = @map ? generate_map(@run, @map) : @run
   fail "missing run or map statement" unless app
@@ -543,7 +543,7 @@ def to_app
   @warmup.call(app) if @warmup
   app
 end
-      
+
 ~~~
 
 `Rack::Builder#use`方法会将传入的参数组合成一个接收`app`作为参数的`Proc`对象, 然后加入到`@use`数组中存储起来.  
@@ -618,13 +618,13 @@ result3 = e[a] = proc {|app| WrapWithHtml.new(app, *args, &block)}.call(a)
 
 ~~~
 
-**Rack::Builder**类其实就是将非常晦涩的代码, 利用`Ruby`元编程能力变成清晰可读的`DSL`, 最终返回了一个最终应用对象.
+**Rack::Builder** 类其实就是将非常晦涩的代码, 利用`Ruby`元编程能力变成清晰可读的`DSL`, 最终返回了一个最终应用对象.
 
 
 
 当一个请求到来时, 我们的Web Server`就会`call`我们的`Rack应用,传入环境变量`env`作为参数.
 
-`env`变量首先进入最外层的中间件处理, 通过处理之后传入下一层的中间件, 如此层层递进, 最终进入我们的`原始应用程序`. 
+`env`变量首先进入最外层的中间件处理, 通过处理之后传入下一层的中间件, 如此层层递进, 最终进入我们的`原始应用程序`.
 
 原始应用程序接收传入的`env`, 然后根据内部逻辑处理之后, 返回一个三元数组
 
@@ -668,7 +668,7 @@ def middleware
 end
 
 -------------------------------------------------------------------------
-    
+
 def middleware
   default_middleware_by_environment
 end
@@ -707,7 +707,7 @@ end
 
 #### 选择 Web Server
 
-在`Rack::Server#start`方法中, 我们通过`Rack::Server#wrapped_app`方法将应用和中间件打包到一起. 然后执行`server.run wrapped_app, options, &blk` 来选择合适的 `Web Server`并启动之. 
+在`Rack::Server#start`方法中, 我们通过`Rack::Server#wrapped_app`方法将应用和中间件打包到一起. 然后执行`server.run wrapped_app, options, &blk` 来选择合适的 `Web Server`并启动之.
 
 ~~~ruby
 [2] pry(main)> $ Rack::Server#server
@@ -832,7 +832,7 @@ end
 
 
 
-所有遵循`Rack协议`的`Web Server`都会实现类似于`WEBrick`的`run`方法, 此方法接收三个参数: 
+所有遵循`Rack协议`的`Web Server`都会实现类似于`WEBrick`的`run`方法, 此方法接收三个参数:
 
 * app: 包装好的`Rack应用程序`
 * options: 参数
@@ -850,12 +850,12 @@ end
 
 ## 再论中间件
 
-上面主要是从`rackup	`命令一步一步研究源码,  对中间件的实现和使用都有所了解. 我们可以在`config.ru`中配置中间件, 这对`Ruby on Rails`、`Sinatra`等框架都是通用的. 
+上面主要是从`rackup	`命令一步一步研究源码,  对中间件的实现和使用都有所了解. 我们可以在`config.ru`中配置中间件, 这对`Ruby on Rails`、`Sinatra`等框架都是通用的.
 
 * `Ruby on Rails`通过`config.middleware`来配置中间件, 可以在`application.rb`或者`enviroment/<enviroment>.rb`文件中进行配置
 * `Sinatra`配置中间件很简单, 直接在`Rack` 应用中使用`use`配置
 
-**在`config.ru`中配置的中间件处在`中间件栈`的上层, 在`Web 框架`中配置的中间件在`中间件栈`下层**. 
+**在`config.ru`中配置的中间件处在`中间件栈`的上层, 在`Web 框架`中配置的中间件在`中间件栈`下层**.
 
 用户的请求自上而下通过`中间件栈`,任何一个中间件都可以终止用户请求而不向下传递.
 
@@ -886,22 +886,22 @@ end
 module Rack
   module Auth
     class Basic < AbstractHandler
-    
+
       def call(env)
       #...
       end
-      
+
       class Request < Auth::AbstractRequest
       end
     end
-    
+
     class AbstractHandler
-    
+
       def initialize(app, realm = nil, &authenticator)
       #...
       end
     end
-    
+
     class AbstractRequest
     end
   end
@@ -912,7 +912,7 @@ end
 
 `Rack::Auth::Basic`作为一个中间件, 肯定会实现 `initialize`方法以及`call`方法
 
-* initialize: 接收一个`app`应用程序作为参数, 一般来说`app`也是符合规范的`Rack中间件`. 
+* initialize: 接收一个`app`应用程序作为参数, 一般来说`app`也是符合规范的`Rack中间件`.
 * call: 接收`env(环境参数)`, 处理之后交给下一个中间件继续处理
 
 我们还是采用`pry`来一步一步研究`Auth`的源码

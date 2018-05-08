@@ -15,7 +15,7 @@ Rack是Ruby Web服务器和Rack应用程序之间的一个接口
 
 ![Rack接口](https//img.nju520/me/2018-03-03-rack.png)
 
-上图给出了一个简单的图示. 当用户的请求抵达Web服务器时, Web服务器就会调用(call)Rack, Rack对请求进行包装, 然后调用Rack应用程序(一般是一个封装好的框架). Rack程序可以方便地利用Rack提供的各种API, 分析请求(request), 进行处理, 返回响应(response). 
+上图给出了一个简单的图示. 当用户的请求抵达Web服务器时, Web服务器就会调用(call)Rack, Rack对请求进行包装, 然后调用Rack应用程序(一般是一个封装好的框架). Rack程序可以方便地利用Rack提供的各种API, 分析请求(request), 进行处理, 返回响应(response).
 
 ### 为什么是Rack
 
@@ -41,7 +41,7 @@ Rack还有一个杀手锏:Rack中间件. Rack利用中间件(Middleware)实现�
 
 ### Rack的使用
 
-Rack协议将Rack应用描述成一个可以响应call方法的Ruby对象, 它接收一个来自外界的参数(env),然后返回一个只包含三个值的数组. 
+Rack协议将Rack应用描述成一个可以响应call方法的Ruby对象, 它接收一个来自外界的参数(env),然后返回一个只包含三个值的数组.
 
 > A Rack application is an Ruby Object(not a class) that responds to call. It tasks exactly one argument, the enviroment and returns an Array of exactly three values: the status,  the headers, and the body.
 
@@ -64,7 +64,7 @@ Rack应用对象接收一个环境(env)参数, 然后返回一个三元数组:
 
 
 
-Rack在Web Server 和应用程序之间提供了最小的API接口, 如果Web Server都遵循Rack提供的这套规则, 那么所有的框架都能通过Rack协议使用Web Server. 
+Rack在Web Server 和应用程序之间提供了最小的API接口, 如果Web Server都遵循Rack提供的这套规则, 那么所有的框架都能通过Rack协议使用Web Server.
 
 所有的Web Server只需要在Rack::Handler模块中实现一个 run方法的类即可:
 
@@ -265,7 +265,7 @@ rack.version => [1, 0]
 
 环境变量大致可以分为两类:
 
-* CGI变量: 
+* CGI变量:
 
   * REQUEST_METHOD: HTTP请求的方法, 可以是 GET POST
   * PATH_INFO: 访问的路径, 此处为 `/admin`
@@ -279,7 +279,7 @@ rack.version => [1, 0]
 
   * rack.hijack, rack.hijack? rack.hijack_to: 实现 websocket
 
-  * rack.multiprocess, rack.multithread: 这两个对象知识了Rack应用的运行环境是否是多进程、多线程. 
+  * rack.multiprocess, rack.multithread: 这两个对象知识了Rack应用的运行环境是否是多进程、多线程.
 
     这里着重说明一下: Rack 服务器可以根据负载情况同时启动Rack应用的多个实例.一般来说,多进程方式比较安全: 如果要使用多线程, 不但要保证Rack应用程序是线程安全, 还需要保证Rack中间件是线程安全.
 
@@ -311,7 +311,7 @@ Rack提供了丰富的API可以帮助我们快速方便地编写灵活的应用�
 
 #### Rack::Request
 
-我们可以将传入Rack应用程序的环境变量(env)是包含一次HTTP请求的所有参数信息.  在Rack内部是将 env 转换成一个 request对象进行操作. `Rack::Request`为存取 env 提供了方便的接口. 
+我们可以将传入Rack应用程序的环境变量(env)是包含一次HTTP请求的所有参数信息.  在Rack内部是将 env 转换成一个 request对象进行操作. `Rack::Request`为存取 env 提供了方便的接口.
 
 > Rack::Request provides a convenient interface to a Rack environment.  It is stateless, the environment +env+ passed to the constructor will be directly modified.
 >   req = Rack::Request.new(env)
@@ -362,7 +362,7 @@ Rack::Handler::WEBrick.run app, :Port => 3000
 
 `Rack::Request`提供了询问当前HTTP请求类型的简洁方法
 
-* request_method: 请求的HTTP方法, 包含 GET POST PUT DELETE HEAD 
+* request_method: 请求的HTTP方法, 包含 GET POST PUT DELETE HEAD
 * get? : HTTP请求是否为 GET
 * head? : HTTP请求是否为 HEAD
 * post? : HTTP请求是否为 POST
@@ -377,7 +377,7 @@ Rack::Handler::WEBrick.run app, :Port => 3000
 # rack/lib/request.rb
 # request 类比较简单, 主要是对 env 进行处理
 # Rack::Request 本身是无状态的,  env 传入 Request对象的构造方法中, 它可以直接被修改
-# 以下代码为节选, 完整代码请参考: 
+# 以下代码为节选, 完整代码请参考:
 # 重点说明一下 super 方法的使用
 # 1. super       调用时, 将沿着继承链调用祖先类/模块的方法, 并携带传递给当前调用对象的全部方法参数
 # 2. super()     调用时, 则不会传递调用者任何参数
@@ -392,66 +392,66 @@ module Rack
       @params = nil
       super(env)
     end
-      
+
     def params
       @params ||= super
     end
-      
+
     def update_param(k, v)
       super
       @params = nil
     end
-      
+
     def delete_param(k)
       v = super
       @params = nil
       v  
     end
-      
+
     # 对 header 进行操作的 helper
     module Env
       # the enviroment of the request
       attr_reader :env
-      
-      # env is an instance of Hash 
+
+      # env is an instance of Hash
       def initialize(env)
         @env = env
         super()
       end
-      
+
       def has_header?(name)
         @env.key? name
       end
-        
+
       def fetch_header(name, &block)
       end
-        
+
       def set_header(name, v)
       end
-        
+
       def add_header(key, v)
       end
-        
+
       def delete_header(name)
       end
-        
+
       def initialize_copy(other)
         @env = other.env.dup
       end
     end
-      
+
     # 一些辅助方法, 用来解析 env
     module Helpers
-        
+
 	  def body;  			get_header(RACK_INPUT); end
       def path_info;    	get_header(PATH_INFO); end
       def request_method;	get_header(REQUEST_METHOD); end
-        
+
       # 判断请求的方法类型
       def get?;				request_method == GET; end
       def trace?;			request_method == TRACE; end
     end
-      
+
     # 将上述两个模块 include 加入 Request类的继承链中
     # Rack::Request.ancestors
     #[Env, Helpers, ...]
@@ -476,14 +476,12 @@ end
 * 直接设置 `response.body`. 此时必须手动设置 `Content-Length` 的值
 * 采用 `response.write` 增量写入内容, 自动填充 `Content-Length`的值
 
-不管采用哪种方式, 最后都得采用` response.finish` 完成 `response`的构建. 除了一些必要的检查外, `finish` 将装配出符合Rack规范的一个三元数组,也就是之前手动返回的那个数组: [status, heades, body]
+不管采用哪种方式, 最后都得采用`response.finish` 完成 `response`的构建. 除了一些必要的检查外, `finish` 将装配出符合Rack规范的一个三元数组,也就是之前手动返回的那个数组: [status, heades, body]
 
 
 
 采用第一种形式构造 body:
-
 ~~~ruby
-
 #! /usr/bin/env ruby
 require 'rack'
 require_relative 'decorator'
@@ -493,21 +491,23 @@ app = -> (env) do
  response = Rack::Response.new
 
  body = "===========header==========<br/>"
- if request.path_info == '/hello'
+ if request.path_info == "/hello"
    body << "you say hello"
    client = request['client']
    body << " from #{client}" if client
  else
    body << "you need provide some client information"
  end
+
  body << "<br/>===========footer=========="
  response.body = [body]
  response.headers['Content-Length'] = body.bytesize.to_s
- response.headers['Content-type'] = 'text/html' 
+ response.headers['Content-type'] = 'text/html'
  response.finish
 end
 
 Rack::Handler::WEBrick.run app, :Port => 3000
+
 ~~~
 
 
@@ -576,16 +576,16 @@ module Rack
   # Rack::Response 为创建 Rack response提供了简介的接口.
   # 它允许设置响应头(header) cookies
   # 我们可以使用 write 增量不断地写入响应内容, 直到调用 finish 结束
-  
+
   class Response
   	attr_accessor :length, :status, :body
     attr_reader :header
     alias headers haeder
-    
+
     def	initialize(body = [], status = [], header = [])
       @status = status.to_i
       @header = Utils::HeaderHash.new.merge(header)
-      
+
       @writer = lambda {|x| @body << x} # 后续调用 @writer.call(x) 向body中添加内容
       @block = nil
       @length = 0
@@ -597,13 +597,13 @@ module Rack
       else
       	raise TypeError, 'stringable or iterable required'
       end
-      
+
       yield self if block_given?
     end
-    
+
     def	finish(&block)
       @block = block
-      
+
       if [204, 304].include?(status.to_i)
       	delete_header CONTENT_TYPE
       	delete_header CONETENT_LENGTH
@@ -613,23 +613,23 @@ module Rack
         [status, header, BodyProxy.new(self){}]
       end
     end
-    
+
     # 向body后插入数据
     def write(str)
       s = str.to_s
       @length += s.bytesize unless chunked
       @writer.call s
-      
+
       set_header(CONTENT_LENGTH, @length.to_s) unless chunked?
       str
     end
-    
+
     # 关闭
     def close
       body.close if body.respond_to?(:close)
     end
-    
-    
+
+
   end
 end
 ~~~
@@ -638,7 +638,7 @@ end
 
 ## Rack中间件
 
-什么是中间件? 简单讲中间件就是在Ruby Web Server和Rack应用程序之间执行的代码. 
+什么是中间件? 简单讲中间件就是在Ruby Web Server和Rack应用程序之间执行的代码.
 
 Rack协议和中间件是Rack能达到今天地位不可或缺的两个特性. Rack协议规定了 WebServer 和 Rack 应用程序之间应该如何通信, 而Rack中间件能够在上层改变HTTP的响应或者请求, 在不改变应用的基础上为Rack应用增加新的功能.
 
@@ -670,7 +670,7 @@ end
 # use Decorator
 # run app
 Rack::Handler::WEBrick.run Decorator.new(app), :Port => 3000
-	
+
 ~~~
 
 最后一行我们采用的是
@@ -678,7 +678,7 @@ Rack::Handler::WEBrick.run Decorator.new(app), :Port => 3000
 ~~~ruby
 Rack::Handler::WEBrick.run Decorator.new(app), Port: 3000
 
-# 相当于调用了 
+# 相当于调用了
 # (Decorator.new(app)).call(env)
 # decorator.call(env)
 # 上述方法内部先调用 @app的 call(env)
@@ -695,7 +695,7 @@ class Decorator
     @app = app
     @block = @block
   end
-  
+
   def call(env)
     status, headers, body = @app.call(env)
     new_body = "===========header==========<br/>"
@@ -703,7 +703,7 @@ class Decorator
     body.each {|str| new_body << str}
     new_body << "<br/>===========footer=========="
     headers['Content-Length'] = new_body.bytesize.to_s
-    
+
     # 最后返回加上头尾信息的新的三元数组
     [status, headers, [new_body]]
   end
@@ -753,7 +753,7 @@ Web框架的作者可以用中间件的形式实现整个框架. 由于中间件
 
 ### 装配中间件
 
-我们往往需要在一个应用程序里面装载很多中间件, 最直接的方式是采用 `new` 方法. 
+我们往往需要在一个应用程序里面装载很多中间件, 最直接的方式是采用 `new` 方法.
 
 ~~~ruby
 # 两个中间件 Middleware1 Middleware2, 一个应用程序 rack_app
@@ -767,7 +767,7 @@ class Builder
   # 加入中间件
   def use
   end
-  
+
   # 加入应用程序
   def run
   end
@@ -820,7 +820,7 @@ class Decorator
     @app = app
     @block = @block
   end
-  
+
   def call(env)
     status, headers, body = @app.call(env)
     new_body = ""
@@ -829,7 +829,7 @@ class Decorator
     new_body << "<br/>===========footer=========="
     # 注释掉下面一行, 采用Rack自带的中间件自动添加头部信息: Content-Length
     # headers['Content-Length'] = new_body.bytesize.to_s
-    
+
     # 最后返回加上头尾信息的新的三元数组
     [status, headers, [new_body]]
   end
@@ -876,7 +876,7 @@ class Builder
 end
 ~~~
 
-`Builder`类中`to_app`的实现,首先对加入的`middlewares`进行了`reverse`,这是因为对所有使用的中间件, 我们必须持有它们的顺序信息. 第一个被`use`的中间件包在最外面一层, 第二个被`use`的中间件在第二层, 依次类推, 直至包含了原始的`Rack应用程序`. 
+`Builder`类中`to_app`的实现,首先对加入的`middlewares`进行了`reverse`,这是因为对所有使用的中间件, 我们必须持有它们的顺序信息. 第一个被`use`的中间件包在最外面一层, 第二个被`use`的中间件在第二层, 依次类推, 直至包含了原始的`Rack应用程序`.
 
 
 
@@ -941,7 +941,7 @@ end
 
 ~~~
 
- 
+
 
 最后修改一下我们的运行程序, 为`Decorator`添加参数和代码块
 
@@ -960,7 +960,7 @@ app = Builder.new {
 }.to_app
 
 Rack::Handler::WEBrick.run app, Port: 3000
-	
+
 ~~~
 
 运行程序, 我们可以看到如下输出:
@@ -1002,7 +1002,7 @@ run lambda { |env| [200, {'Content-Type' => 'text/html'}, ['Hello World']] }
 
 
 ~~~shell
-$ rackup 
+$ rackup
 Puma starting in single mode...
 * Version 3.11.2 (ruby 2.4.2-p198), codename: Love Song
 * Min threads: 0, max threads: 16
@@ -1015,7 +1015,6 @@ Use Ctrl-C to stop
 
 
 
-以上主要对`Rack`进行了简单的介绍, 并且自行实现了中间件的构造和装载代码. 
+以上主要对`Rack`进行了简单的介绍, 并且自行实现了中间件的构造和装载代码.
 
 下一篇着重研究`Rack`源码, 以及Web Server的启动过程
-

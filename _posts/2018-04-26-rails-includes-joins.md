@@ -49,7 +49,7 @@ end
   User Load (93.3ms)  SELECT `users`.* FROM `users` INNER JOIN `orders` ON `orders`.`user_id` = `users`.`id` WHERE `users`.`deleted_at` IS NULL
 ~~~
 
-上述查询的意思就是把所有包含了订单的用户作为一个`User`对象返回. 
+上述查询的意思就是把所有包含了订单的用户作为一个`User`对象返回.
 
 Warning:  **如果多个订单属于同一个用户, 那么这个用户会在`User`对象中出现多次.要想让每个用户只出现一次, 可以使用**:
 
@@ -82,22 +82,22 @@ Order.joins(:user).count == Order.joins(:user).distinct.count
 class Category < ApplicationRecord
   has_many :articles
 end
- 
+
 class Article < ApplicationRecord
   belongs_to :category
   has_many :comments
   has_many :tags
 end
- 
+
 class Comment < ApplicationRecord
   belongs_to :article
   has_one :guest
 end
- 
+
 class Guest < ApplicationRecord
   belongs_to :comment
 end
- 
+
 class Tag < ApplicationRecord
   belongs_to :article
 end
@@ -125,7 +125,7 @@ Article.joins(:category, :comments)
 Article.joins(comments: :guest)
 # => Article.joins({comments: :guest})
 
-# => SELECT articles.* from articles 
+# => SELECT articles.* from articles
 INNER JOIN comments ON comments.article_id = articles.id
 INNER JOIN guest    ON guest.comment_id = comments.id
 ~~~
@@ -139,7 +139,7 @@ INNER JOIN guest    ON guest.comment_id = comments.id
 ~~~ruby
 Category.joins(articles: [{comments: :guest}, :tags])
 
-# => SELECT categories.* from categories 
+# => SELECT categories.* from categories
 INNER JOIN articles ON articles.category_id = categories.id
 INNER JOIN comments ON comments.article_id  = articles.id
 INNER JOIN guests   ON guests.comment_id    = comments.id
@@ -166,7 +166,7 @@ INNER JOIN tags     ON tags.article_id		= artciles.id
 time_range = (Time.now.midnight - 1.day)..Time.now.midnight
 Client.joins(:orders).where('orders.created_at' => time_range)
 
-# => SELECT clients.* from clients 
+# => SELECT clients.* from clients
 INNER JOIN orders ON orders.client_id = cliens.id
 WHERE orders.created_at BETWEEN '2018-04-30 16:00:00' AND '2018-05-01 16:00:00'
 
@@ -186,7 +186,7 @@ Rails 5提供了`left_outer_joins`来实现左外联结.
 左外联结一般用来选择一组记录, 不管他们是否具有关联记录.
 
 ~~~ruby
-User.left_outer_joins(:orders).distinct.select('users.name AS name, orders.number AS number)
+User.left_outer_joins(:orders).distinct.select('users.name AS name, orders.number AS number')
 
 # => SELECT DISTINCT users.name AS name, orders.number AS number
 LEFT OUTER JOIN orders ON orders.user_id = users.id
@@ -196,7 +196,7 @@ LEFT OUTER JOIN orders ON orders.user_id = users.id
 
 ### 联结表返回的对象
 
-以上我们讲述了 Rails 中 `joins`以及`left_outer_joins`的使用. 
+以上我们讲述了 Rails 中 `joins`以及`left_outer_joins`的使用.
 
 一般来说, 联结表的意义是用来过滤集合, 并不会加载关联的对象. 另外, 如果在联结表中加入了查询条件, 将会根据添加的查询条件对联结表进行过滤.
 
@@ -251,7 +251,7 @@ Category.includes(articles: [{comments: :guest}, :tags]).find(1)
 
 #### 为关联的及早加载指明条件
 
-我们可以像`joins`那样为及早加载指明条件. 
+我们可以像`joins`那样为及早加载指明条件.
 
 **加上条件之后, 就会生成一张大的联结表(LEFT OUTER JOIN)**
 
@@ -260,7 +260,7 @@ Category.includes(articles: [{comments: :guest}, :tags]).find(1)
 ~~~ruby
 Article.includes(:comments).where(comments: {visible: true})
 
-# 
+#
 SELECT "articles"."id" AS t0_r0, ... "comments"."updated_at" AS t1_r5 FROM "articles" LEFT OUTER JOIN "comments" ON "comments"."article_id" = "articles"."id" WHERE (comments.visible = 1)
 ~~~
 
@@ -290,7 +290,7 @@ Article.includes(:comments).where('comments.visible = ?', true).references(:comm
 >
 > User.preload(:posts)
 >
-> SELECT users.* FROM users 
+> SELECT users.* FROM users
 >
 > SELECT posts.* FROM posts WHERE posts.user_id IN (1,2,3)
 
@@ -357,10 +357,3 @@ Rails 很聪明地帮我们选择到底是使用`preload`还是 `eager_load`.
 参考文章:
 
 https://goiabada.blog/to-join-or-not-to-join-an-act-of-includes-f6728fcefea3
-
-
-
-
-
-
-
