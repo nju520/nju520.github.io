@@ -759,10 +759,12 @@ initializer :build_middleware_stack do
 end
 ~~~
 
+This needs to happen before eager load so it happens
 
-# This needs to happen before eager load so it happens
-# in exactly the same point regardless of config.cache_classes
-# 9) run to_prepare callbacks
+in exactly the same point regardless of config.cache_classes
+
+#####  9) run to_prepare callbacks
+
 initializer :run_prepare_callbacks do
   ActionDispatch::Reloader.prepare!
 end
