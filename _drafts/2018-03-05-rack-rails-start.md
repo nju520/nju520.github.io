@@ -200,7 +200,7 @@ end
 `exec_app`方法的主要作用是执行应用中的`bin/rails`文件.
 如果在当前文件夹未找到`bin/rails`文件, 就会继续在上层文件夹中查找, 直到找到为止. 因此, 我们可以在一个`Rails`应用中的任何位置执行`rails 命令`.
 
-执行 `rails server` 实际上就相当于执行 `exec ruby bin/rails server`
+执行 `rails server` 实际上就相当于执行 **`exec ruby bin/rails server`**
 
 
 #### bin/rails 文件
@@ -410,6 +410,7 @@ private
 
 在`Rack应用(二)` 中我们曾研究过`wrapped_app`以及`server.start`方法, 在此依旧不表.
 
+让我们直接查看一下 `config.ru`文件:
 ~~~ruby
 # config.ru
 # This file is used by Rack-based servers to start the application.
@@ -420,7 +421,10 @@ run Rails.application
 
 ~~~
 
-`Rails`初始化过程中的大部分工作都是在这一步中完成. 在 `config.ru`文件中, 加载 `config/environment.rb`文件中的第一行代码先被执行:
+`Rails`初始化过程中的大部分工作都是在这一步中完成.
+** `rails server` 指令可以使用 `rackup config.ru` 代替 **
+
+在 `config.ru`文件中, 加载 `config/environment.rb`文件中的第一行代码先被执行:
 
 ~~~ruby
 require_relative 'config/environment'
