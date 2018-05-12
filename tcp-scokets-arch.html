@@ -1648,7 +1648,7 @@ end
   <a class="read-next-story prev no-cover" href="tcp-scokets-no-block">
     <section class="post">
       <h2>TCP Socket 编程 -- 非阻塞式 IO</h2>
-      <p>非阻塞式 IO 网络请求瓶颈!! 非阻塞式读操作 还记得我们之前学过的Socket#read吗? 它会一直保持阻塞, 直到接收到EOF`或者获得指定的最小字节数为止. 如果客户端没有发送EOF, 就可能会导致阻塞. 这种情况虽然可以通过readpartial暂时解决, readpartial会立刻返回所有的可用数据. 但是如果没有数据可用, 那么readpartial也会陷入阻塞状态. 我们可以使用read_nonblock来实现非阻塞式读操作. 和readpartial...</p>
+      <p>非阻塞式读操作 还记得我们之前学过的Socket#read吗? 它会一直保持阻塞, 直到接收到EOF或者获得指定的最小字节数为止. 如果客户端没有发送EOF, 就可能会导致阻塞. 这种情况虽然可以通过readpartial暂时解决, readpartial会立刻返回所有的可用数据. 但是如果没有数据可用, 那么readpartial也会陷入阻塞状态. 我们可以使用read_nonblock来实现非阻塞式读操作. 和readpartial 非常类似, read_nonblock需要一个整数的参数, 指定需要读取的最大字节数....</p>
     </section>
   </a>
   

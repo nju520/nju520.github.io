@@ -108,7 +108,7 @@
 </script>
 
   </head>
-  <body class=" home-template nav-closed">
+  <body class=" paged archive-template nav-closed">
     <!-- Google Tag Manager (noscript) -->
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PWFC85B"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
@@ -164,9 +164,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   
   <nav class="pagination" role="pagination">
   
-  <span class="page-number"> Page 1 of 4 </span>
   
-  <a class="older-posts" href="/page2/" title="Next Page">Older Posts &raquo;</a>
+  <a class="newer-posts" href="/page2/" title="Previous Page">&laquo; Newer Posts</a>
+  
+  
+  <span class="page-number"> Page 3 of 4 </span>
+  
+  <a class="older-posts" href="/page4/" title="Next Page">Older Posts &raquo;</a>
   
 </nav>
 
@@ -177,11 +181,95 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <article class="post">
   <header class="post-header">
-    <h2 class="post-title"><a href="/sidekiq">Sidekiq 异步任务调度与执行</a></h2>
+    <h2 class="post-title"><a href="/redis-in-action">Redis 实战 (一)</a></h2>
   </header>
   <section class="post-excerpt">
     
-    <p>sidekiq 是 Ruby 中一款非常优秀的后台任务处理软件, 其本身提供的API十分简洁, 源代码也易于阅读, 没有太多花哨的代码. Sidekiq 将 Redis 的各种数据结构用得都起到好处, 我们可以通过 Sidekiq 加深对 Redis 的印象以及学习如何恰当高效地结合 Redis 实现业务逻辑.本篇文章从 Sidekiq 的启动开始,详细解读 Sidekiq 的异步任务调度和执行. <a class="read-more" href="/sidekiq">&raquo;</a></p>
+    <p>Redis 是一个远程内存数据库, 它可以提供五种不同类型的数据结构, 很多问题都可以很自然地映射到这些数据结构上. 用户还可以通过复制、持久化(persistance)和客户端分片(clien-side sharding)等特性, 方便地将 Redis 扩展成一个能够包含数百G数据, 每秒处理上百万次请求的系统.本章主要熟悉 Redis 的基本实用, 并通过一个虚拟的 Web 应用来使用 Redis 解决实际问题. <a class="read-more" href="/redis-in-action">&raquo;</a></p>
+    
+  </section>
+  <footer class="post-meta">
+    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
+    
+    <a href='/tag/redis'>redis</a>
+    
+    <a href='/tag/database'>database</a>
+    
+    <time class="post-date" datetime="2017-04-06">06 Apr 2017</time>
+  </footer>
+</article>
+
+<article class="post">
+  <header class="post-header">
+    <h2 class="post-title"><a href="/javascript-inherit">JavaScript 继承模式</a></h2>
+  </header>
+  <section class="post-excerpt">
+    
+    <p>上一篇文章我们对JavaScript的原型有了深入的了解, 本篇文章继续阐述 JavaScript中的继承模式. <a class="read-more" href="/javascript-inherit">&raquo;</a></p>
+    
+  </section>
+  <footer class="post-meta">
+    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
+    
+    <a href='/tag/JavaScript'>JavaScript</a>
+    
+    <a href='/tag/inherit'>inherit</a>
+    
+    <time class="post-date" datetime="2016-12-27">27 Dec 2016</time>
+  </footer>
+</article>
+
+<article class="post">
+  <header class="post-header">
+    <h2 class="post-title"><a href="/javascript-prototype">JavaScript 深入理解 prototype</a></h2>
+  </header>
+  <section class="post-excerpt">
+    
+    <p>如果你之前只接触过传统的OOP继承模式的话, 就会对 JavaScript 原型模型感到困惑, 但这正是JavaScript原型继承的优势所在. 实现传统的继承模型很简单, 但是实现JavaScript中的原型继承则要困难的多. 本篇文章就围绕 prototype深入探讨一下 原型继承. <a class="read-more" href="/javascript-prototype">&raquo;</a></p>
+    
+  </section>
+  <footer class="post-meta">
+    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
+    
+    <a href='/tag/JavaScript'>JavaScript</a>
+    
+    <a href='/tag/prototype'>prototype</a>
+    
+    <a href='/tag/OOP'>OOP</a>
+    
+    <time class="post-date" datetime="2016-11-20">20 Nov 2016</time>
+  </footer>
+</article>
+
+<article class="post">
+  <header class="post-header">
+    <h2 class="post-title"><a href="/javascript-object">JavaScript 深入理解 对象 (一)</a></h2>
+  </header>
+  <section class="post-excerpt">
+    
+    <p>JavaScript提供了强大而灵活的OOP语言能力.学习JavaScript的难点之一就是理解Object(对象),因为JavaScript的Object对象模型很独特, 初学者不容易掌握. 本系列文章就带你来深入理解 JavaScript的对象, 原型模型以及继承 <a class="read-more" href="/javascript-object">&raquo;</a></p>
+    
+  </section>
+  <footer class="post-meta">
+    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
+    
+    <a href='/tag/JavaScript'>JavaScript</a>
+    
+    <a href='/tag/object'>object</a>
+    
+    <a href='/tag/OOP'>OOP</a>
+    
+    <time class="post-date" datetime="2016-11-04">04 Nov 2016</time>
+  </footer>
+</article>
+
+<article class="post">
+  <header class="post-header">
+    <h2 class="post-title"><a href="/ruby-block">大话 Ruby Block</a></h2>
+  </header>
+  <section class="post-excerpt">
+    
+    <p>Ruby 代码块是Ruby语言的最诱人的语言特性, 我们可以使用代码块来进行各式各样的操作. 代码块不是独立运行的, 运行代码需要一个执行环境,局部变量, 实例变量、self等. 创建一个代码块时就会创建一个新的绑定, 然后代码块连同它的绑定传给方法.本篇文章就叫单聊一下Ruby中的代码块. <a class="read-more" href="/ruby-block">&raquo;</a></p>
     
   </section>
   <footer class="post-meta">
@@ -189,165 +277,53 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     
     <a href='/tag/Ruby'>Ruby</a>
     
-    <a href='/tag/Sidekiq'>Sidekiq</a>
+    <a href='/tag/block'>block</a>
     
-    <a href='/tag/workers'>workers</a>
-    
-    <a href='/tag/Redis'>Redis</a>
-    
-    <time class="post-date" datetime="2018-03-18">18 Mar 2018</time>
+    <time class="post-date" datetime="2016-09-20">20 Sep 2016</time>
   </footer>
 </article>
 
 <article class="post">
   <header class="post-header">
-    <h2 class="post-title"><a href="/tcp-scokets-arch">TCP Socket 编程 -- 网络架构模式</a></h2>
+    <h2 class="post-title"><a href="/javascript-event">JavaScript 与 事件</a></h2>
   </header>
   <section class="post-excerpt">
     
-    <p>本篇文件会详细介绍架构网络应用程序的常见方式. 如何处理并发? 如何处理错误? 处理缓慢的客户端的最好的方法是什么? 如何最有效地利用资源?这类问题都能在本篇文章中找到答案. <a class="read-more" href="/tcp-scokets-arch">&raquo;</a></p>
+    <p>与浏览器进行交互时浏览器会触发各种事件, 我们可以通过编写 JavaScript来监听事件.JavaScript是一套频繁使用事件机制的动态语言, 熟悉并掌握时间机制对于Web开发者开始至关重要. <a class="read-more" href="/javascript-event">&raquo;</a></p>
     
   </section>
   <footer class="post-meta">
     <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
     
-    <a href='/tag/TCP'>TCP</a>
+    <a href='/tag/JavaScript'>JavaScript</a>
     
-    <a href='/tag/socket'>socket</a>
+    <a href='/tag/event'>event</a>
     
-    <a href='/tag/Ruby'>Ruby</a>
-    
-    <a href='/tag/process'>process</a>
-    
-    <a href='/tag/prefork'>prefork</a>
-    
-    <a href='/tag/thread'>thread</a>
-    
-    <a href='/tag/threadpool'>threadpool</a>
-    
-    <a href='/tag/Reactor'>Reactor</a>
-    
-    <time class="post-date" datetime="2018-03-15">15 Mar 2018</time>
+    <time class="post-date" datetime="2016-09-13">13 Sep 2016</time>
   </footer>
 </article>
 
 <article class="post">
   <header class="post-header">
-    <h2 class="post-title"><a href="/tcp-scokets-no-block">TCP Socket 编程 -- 非阻塞式 IO</a></h2>
+    <h2 class="post-title"><a href="/javascript-call-apply-bind">妙用JavaScript中的apply/call/bind</a></h2>
   </header>
   <section class="post-excerpt">
     
-    <p>网络请求的瓶颈一般来自于 `IO`. 在常规的编程模式下, 比如程序做一次数据库的SQL查询, 先向数据库发起查询请求, 通常要等到数据库查询返回数据时才执行接下来的任务. 在这段时间内, 程序啥也干不了, 只能干等着; 服务器的CPU资源也就空闲, 这就是我们常见的阻塞. 本篇文章通过介绍几种非阻塞式读写来避免阻塞. <a class="read-more" href="/tcp-scokets-no-block">&raquo;</a></p>
+    <p>JavaScript中, call和apply主要用途是为了扩充函数赖以生存的作用域. 通俗讲, 就是为了动态改变函数体内部的this指向. bind方法虽然用法和call和apply有差异, 但是作用也是改变函数体内的this指向. <a class="read-more" href="/javascript-call-apply-bind">&raquo;</a></p>
     
   </section>
   <footer class="post-meta">
     <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
     
-    <a href='/tag/TCP'>TCP</a>
+    <a href='/tag/JavaScript'>JavaScript</a>
     
-    <a href='/tag/socket'>socket</a>
+    <a href='/tag/apply'>apply</a>
     
-    <a href='/tag/Ruby'>Ruby</a>
+    <a href='/tag/call'>call</a>
     
-    <time class="post-date" datetime="2018-03-15">15 Mar 2018</time>
-  </footer>
-</article>
-
-<article class="post">
-  <header class="post-header">
-    <h2 class="post-title"><a href="/tcp-scokets">TCP Socket 编程 -- 基础</a></h2>
-  </header>
-  <section class="post-excerpt">
+    <a href='/tag/bind'>bind</a>
     
-    <p>套接字 `socket` 连接起了数字世界. 正是网络编程--更确切的说, 是一组特定的套接字编程API -- 的出现, 才使得世界越来越小. 本文会介绍套接字编程的基础知识, 包括如何创建套接字, 如何连接套接字以及如何共享数据. 所有的示例代码均为 `Ruby` <a class="read-more" href="/tcp-scokets">&raquo;</a></p>
-    
-  </section>
-  <footer class="post-meta">
-    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
-    
-    <a href='/tag/TCP'>TCP</a>
-    
-    <a href='/tag/socket'>socket</a>
-    
-    <a href='/tag/Ruby'>Ruby</a>
-    
-    <time class="post-date" datetime="2018-03-10">10 Mar 2018</time>
-  </footer>
-</article>
-
-<article class="post">
-  <header class="post-header">
-    <h2 class="post-title"><a href="/rack-webrick">WEBrick 源码分析</a></h2>
-  </header>
-  <section class="post-excerpt">
-    
-    <p>WEBrick是 Ruby 最古老的一款 Web Server, 本文就从源码入手, 解读 WEBrick的实现原理, 从线程和进程的角度分析 WEBrick的优缺点. <a class="read-more" href="/rack-webrick">&raquo;</a></p>
-    
-  </section>
-  <footer class="post-meta">
-    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
-    
-    <a href='/tag/rack'>rack</a>
-    
-    <a href='/tag/webrick'>webrick</a>
-    
-    <a href='/tag/socket'>socket</a>
-    
-    <a href='/tag/thread'>thread</a>
-    
-    <time class="post-date" datetime="2018-03-09">09 Mar 2018</time>
-  </footer>
-</article>
-
-<article class="post">
-  <header class="post-header">
-    <h2 class="post-title"><a href="/rack-rails">Ruby Rack 协议及其应用(三)</a></h2>
-  </header>
-  <section class="post-excerpt">
-    
-    <p>Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本篇文章着重讲述 `Ruby on Rails`框架的启动过程. <a class="read-more" href="/rack-rails">&raquo;</a></p>
-    
-  </section>
-  <footer class="post-meta">
-    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
-    
-    <a href='/tag/Rack系列'>Rack系列</a>
-    
-    <a href='/tag/rack'>rack</a>
-    
-    <a href='/tag/ruby'>ruby</a>
-    
-    <a href='/tag/rails'>rails</a>
-    
-    <a href='/tag/server'>server</a>
-    
-    <time class="post-date" datetime="2018-03-05">05 Mar 2018</time>
-  </footer>
-</article>
-
-<article class="post">
-  <header class="post-header">
-    <h2 class="post-title"><a href="/rack-working">Ruby Rack 协议及其应用(二)</a></h2>
-  </header>
-  <section class="post-excerpt">
-    
-    <p>Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本系列文章就深入探讨Rack协议的原理以及实现. <a class="read-more" href="/rack-working">&raquo;</a></p>
-    
-  </section>
-  <footer class="post-meta">
-    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
-    
-    <a href='/tag/Rack系列'>Rack系列</a>
-    
-    <a href='/tag/rack'>rack</a>
-    
-    <a href='/tag/ruby'>ruby</a>
-    
-    <a href='/tag/rails'>rails</a>
-    
-    <a href='/tag/server'>server</a>
-    
-    <time class="post-date" datetime="2018-03-04">04 Mar 2018</time>
+    <time class="post-date" datetime="2016-07-09">09 Jul 2016</time>
   </footer>
 </article>
 
@@ -356,9 +332,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <nav class="pagination" role="pagination">
   
-  <span class="page-number"> Page 1 of 4 </span>
   
-  <a class="older-posts" href="/page2/" title="Next Page">Older Posts &raquo;</a>
+  <a class="newer-posts" href="/page2/" title="Previous Page">&laquo; Newer Posts</a>
+  
+  
+  <span class="page-number"> Page 3 of 4 </span>
+  
+  <a class="older-posts" href="/page4/" title="Next Page">Older Posts &raquo;</a>
   
 </nav>
 

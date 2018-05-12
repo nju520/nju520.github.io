@@ -122,7 +122,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </a>
   <ul>
     <li class="nav-home " role="presentation"><a href="/">Home</a></li>
-    <li class="nav-ruby " role="presentation"><a href="/tag/ruby">Ruby</a></li>
+    <li class="nav-ruby  nav-current" role="presentation"><a href="/tag/ruby">Ruby</a></li>
     <li class="nav-javascript " role="presentation"><a href="/tag/javascript">JavaScript</a></li>
     <li class="nav-server " role="presentation"><a href="/tag/server">Server</a></li>
     <li class="nav-database " role="presentation"><a href="/tag/database">Database</a></li>
@@ -148,10 +148,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </nav>
   <div class="vertical">
     <div class="main-header-content inner">
-      <h1 class="page-title">Ruby</h1>
+      <h1 class="page-title">ruby</h1>
       <h2 class="page-description">
         
-        A 4-post collection
+        A 3-post collection
         
       </h2>
     </div>
@@ -178,101 +178,79 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <article class="post">
   <header class="post-header">
-    <h2 class="post-title"><a href="/sidekiq">Sidekiq 异步任务调度与执行</a></h2>
+    <h2 class="post-title"><a href="/rack-rails">Ruby Rack 协议及其应用(三)</a></h2>
   </header>
   <section class="post-excerpt">
     
-    <p>sidekiq 是 Ruby 中一款非常优秀的后台任务处理软件, 其本身提供的API十分简洁, 源代码也易于阅读, 没有太多花哨的代码. Sidekiq 将 Redis 的各种数据结构用得都起到好处, 我们可以通过 Sidekiq 加深对 Redis 的印象以及学习如何恰当高效地结合 Redis 实现业务逻辑.本篇文章从 Sidekiq 的启动开始,详细解读 Sidekiq 的异步任务调度和执行. <a class="read-more" href="/sidekiq">&raquo;</a></p>
+    <p>Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本篇文章着重讲述 `Ruby on Rails`框架的启动过程. <a class="read-more" href="/rack-rails">&raquo;</a></p>
     
   </section>
   <footer class="post-meta">
     <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
     
-    <a href='/tag/Ruby'>Ruby</a>
+    <a href='/tag/Rack系列'>Rack系列</a>
     
-    <a href='/tag/Sidekiq'>Sidekiq</a>
+    <a href='/tag/rack'>rack</a>
     
-    <a href='/tag/workers'>workers</a>
+    <a href='/tag/ruby'>ruby</a>
     
-    <a href='/tag/Redis'>Redis</a>
+    <a href='/tag/rails'>rails</a>
     
-    <time class="post-date" datetime="2018-03-18">18 Mar 2018</time>
+    <a href='/tag/server'>server</a>
+    
+    <time class="post-date" datetime="2018-03-05">05 Mar 2018</time>
   </footer>
 </article>
 
 <article class="post">
   <header class="post-header">
-    <h2 class="post-title"><a href="/tcp-scokets-arch">TCP Socket 编程 -- 网络架构模式</a></h2>
+    <h2 class="post-title"><a href="/rack-working">Ruby Rack 协议及其应用(二)</a></h2>
   </header>
   <section class="post-excerpt">
     
-    <p>本篇文件会详细介绍架构网络应用程序的常见方式. 如何处理并发? 如何处理错误? 处理缓慢的客户端的最好的方法是什么? 如何最有效地利用资源?这类问题都能在本篇文章中找到答案. <a class="read-more" href="/tcp-scokets-arch">&raquo;</a></p>
+    <p>Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本系列文章就深入探讨Rack协议的原理以及实现. <a class="read-more" href="/rack-working">&raquo;</a></p>
     
   </section>
   <footer class="post-meta">
     <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
     
-    <a href='/tag/TCP'>TCP</a>
+    <a href='/tag/Rack系列'>Rack系列</a>
     
-    <a href='/tag/socket'>socket</a>
+    <a href='/tag/rack'>rack</a>
     
-    <a href='/tag/Ruby'>Ruby</a>
+    <a href='/tag/ruby'>ruby</a>
     
-    <a href='/tag/process'>process</a>
+    <a href='/tag/rails'>rails</a>
     
-    <a href='/tag/prefork'>prefork</a>
+    <a href='/tag/server'>server</a>
     
-    <a href='/tag/thread'>thread</a>
-    
-    <a href='/tag/threadpool'>threadpool</a>
-    
-    <a href='/tag/Reactor'>Reactor</a>
-    
-    <time class="post-date" datetime="2018-03-15">15 Mar 2018</time>
+    <time class="post-date" datetime="2018-03-04">04 Mar 2018</time>
   </footer>
 </article>
 
 <article class="post">
   <header class="post-header">
-    <h2 class="post-title"><a href="/tcp-scokets-no-block">TCP Socket 编程 -- 非阻塞式 IO</a></h2>
+    <h2 class="post-title"><a href="/rack-start">Ruby Rack 协议及其应用(一)</a></h2>
   </header>
   <section class="post-excerpt">
     
-    <p>网络请求的瓶颈一般来自于 `IO` <a class="read-more" href="/tcp-scokets-no-block">&raquo;</a></p>
+    <p>Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本系列文章就深入探讨Rack协议的原理以及实现. <a class="read-more" href="/rack-start">&raquo;</a></p>
     
   </section>
   <footer class="post-meta">
     <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
     
-    <a href='/tag/TCP'>TCP</a>
+    <a href='/tag/Rack系列'>Rack系列</a>
     
-    <a href='/tag/socket'>socket</a>
+    <a href='/tag/rack'>rack</a>
     
-    <a href='/tag/Ruby'>Ruby</a>
+    <a href='/tag/ruby'>ruby</a>
     
-    <time class="post-date" datetime="2018-03-15">15 Mar 2018</time>
-  </footer>
-</article>
-
-<article class="post">
-  <header class="post-header">
-    <h2 class="post-title"><a href="/tcp-scokets">TCP Socket 编程 -- 基础</a></h2>
-  </header>
-  <section class="post-excerpt">
+    <a href='/tag/rails'>rails</a>
     
-    <p>套接字 `socket` 连接起了数字世界. 正是网络编程--更确切的说, 是一组特定的套接字编程API -- 的出现, 才使得世界越来越小. 本文会介绍套接字编程的基础知识, 包括如何创建套接字, 如何连接套接字以及如何共享数据. 所有的示例代码均为 `Ruby` <a class="read-more" href="/tcp-scokets">&raquo;</a></p>
+    <a href='/tag/server'>server</a>
     
-  </section>
-  <footer class="post-meta">
-    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
-    
-    <a href='/tag/TCP'>TCP</a>
-    
-    <a href='/tag/socket'>socket</a>
-    
-    <a href='/tag/Ruby'>Ruby</a>
-    
-    <time class="post-date" datetime="2018-03-10">10 Mar 2018</time>
+    <time class="post-date" datetime="2018-03-01">01 Mar 2018</time>
   </footer>
 </article>
 

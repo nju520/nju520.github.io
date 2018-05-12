@@ -214,7 +214,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </header>
   <section class="post-excerpt">
     
-    <p>网络请求的瓶颈一般来自于 `IO` <a class="read-more" href="/tcp-scokets-no-block">&raquo;</a></p>
+    <p>网络请求的瓶颈一般来自于 `IO`. 在常规的编程模式下, 比如程序做一次数据库的SQL查询, 先向数据库发起查询请求, 通常要等到数据库查询返回数据时才执行接下来的任务. 在这段时间内, 程序啥也干不了, 只能干等着; 服务器的CPU资源也就空闲, 这就是我们常见的阻塞. 本篇文章通过介绍几种非阻塞式读写来避免阻塞. <a class="read-more" href="/tcp-scokets-no-block">&raquo;</a></p>
     
   </section>
   <footer class="post-meta">

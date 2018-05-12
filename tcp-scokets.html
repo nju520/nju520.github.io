@@ -963,7 +963,7 @@ $ ruby client.rb
   <a class="read-next-story no-cover" href="tcp-scokets-no-block">
     <section class="post">
       <h2>TCP Socket 编程 -- 非阻塞式 IO</h2>
-      <p>## 非阻塞式 `IO` ### 网络请求瓶颈!! ### 非阻塞式读操作 还记得我们之前学过的`Socket#read`吗? `它会一直保持阻塞, 直到接收到`EOF`或者获得指定的最小字节数为止. 如果客户端没有发送`EOF`, 就可能会导致阻塞. 这种情况虽然可以通过`readpartial`暂时解决, `readpartial`会立刻返回所有的可用数据. 但是如果没有数据可用,...</p>
+      <p>## 非阻塞式读操作 还记得我们之前学过的`Socket#read`吗? 它会一直保持阻塞, 直到接收到`EOF`或者获得指定的最小字节数为止. 如果客户端没有发送`EOF`, 就可能会导致阻塞. 这种情况虽然可以通过`readpartial`暂时解决, `readpartial`会立刻返回所有的可用数据. 但是如果没有数据可用, 那么`readpartial`也会陷入阻塞状态. 我们可以使用`read_nonblock`来实现非阻塞式读操作. 和`readpartial` 非常类似, `read_nonblock`需要一个整数的参数,...</p>
     </section>
   </a>
   

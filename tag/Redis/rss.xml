@@ -12,489 +12,1140 @@
     <atom:link href="rss" rel="self" type="application/rss+xml" />
     
 <item>
-  <title>Redis 实战 (一)</title>
-  <link>//redis-in-action</link>
+  <title>Sidekiq 异步任务调度与执行</title>
+  <link>//sidekiq</link>
   <author>nju520</author>
-  <pubDate>2018-04-06T00:00:00+08:00</pubDate>
-  <guid>//redis-in-action</guid>
+  <pubDate>2018-03-18T00:00:00+08:00</pubDate>
+  <guid>//sidekiq</guid>
   <description><![CDATA[
-  <blockquote>
-  <ol>
-    <li>本系列文章参考 《Redis 入门指南》  《Redis IN ACTION》</li>
-    <li>本系列文章的代码采用 Ruby实现.</li>
-  </ol>
+  <p>sidekiq 是 Ruby 中一款非常优秀的后台任务处理软件, 其本身提供的API十分简洁, 源代码也易于阅读, 没有太多花哨的代码. Sidekiq 将 Redis 的各种数据结构用得都起到好处, 我们可以通过 Sidekiq 加深对 Redis 的印象以及学习如何恰当高效地结合 Redis 实现业务逻辑.本篇文章从 Sidekiq 的启动开始,详细解读 Sidekiq 的异步任务调度和执行.  除此之外, 我还会介绍中间件机制以及在此基础上实现的任务重试机制.</p>
+
+<blockquote>
+  <p>本篇文章涉及的 Sidekiq 版本是 5.0.5</p>
 </blockquote>
 
-<h2 id="初识-redis">初识 Redis</h2>
+<h2 id="初识-sidekiq">初识 Sidekiq</h2>
 
-<p><code>Redis</code>是一个速度非常快的非关系型数据库(no-relational database), 它可以存储键(key)与5种不同类型的值(value)之间的映射(map). 它可以将存储在内存的键值对数据持久化到硬盘, 也可以使用复制特性来扩展读功能, 还可以使用客户端分片来扩展写性能.</p>
+<p>在我们具体解读<code>Sidekiq</code>的源码之前, 我们先来熟悉一下<code>Sidekiq</code>异步任务的创建和执行, 保证我们对其结构有一个总体的认识.</p>
 
-<h3 id="redis-附加特性">Redis 附加特性</h3>
+<p><code>Sidekiq</code>的使用非常简洁, 我们只需要在<code>app/workers</code>文件夹中添加一个<code>worker</code>,来处理异步请求:</p>
 
-<p>在使用类似 Redis 这样的内存数据库时, 我们首先想到的一个问题就是: “当服务器被关闭时, 服务器被存储的数据将何去何从?”</p>
+<pre><code class="language-ruby">class HardWorker
+  include Sidekiq::Worker
 
-<p>Redis 拥有两种不同形式的持久化方法, 它们都可以使用小而紧凑的格式将存储在内存中的数据存储到硬盘中.</p>
+  def perform(name, count)
+  # do something you want
+  end
+end
+</code></pre>
 
-<ol>
-  <li>时间点转储(point-in-time dump),转储操作既可以在“指定时间段内有指定数量的写操作执行”被满足时执行, 还可以通过调用两条转储到硬盘(dump-to-disk)命令中的一条来执行.</li>
-  <li>将所有修改了数据库的命令都写入一个只追加(append-only)文件里面, 用户可以根据数据的重要程度, 将只追加写入设置为不同形式:
+<p>我们可以在需要执行操作的地方提交异步任务了:</p>
+
+<pre><code class="language-ruby">#. 常规提交
+HardWorker.perform_async('hehe', 10)
+
+# 延迟提交 10分钟
+HardWorker.perform_in(10.minutes, 'sleep', 10)
+
+# 指定将来的某个时刻提交
+# 我们指定此任务明天的这个此刻执行
+HardWorker.perform_at(Time.now + 1.day, 'run', 200)
+</code></pre>
+
+<p>当我们执行上述三个提交方法时, <code>Sidekiq Worker</code>会将一个异步任务以<code>JSON</code>的形式将相关的参数信息加入到 <code>Redis</code>中并等待消费者对任务的拉取和处理.</p>
+
+<p><code>Sidekiq</code>的消费者由三个部分:</p>
+
+<ul>
+  <li>Sidekiq::Scheduled::Poller: 定时任务拉取器.
     <ul>
-      <li>不同步(sync)</li>
-      <li>每秒同步一次</li>
-      <li>每写入一个命令就同步一次</li>
+      <li>负责在一定时间范围内不定时检查定时任务(scheduled)以及重试任务(retry), 将计划时间已经超过当前时间的任务追加到各自对应的任务队列中</li>
+      <li>Sidekiq::Manager: worker 管理器. 负责按照配置的<code>concurrency</code>参数创建匹配数量的<code>worker</code>, 同时负责<code>worker</code>的管理. 这里的<code>worker</code>实际上就是一个<code>Processor</code>的实例</li>
     </ul>
   </li>
-</ol>
-
-<p>还有一点值得考虑的就是有时候只使用一台 Redis 服务器可能无法处理所有请求. 为了扩展Redis 的读性能, 并为Redis提供故障转移(failure)支持, Redis 实现了主从复制特性: 执行复制的从服务器会连接上主服务器, 接收主服务器发送的整个数据库的初始副本(copy); 之后主服务器执行的写命令, 都会发送到从服务器去执行, 从而实时地更新服务器的数据集.</p>
-
-<p>因为从服务器包含的数据会不断地进行更新, 因此客户端可以向任意一个从服务器发送读请求, 以此来避免对主服务器进行的集中式访问.</p>
-
-<h3 id="redis-数据结构">Redis 数据结构</h3>
-
-<p>Redis 可以存储键(key)五种不同数据结构类型之间的映射:</p>
-
-<ul>
-  <li>
-    <p>String</p>
-  </li>
-  <li>
-    <p>List</p>
-  </li>
-  <li>
-    <p>Set</p>
-  </li>
-  <li>
-    <p>Hash</p>
-  </li>
-  <li>
-    <p>Zset</p>
-
-    <p>​</p>
-  </li>
+  <li>Sidekiq::Processor:  负责执行指定的任务</li>
 </ul>
 
-<h4 id="string">String</h4>
+<p>它们三者会相互协作共同完成对<code>Redis</code>中任务消费的全过程.</p>
 
-<p>Redis 的字符串和其他编程语言或者键值存储提供的字符串非常相似.</p>
+<p><img src="" alt="Sidekiq Module" /></p>
 
-<p>字符串拥有一些和其他键值存储相似的命令, 比如 GET、 SET、 DEL.</p>
+<h2 id="异步任务入队">异步任务入队</h2>
 
-<p>在下一个章节我们着重熟悉 Redis 的常用指令.</p>
-
-<h4 id="list">List</h4>
-
-<p>Redis 对链表(linked-list)结构的支持使得它在键值存储的世界中独树一帜. 一个列表结构可以有序地存储多个字符串.</p>
-
-<p>Redis列表可执行的操作和很多编程语言中的列表操作非常相似:</p>
-
-<ul>
-  <li>LPUSH: 将元素推入列表的左端(left end)</li>
-  <li>RPUSH: 将元素推入列表的右端(right end)</li>
-  <li>LPOP: 从列表左端弹出数据</li>
-  <li>RPOP: 从列表右端弹出数据</li>
-  <li>LINDEX: 获取列表中指定序号的元素</li>
-  <li>LRANGE: 获取列表在给定范围上的所有元素</li>
-</ul>
-
-<p>Redis 的列表并不仅仅支持一些通用的列表操作, 它还提供将元素插入列表中间的命令、将列表修剪至指定长度的命令.</p>
-
-<h4 id="set">Set</h4>
-
-<p>Redis的集合和列表都是可以存储多个字符串, 它们之间的区别就在于:</p>
-
-<ul>
-  <li>列表可以存储多个相同的字符串</li>
-  <li>集合通过散列表来保证自己存储的每个字符串都是各不相同(这些散列表只有键, 没有与键相关联的值)</li>
-</ul>
-
-<p>因为Redis的集合使用无序(unordered)方式存储元素, 所以用户不能像使用列表那样, 将元素推入集合的一端 或者从集合的某一段弹出元素. 但是我们可以采用集合特有的命令来完成相应的操作:</p>
-
-<ul>
-  <li><code>SADD</code>向集合中添加元素</li>
-  <li><code>SREM</code>命令从集合中移除元素</li>
-  <li><code>SISMEMBER</code>检查一个元素是否存在集合中</li>
-  <li><code>SMEMBERS</code>获取集合包含的所有数据</li>
-</ul>
-
-<p>除了一些基本的操作之外, 集合还支持一些集合之间的操作:</p>
-
-<ul>
-  <li>SINTER: 取两个集合的交集</li>
-  <li>SUNION: 取两个集合并集</li>
-  <li>SDIFF: 取两个集合差集 (SetA - SetB)</li>
-</ul>
-
-<p>这些指定在特定的场景中非常实用.</p>
-
-<h4 id="hash">Hash</h4>
-
-<p>Redis的散列是可以存储多个键值对之间的映射. 和字符串一样, 散列存储的值机可以是字符串又可以是数字值. 我们还可以对散列存储的数字执行自增和自减操作.</p>
-
-<p>散列在很多方面就像是一个微缩版的Redis,不少字符串命令都有相应的散列版本.</p>
-
-<ul>
-  <li>HSET: 添加一个键值对</li>
-  <li>HGET: 获取一个键对应的值</li>
-  <li>HGETALL: 获取所有的键值对</li>
-  <li>HDEL: 删除一个键值对</li>
-</ul>
-
-<p>熟悉文档数据库的同学来说 Redis 的散列可以看作文档数据库里面的文档;</p>
-
-<p>熟悉关系数据库的同学可以将散列看作关系数据库里面的行.</p>
-
-<p>因为散列、文档以及行都运行用户同时访问或者修改一个或多个域.</p>
-
-<h4 id="zset">ZSET</h4>
-
-<p>有序集合是 Redis 最高级的一种数据结构.有序集合和散列一样, 都用于存储键值对:</p>
-
-<ul>
-  <li>有序集合的键: 被称为成员(member),每个成员是各不相同的</li>
-  <li>有序集合的值: 被称为分值(score),分值必须为浮点数.</li>
-</ul>
-
-<p>有序集合是 Redis 中唯一一个既可以通过成员访问元素(这和散列类型), 又可以根据分值以及分值的排序顺序来访问元素的结构.</p>
-
-<ul>
-  <li>
-    <p>ZADD: 向一个有序集合同添加元素</p>
-  </li>
-  <li>
-    <p>ZRANGE: 获取有序集合中指定范围的元素, 多个元素会按照分值大小进行排序</p>
-  </li>
-  <li>
-    <p>ZRANGEBYSCORE: 根据分值来获取指定范围的元素</p>
-  </li>
-  <li>
-    <p>ZREM: 删除一个有序元素</p>
-
-    <p>​</p>
-  </li>
-</ul>
-
-<h3 id="文章投票">文章投票</h3>
-
-<p>现在是时候来学习一下怎么使用这些结构来解决实际问题了.</p>
-
-<p>最近几年, 越来越多的网站开始提供对网页链接、文章或者问题进行投票的功能.</p>
-
-<p><img src="点赞/踩" alt="stackoverflow" /></p>
-
-<p>这些网站会根据文章的发布时间和文章获得的投票数计算出一个评分, 按照这个评分来决定如何排序和展示文章.</p>
-
-<p>这一小节就会实现一个简单的文章投票网站的后端.</p>
-
-<h4 id="对文章进行投票">对文章进行投票</h4>
-
-<p>要构建一个文章投票网站,我们首先要做的就是为这个网站设置一些数值和限制条件.</p>
-
-<blockquote>
-  <p>如果一篇文章获得了至少200张投票(up vote),那么网站就认为这篇文章是一篇大家都感兴趣的文章.</p>
-
-  <p>假设这个网站每天发布1000篇文章, 而其中的50篇符合上述要求, 那么我们就将这50篇文章放到文章列表前100位至少一天.</p>
-
-  <p>另外, 我们的网站暂时不支持反对票(down vote)的功能</p>
-</blockquote>
-
-<p>一般来说, 越晚发布的文章比越早发布的文章有更高的基础分数. 换言之, 我们需要一种策略来实现随着时间流逝基础分数越来越大, 程序需要根据文章的发布时间和当前时间来计算文章的评分.</p>
-
-<p>具体策略如下:</p>
-
-<blockquote>
-  <p>将文章得到的支持票数 乘以一个常量, 然后加上文章的发布时间, 得出的结果就是文章的评分.</p>
-
-  <p>我们使用 UTC 时区 1970年1月1日 到现在为止经历过的秒数来计算文章的评分, 这个值通常被称为 Unix 时间.</p>
-
-  <p>另外, 我们的常量为432. 这个常量是通过将一天的秒数(86,400)除以文章展示一天所需的支持票数(200)得出的: 文章每获得一张支持票, 程序就将文章的得分增加 432 分.</p>
-</blockquote>
-
-<p>构建文章投票网站除了需要计算文章评分之外, 还需要使用Redis散列来存储网站上的各种信息. 对于网站的每篇文章, 程序都使用一个散列值来存储文章的标题、指向文章的网站、发布文章的用户、文章的发布时间、文章得到的投票数量.</p>
-
-<p><code>article:202791</code> 详细信息:</p>
+<p>当我们对需要异步执行的任务执行<code>Worker.perform_async</code>的方法时, <code>Sidekiq</code>其实并不会真正取创建一个<code>HardWroker</code>等具体<code>Worker</code>对象, 它实际上会调用<code>Worker.client_push</code>方法将当前的<code>class</code>和<code>args</code>参数传进去, 也就是我们需要异步执行的类和<code>perform</code>方法所需要的参数, 以及<code>Sidekiq</code>添加的额外参数:</p>
 
 <pre><code class="language-json">{
-    "title": "Redis in action: first part",
-    "link": "http://hwbnju.com/redis-in-action",
-    "poster": "hwbnju",
-    "time": "1523079350",
-    "votes": "212"
+  "class": "Platform::ActiveUserWorker",
+  "args": ["2018-03-09"],
+  "retry": true,
+  "queue": "default",
+  "jid": "f2c20ffd382925563ffbc6b0",
+  "created_at": 1520524801.3932867,
+  "enqueued_at": 1520524801.3934016
 }
 </code></pre>
 
-<blockquote>
-  <p>使用冒号(:)作为分隔符: 上述散列的key 我们使用 <code>article:article_id</code> 的形式来构建命名空间.</p>
-</blockquote>
+<p>使用<code>pry</code>工具来查看一下源码:</p>
 
-<p>我们的文章投票网站需要使用两个有序集合(zset)来有序地存储文章:</p>
+<pre><code class="language-ruby">[4] pry(main)&gt; $ Sidekiq::Worker::ClassMethods#perform_async
+
+From: /sidekiq-5.0.5/lib/sidekiq/worker.rb @ line 86:
+Owner: Sidekiq::Worker::ClassMethods
+Visibility: public
+Number of lines: 3
+
+def perform_async(*args)
+  client_push('class'.freeze =&gt; self, 'args'.freeze =&gt; args)
+end
+
+</code></pre>
+
+<p>除了<code>perform_async</code>之外, `	Worker<code>还提供了两种用于在一段时间之后或者未来的某个时刻执行相应任务的方法 </code>Worker.perform_at<code>和</code>Worker.perform_in`:</p>
+
+<pre><code class="language-ruby">From: /sidekiq-5.0.5/lib/sidekiq/worker.rb @ line 92:
+Owner: Sidekiq::Worker::ClassMethods
+Visibility: public
+Number of lines: 12
+
+def perform_in(interval, *args)
+  int = interval.to_f
+  now = Time.now.to_f
+  ts = (int &lt; 1_000_000_000 ? now + int : int)
+  # 比普通的 perform_async 多了一个 at 参数
+  item = { 'class'.freeze =&gt; self, 'args'.freeze =&gt; args, 'at'.freeze =&gt; ts }
+  item.delete('at'.freeze) if ts &lt;= now
+
+  client_push(item)
+end
+
+#. 在底层实现中, perform_at 与 perform_in 是同一个方法的两种形式的调用
+alias_method :perform_at, :perform_in
+</code></pre>
+
+<p>为了使用同一个接口支持两种不同的安排方式(时间点和多久之后), 方法内部对传入的<code>internal</code>进行了判定:</p>
 
 <ul>
-  <li>publish_at: 成员为文章 ID , 分值为文章的发布时间. 记录根据发布时间排序的文章</li>
-  <li>score: 成员为文章 ID, 分值为文章得到的评分. 记录根据评分排序的文章</li>
+  <li><code>interval.to_f &lt; 1_000_000_000</code>: 此时方法就认为传入的参数是一段时间.
+    <ul>
+      <li><code>Time.at 1_000_000_000</code> == 2001-09-09 09:46:40 +0800</li>
+    </ul>
+  </li>
+  <li>interval.to_f &gt;= 1_000_000_000: 此时方法断定传入的参数是未来的某个时间点, eg:  <code>Time.now + 1.day</code>
+    <ul>
+      <li>如果传入的时间点是过去的时间点, 那么才 <code>item</code>中会删除<code>at</code></li>
+    </ul>
+  </li>
 </ul>
 
-<p>为了防止用户对同一篇文章进行多次投票, 我们需要为每篇文章记录一个已投票用户名单.</p>
+<p>虽然<code>Worker.perform_at</code>和<code>Worker.perform_in</code>是完全相同的方法, 但是我们在使用时还是尽量遵循方法的语义选择两者中更符合使用逻辑的方法.</p>
 
-<p>为此, 程序将为每篇文章创建一个集合, 使用这个集合来存储所有已投票用户的ID:  voted:acrticle_id.</p>
+<p>以上三种创建异步任务的方式, 最终都执行了<code>Worker.client_push</code>方法. 该方法接受一个哈希参数, 参数大致形式如下:</p>
 
-<p>为了尽量节约内存, 我们规定当一篇文章发布期满一周之后, 用户将不能对其进行投票, 文章的评分也会固定下来, 而记录文章已投票用户名单的集合也会被删除.</p>
+<pre><code class="language-ruby">{
+  class: "Platform::ActiveUserWorker",
+  args: ["2018-03-09"],
+  at: '60.0'
+ }
+</code></pre>
 
-<p>在实现文章投票功能之前, 我们来浏览一下使用的数据结构:</p>
+<p>在方法的实现中, 首先获取上下文中的<code>Redis</code>线程池, 并将传入的<code>item</code>对象压入<code>Redis</code>队列中</p>
+
+<pre><code class="language-ruby">[3] pry(main)&gt; $ Sidekiq::Worker::ClassMethods#client_push
+
+From: /sidekiq-5.0.5/lib/sidekiq/worker.rb @ line 136:
+Owner: Sidekiq::Worker::ClassMethods
+Visibility: public
+Number of lines: 9
+
+def client_push(item) # :nodoc:
+  # Redis 连接池
+  pool = Thread.current[:sidekiq_via_pool] || get_sidekiq_options['pool'.freeze] || Sidekiq.redis_pool
+  # stringify
+  item.keys.each do |key|
+    item[key.to_s] = item.delete(key)
+  end
+
+  Sidekiq::Client.new(pool).push(item)
+end
+</code></pre>
+
+<p><code>client_push</code>方法最后调用了<code>Sidekiq::Client.new</code> 实例化一个<code>Sidekiq::Client</code>, 并将<code>item</code>  压入到<code>Redis</code>队列.</p>
+
+<pre><code class="language-ruby">[4] pry(main)&gt; $ Sidekiq::Client#push
+
+From: /sidekiq-5.0.5/lib/sidekiq/client.rb @ line 69:
+Owner: Sidekiq::Client
+Visibility: public
+Number of lines: 9
+
+def push(item)
+  normed = normalize_item(item)
+  payload = process_single(item['class'.freeze], normed)
+
+  if payload
+    # 此时传入的 payload 只有一个
+    raw_push([payload])
+    payload['jid'.freeze]
+  end
+end
+
+def normalize_item(item)
+  # 省略错误处理
+  # 如果传入的 item 没有携带某些参数时, 就采用系统默认的参数
+  normalized_hash(item['class'])
+    .each{ |key, value| item[key] = value if item[key].nil? }
+
+  item['class'] = item['class'].to_s
+  item['queue'] = item['queue'].to_s
+  item['jid'] ||= SecureRandom.hex(12)
+  item['created_at'] ||= Time.now.to_f
+  item
+end
+
+# 获取默认参数
+def normalized_hash(item_class)
+  if item_class.is_a?(Class)
+    # 省略错误处理(需要普通的 SomeWorker include Sidekiq::Worker)
+    item_class.get_sidekiq_options
+  else
+    Sidekiq.default_worker_options
+  end
+end
+
+# Sidekiq 提供了两个默认参数
+DEFAULT_WORKER_OPTIONS = {
+  'retry' =&gt; true,
+  'queue' =&gt; 'default'
+}
+
+
+# 每个中间件对传入的哈希进行处理之后,返回 item
+# 具体实现请见 ·又见中间件·
+def process_single(worker_class, item)
+  queue = item['queue']
+
+  middleware.invoke(worker_class, item, queue, @redis_pool) do
+    item
+  end
+end
+</code></pre>
+
+<p>从代码的注释我们可以知道,  <code>Sidekiq::Client#push</code>方法接受的哈希参数包括以下内容:</p>
 
 <ul>
-  <li>article:article_id: 散列, 用来记录文章的具体信息</li>
-  <li>publish_at: 有序集合, 用来记录根据发布时间排序的文章</li>
-  <li>score: 有序集合, 用来记录根据文章评分排序的文章</li>
-  <li>voted:article_id: 集合, 记录文章对应的投票用户</li>
+  <li>queue: 具名队列, 默认为 <code>default</code></li>
+  <li>class: 被调用的<code>worker</code></li>
+  <li>args: 传给<code>Worker.perform</code>的参数, 必须是 <code>JSON-serializable</code>, 而且必须是一个数组</li>
+  <li>at: 计划执行的时间点, 必须是 <code>Numeric</code></li>
+  <li>retry: 如果任务失败是否重试标志, 默认为 <code>true</code></li>
 </ul>
 
-<h5 id="投票吧">投票吧</h5>
+<p>从<code>Worker.perform_async</code>到<code>Client#push</code>方法, 都对即将加入到<code>Redis</code>队列的哈希进行处理, 从添加<code>at</code>字段到字符串化、再到<code>Client#normalize_item</code>方法中添加默认参数<code>retry</code>、<code>queue</code>, <code>jid</code>、<code>created_at</code>. 经过 <code>process_single</code>的处理, 传入 <code>raw_push</code>的哈希值大致如下:</p>
 
-<p>当用户尝试对一篇文章进行投票时, 程序需要使用<code>ZSCORE</code>命令检查记录文章发布时间的有序集合, 判断文章的发布时间是否超过一周.</p>
+<pre><code class="language-json">{
+ "jobstr":
+     {
+      "class": "Platform::ActiveUserWorker",
+      "args": ["2018-03-09"],
+      "retry": true,
+      "queue": "default",
+      "jid": "f2c20ffd382925563ffbc6b0",
+      "created_at": 1520524801.3932867,
+      "enqueued_at": 1520524801.3934016
+     }
+}
+</code></pre>
 
-<p>如果文章还处在可以投票的时间范围内, 那么程序就使用SADD`命令, 尝试将用户添加到记录文章已投票用户名单的集合中.</p>
+<p>所有添加异步任务的方法最终都调用了私有方法<code>Client#raw_push</code> , 此方法继续调用<code>atomc_push</code>向<code>Redis</code>添加数据.</p>
 
-<p>如果添加操作执行成功的话, 说明用户是第一次对这篇文章进行投票, 程序将使用<code>ZINCRBY</code>命令为文章的评分增加<code>432</code>(ZINCRBY命令用于有序集合成员的分数执行自增操作), 并使用<code>HINCRBY</code>命令对散列记录文章的投票数进行更新(HINCRBY命令用于对散列存储的值执行自增操作).</p>
-
-<p>让我们来实现上述逻辑:</p>
-
-<pre><code class="language-ruby">ONE_WEEK_IN_SECONDS = 7 * 86400
-VOTE_SCORES = 432
-
-# article =&gt; article:20198
-# redis =&gt; 为 Redis客户端的一个实例
-def article_votes(user, article)
-  cut_off = Time.now.to_i - ONE_WEEK_IN_SECONDS
-  return if redis.zscore('zset:publish_at', article) &lt; cut_off
-  article_id = article.split(':')[1]
-
-  # 如果用户之前未对此文章投票, 就将其加入到投票用户名单中
-  if redis.sadd('voted:' + article_id, user)
-    redis.zincrby('score', article, VOTE_SCORES) # 文章的评分增加 432
-    redis.hincrby(article, 'votes', 1) # 文章的投票数加 1
+<pre><code class="language-ruby">def raw_push(payloads)
+  # #
+  @redis_pool.with do |conn|
+    conn.multi do
+      atomic_push(conn, payloads)
+    end
   end
+  true
 end
 </code></pre>
 
-<blockquote>
-  <p>从技术上讲, 要正确的实现投票功能, 需要将 SADD、 ZINCRBY、 HINCRBY这三个指令放到一个事务中执行, 我们暂且这样写, 后续再改进.</p>
-</blockquote>
-
-<p>我们实现的投票功能, 但是如何发布一篇文章呢?</p>
-
-<h4 id="发布并获取文章">发布并获取文章</h4>
-
-<p>发布一篇新文章首先需要创建一个新的文章ID, 这项工作可以通过对一个计数器(counter)执行INCR命令来实现.</p>
-
-<p>接着程序使用<code>SADD</code> 将文章发布者的ID添加到记录已投票用户名单的集合中(我们默认文章赞同数为1), 并使用<code>EXPIRE</code>命令为这个集合设置一个过期时间, 让 Redis 再文章发布期满一周之后自动删除这个集合.</p>
-
-<p>之后程序会使用<code>HMSET</code>来存储文章的详细信息, 并执行<code>ZADD</code>命令, 将文章的初始评分(initial score)和发布时间分别添加到两个相应的有序集合中.</p>
-
-<pre><code class="language-ruby">def publish_article(user, title, link)
-  article_id = redis.incr('article:').to_s
-
-  voted = 'voted:' + article_id  # 文章已投票用户名单集合
-  redis.sadd(voted, user)
-  redis.expire(voted, ONE_WEEK_IN_SECONDS)
-
-  article = 'article:' + article_id
-  now = Time.now
-  redis.hmset(article, {
-    title: title,
-    link: link,
-    publisher: user,
-    time: now,
-    votes: 1
-  }) # 存储文章的详细信息
-
-  redis.zadd('score', article, now + VOTE_SCORES) # 评分有序集合
-  redis.zadd('publish_at', article, now)          # 发布时间有序集合
-
-  article_id
-end
-</code></pre>
-
-<h4 id="取出文章">取出文章</h4>
-
-<p>我们已经实现了发布文章以及为文章投票的功能, 接下来就是如何取出评分最高的文章以及最新发布的文章了.</p>
-
-<p>程序首先使用<code>ZREVRANEG</code>命令取出多个文章ID, 然后再对每个文章ID执行一次<code>HEGTALL</code>命令取出文章的详细信息, 这个方法既可以取出评分最高的文章, 又可以取出最新发布的文章.</p>
-
-<blockquote>
-  <p>因为有序集合会根据成员的分值从小到大排列元素, 因此我们采用<code>ZREVRANGE</code>指令</p>
-</blockquote>
-
-<pre><code class="language-ruby">ARTICLE_PER_PAGE = 10
-def get_articles(page, order = 'score')
-  first = (page - 1) * ARTICLE_PER_PAGE
-  last = first + ARTICLE_PER_PAGE - 1
-
-  redis.zrevrange(order, first, last).map do |article|
-    article_data = hgetall(article)
-    article_data['id'] = article
-    return article_data
-  end
-end
-
-</code></pre>
-
-<h4 id="对文章进行分组">对文章进行分组</h4>
-
-<p>虽然我们构建的网站可以展示最新发布的文章和评分最高的文章了, 但是它还不具备目前很多投票网站都支持的群组(group)功能: 这个功能可以让用户只看到与特定话题相关的文章, 比如“redis 拾遗”,  “Web 开发”文章.</p>
-
-<p>群组功能由两部分构成:</p>
+<p>添加数据时会分两种情况:</p>
 
 <ul>
-  <li>记录文章所属群组</li>
-  <li>取出群组中的文章</li>
+  <li>当异步任务再未来的某一个时间点进行安排时, 此任务就会加入到一个有序集合 <code>schedule</code>
+    <ul>
+      <li>有序集合的 <code>score</code>自然是异步任务执行的时刻
+​</li>
+    </ul>
+  </li>
+  <li>当任务为立即执行任务时:
+    <ul>
+      <li>设置当前异步任务入队的时间<code>enqueued_at</code></li>
+      <li>Sidekiq将<code>payload</code>所属的<strong>队列</strong>加入到一个大队列 <code>queues</code>的集合中</li>
+      <li>将负载 <code>payload</code>直接压入 <code>"#queue:#{q}"</code>队列中等待消费者的拉取.</li>
+    </ul>
+  </li>
 </ul>
 
-<p>为了记录各个群组都保存了哪些文章, 网站需要为每个群组创建一个集合, 并将所有同属于一个群组的文章ID都记录在这个集合中.</p>
+<pre><code class="language-ruby">From: sidekiq-5.0.5/lib/sidekiq/client.rb @ line 191:
+Owner: Sidekiq::Client
+Visibility: private
+Number of lines: 17
 
-<pre><code class="language-ruby">def add_remove_groups(article_id, to_add = [], to_remove = [])
-  # 构建存储文章信息的键名
-  article = 'article:' + article_id
-
-  # 将文章添加到它所属的群组中
-  to_add.each do |group|
-    redis.sadd('group:' + group, article)
-  end
-
-  # 从群组中移除文章
-  to_remove.each do |group|
-    redis.srem('group:' + group, article)
+def atomic_push(conn, payloads)
+  # 根据传入的负载是否有 at key
+  if payloads.first['at'.freeze]
+    conn.zadd('schedule'.freeze, payloads.map do |hash|
+      at = hash.delete('at'.freeze).to_s
+      # 传入的 payload 需要转成 JSON 格式
+      # [score, payload]
+      [at, Sidekiq.dump_json(hash)]
+    end)
+  else
+    q = payloads.first['queue'.freeze]
+    now = Time.now.to_f
+    to_push = payloads.map do |entry|
+      entry['enqueued_at'.freeze] = now
+      Sidekiq.dump_json(entry)
+    end
+    conn.sadd('queues'.freeze, q)
+    conn.lpush("queue:#{q}", to_push)
   end
 end
 </code></pre>
 
-<p>上面的代码实现了使用集合来记录群组文章的功能. 初看上去, 可能会觉得使用集合来记录群组文章并没多大用处, 但是要知道 Redis 不仅可以对多个集合执行操作, 还可以在集合与有序集合之间执行操作.</p>
+<h3 id="redis的存储">Redis的存储</h3>
 
-<p>为了能够根据评分对群组文章进行排序和分页(paging), 网站需要将同一个群组里面的所有文章按照评分有序地存储到一个有序集合中. Redis中<code>ZINTERSTORE</code>命令可以结束多个集合与有序集合作为输入, 找出所有同时存在于集合与有序集合的成员, 并以几种不同的方式来合并(combine)这些成员的分值(所有的集合成员的分值会被默认视为1).</p>
-
-<p>对于我们的投票网站来说, 程序需要使用<code>ZINTERSTORE</code>命令选出相同成员中最大的那个分值来作为交集成员的分值, 这就取决于所使用的排序选项, 这些分值既可以是文章的评分, 也可以是文章的发布时间.</p>
+<p>无论是立即执行还是未来计划的异步任务都会进入<code>Redis</code>的队列中, 但是它们之间的存储还是有所区别.</p>
 
 <ul>
-  <li>存储群组文章的集合与存储文章评分的有序集合执行 <code>ZINTERSTORE</code>命令, 可以得到按照文章评分排序的群组文章</li>
-  <li>存储群组文章的集合与存储文章发布时间的有序集合执行<code>ZINTERSTORE</code>, 可以得到按照文章发布时间排序的群组文章</li>
+  <li><code>Worker.perform_at/in</code>会将任务以<code>[at, payload]</code>的形式加入到<code>schedules</code>有序集合中</li>
+  <li><code>Worker.perform_async</code>将负载直接加入到指定的队列 <code>"queue:#{q}"中, 并向整个</code>Sidekiq<code>的队伍集合</code>queues`中添加该队列</li>
 </ul>
 
-<p>如果文章非常多, 执行<code>ZINTERSTORE</code>命令就会比较长, 为了尽量减少Redis的工作量, 程序会将这个命令的计算结果缓存60秒.</p>
+<p>所有的<code>payload</code>都包含一个异步任务需要执行的全部信息:</p>
 
-<pre><code class="language-ruby"># 获取根据某种形式排序的分组文章列表
-def get_group_articles(group, page, order = 'score')
-  # 为每个群组的每种排序顺序都创建一个键 eg: score:programming
-  key = order + group
+<ul>
+  <li>
+    <p>执行的队列: queue</p>
+  </li>
+  <li>
+    <p>异步队列的类 <code>class</code></p>
+  </li>
+  <li>参数 <code>args</code>: 将传入 <code>Worker.perform</code>方法
+    <ul>
+      <li><code>sidekiq_options</code>中的默认参数: <code>retry</code> 、 <code>queue</code></li>
+    </ul>
+  </li>
+  <li>
+    <p><code>jid</code>: 任务唯一标识符, 通过<code>SecureRandom.hex(12)</code>生成</p>
+  </li>
+  <li>
+    <p>enqueued_at: 入队时间</p>
+  </li>
+  <li>
+    <p><code>created_at</code>: 创建时间</p>
 
-  unless redis.exist?(key)
-    redis.zinterstore(key, ['group:' + group, order], :aggregate =&gt; 'max')
-    redis.expire(key, 60)
+    <p>​</p>
+
+    <p><img src="" alt="payload" /></p>
+
+    <p>​</p>
+  </li>
+</ul>
+
+<p>接下来我们就从<code>Sidekiq</code>启动画面着手, 还是我们的<code>Sidekiq</code>源码解读之旅吧!</p>
+
+<h2 id="启动">启动</h2>
+
+<p>每当我们启动一个<code>Sidekiq</code>服务时, 令人印象深刻地就是在命令行中出现了一个功夫少年:</p>
+
+<pre><code>
+         m,
+         `$b
+    .ss,  $$:         .,d$
+    `$$P,d$P'    .,md$P"'
+     ,$$$$$bmmd$$$P^'
+   .d$$$$$$$$$$P'
+   $$^' `"^$$$'       ____  _     _      _    _
+   $:     ,$$:       / ___|(_) __| | ___| | _(_) __ _
+   `b     :$$        \___ \| |/ _` |/ _ \ |/ / |/ _` |
+          $$:         ___) | | (_| |  __/   &lt;| | (_| |
+          $$         |____/|_|\__,_|\___|_|\_\_|\__, |
+        .d$$                                       |_|
+
+
+</code></pre>
+
+<p>我们可以通过如下指令找到运行<code>sidekiq</code>的bin文件:</p>
+
+<pre><code class="language-ruby">$ where sidekiq
+/Users/bobo/.rvm/gems/ruby-2.4.2/bin/sidekiq
+/usr/local/bin/sidekiq
+</code></pre>
+
+<p>我们就从 <code>bin/sidekiq.rb</code> 文件开始我们的源码之旅:</p>
+
+<pre><code class="language-ruby">require_relative '../lib/sidekiq/cli'
+
+begin
+  cli = Sidekiq::CLI.instance # &lt;==== just skip
+  cli.parse
+  cli.run # &lt;======== here we go
+rescue =&gt; e
+  raise e if $DEBUG
+  STDERR.puts e.message
+  STDERR.puts e.backtrace.join("\n")
+  exit 1
+end
+</code></pre>
+
+<p>启动文件首先是创建一个<code>CLI</code>对象, 执行<code>CLI#parse</code>方法对参数进行解析, 其中包括队列的配置, worker数量的配置, 在此不展开. 紧接着调用<code>CLI#run</code>方法. 让我们继续往下分析, 打开一个<code>CLI#run</code>方法:</p>
+
+<pre><code class="language-ruby">def run
+  # 打印控制台 banner 信息, 打印日志及运行环境
+  # 信号处理
+
+  self_read, self_write = IO.pipe
+  require 'sidekiq/launcher'
+  @launcher = Sidekiq::Launcher.new(options)
+  begin
+    launcher.run # &lt;======= here we go
+    while readable_io = IO.select([self_read])
+      signal = readable_io.first[0].gets.strip
+      handle_single(signal)
+    end
+  rescue Interrupt
+    # 进程接收到的信号处理以及退出逻辑
+    launcher.stop
+  	exit(0)
   end
-
-  # 根据页码获取对应的文章列表
-  get_articles(page, key)
 end
 </code></pre>
 
-<p>上述代码实现从群组中获取一整页文章.</p>
+<h3 id="从-launcher-到-manager">从 Launcher 到 Manager</h3>
 
-<p>我们的实现中允许一篇文章同时属于多个群组(比如一篇文章可以同时属于“编程”和“算法”两个群组) .</p>
+<p><code>CLI#run</code>方法首先是实例化一个<code>Sidekiq::Launcher</code>对象, 紧随其后调用了<code>Launcher#run</code>方法, <code>Launcher#run</code>方法又做了哪些事情呢?</p>
 
-<p>所以对于一篇同时属于多个群组的文章来说, 更新文章的评分意味着程序需要对文章所属的全部群组执行自增操作, 这一操作在一篇文章属于多个群组的情况下非常耗时. 因此我们在<code>get_group_articles()</code>方法中对<code>ZINTERSTORE</code>进行了60秒的缓存, 以此来减少<code>ZINTERSTORE</code>命令的执行次数, 这样就不需要在更新文章评分的时候重新获取根据评分(发布时间)排序的文章列表了. 如果缓存已失效, 我们就会重新获取最新评分(发布时间)排序的文章列表</p>
-
-<p>开发者需要在灵活性或限制条件下取舍将改变程序存储和更新数据的方式, 这一点对于任何数据库都适用.</p>
-
-<h4 id="给文章加上标签">给文章加上标签</h4>
-
-<p>标签其实也是另外一种形式的分组. 考虑到一个文章的所有标签都是互不相同, 而且展示时对这些标签的排列顺序也没有特殊要求, 我们可以使用集类型来存储文章的标签.</p>
-
-<p>对每篇文章我们使用键名 <code>article:article_id:tags</code>的键来存储该篇文章的标签.</p>
-
-<pre><code class="language-ruby">def add_tags(article_id, tags)
-  key = 'article:' + article_id + ':tags'
-  redis.sadd(key, tags)
-end
-
-def remove_tags(article_id, tags)
-  key = 'article:' + article_id + ':tags'
-  redis.srem(key, tags)
+<pre><code class="language-ruby"># lib/launcher.rb
+def run
+  @thread = safe_thread("heartbeat", &amp;method(:start_heartbeat))
+  @poller.start
+  @manager.start
 end
 </code></pre>
 
-<h5 id="通过标签搜索文章">通过标签搜索文章</h5>
+<p><code>Launcher#run</code>方法首先通过<code>safe_thread</code>创建了一个新线程, 线程主要负责执行<code>start_heartbeat</code>方法, 其实就是心跳代码, 负责定时检查<code>sidekiq</code>的健康状态, 暂且不表.</p>
 
-<p>有时我们需要列出某个标签下的所有文章, 甚至需要获得同时属于某几个标签的文章列表.</p>
-
-<p>我们可以为每个标签使用一个名为<code>tag:tag_name:articles</code>的集合类型键存储标有该标签的文章ID列表.</p>
-
-<p>每当我们为一篇文章添加一个标签时, 就将这个文章ID加入到标签文章集合中去:</p>
-
-<pre><code class="language-ruby">def add_tags(article_id, tags)
-  key = 'article:' + article_id + ':tags'
-  tags.each do |tag|
-    redis.sadd(key, tag)
-    tag_key = 'tag:' + tag + 'articles'
-    redis.sadd(tag_key, article_id)
-  end
-
-end
-
-def remove_tags(article_id, tags)
-  key = 'article:' + article_id + ':tags'
-  tags.each do |tag|
-    redis.srem(key, tag)
-    tag_key = 'tag:' + tag + 'articles'
-    redis.srem(tag_key, article_id)
+<pre><code class="language-ruby"># lib/launcher.rb
+def safe_thread(name, &amp;block)
+  Thread.new do
+    Thread.current['sidekiq_label'] = name
+    watchdog(name, &amp;block)
   end
 end
-</code></pre>
 
-<p>现在我们可以很方便地获取一篇文章的标签集合:</p>
-
-<pre><code class="language-ruby">def get_article_tags(article_id)
-  key = 'article:' + article_id + 'tags'
-  redis.smembers(key)
+def watchdog(last_words)
+  yield
+rescue Exception =&gt; ex
+  handle_exception(ex, { context: last_words })
+  raise ex
 end
 </code></pre>
 
-<p>也可以很方便地获取属于一个标签的所有文章:</p>
+<p><code>Launcher#run</code>第二行和第三行代码分别启动了<code>@poller</code>以及<code>@manager</code>. 这两个实例是从创建的?</p>
 
-<pre><code class="language-ruby">def get_articles_by_tag(tag)
-  key = 'tag:' + tag + 'articles'
-  redis.smembers(key)
+<p>让我们回顾一下前面的<code>lib/cli.rb</code>中的<code>CLI#run</code>方法, 它会负责创建<code>Sidekiq::Launcher</code>的实例, 让我们来看一下<code>Sidekiq::Launcher#initialize</code>定义:</p>
+
+<pre><code class="language-ruby"># lib/launcher.rb
+def initialize(options)
+  @manager = Sidekiq::Manager.new(options)
+  @poller = Sidekiq::Scheduled::Poller.new
+  @done = false
+  @options = options
+end
+</code></pre>
+
+<p>我们可以看到, <code>@manager</code>是在创建<code>Sidekiq::Launcher</code>实例的过程中同步创建的<code>Sidekiq::Manager</code>实例.</p>
+
+<p>同理, <code>@poller</code>是同步创建的<code>Sidekiq::Scheduled::Poller</code>实例.</p>
+
+<p>我们首先来看一下<code>@poller.start</code>的逻辑:</p>
+
+<pre><code class="language-ruby"># lib/scheduled.rb
+def start
+  @thread ||= safe_thread("scheduler") do
+    initial_wait
+
+    while !@done
+      enqueue
+      wait
+    end
+    Sidekiq.logger.info("Scheduler exiting...")
+  end
+end
+</code></pre>
+
+<p>我们可以看到 <code>Sidekiq::Scheduled::Poller#start</code>方法创建了一个新线程, 在线程中执行了两部分代码:</p>
+
+<ul>
+  <li>初始化等待值</li>
+  <li>在一个循环中不断的<code>enqueue</code>以及<code>wait</code></li>
+</ul>
+
+<p>PS: <code>Sidekiq::Scheduled::Poller#start</code>方法在线程创建完毕之后就会立刻返回, 至于新启动的新线程中的逻辑, 请前往下面的章节<code>Sidekiq::Scheduled::Poller</code>作更深一步分析.</p>
+
+<p>我们继续查看一下<code>@manager</code>的启动到底做了什么:</p>
+
+<pre><code class="language-ruby"># lib/manager.rb
+def start
+  @workers.each do |x|
+    x.start
+  end
+end
+</code></pre>
+
+<p>这里的 <code>@workers</code>是什么? 我们来看一下<code>Sidekiq::Manager#initialize</code>方法:</p>
+
+<pre><code class="language-ruby"># lib/manager.rb
+def initialize(options={})
+   @options = options
+   @count = options[:concurrency] || 25
+
+   @done = false
+   @workers = Set.new
+   @count.times do
+     # 创建 Processor 实例时传入的参数就是 Manager 实例
+     @workers &lt;&lt; Processor.new(self)
+   end
+   # Mutex
+   @plock = Mutex.new
+ end
+</code></pre>
+
+<p>原来如此, 在创建了<code>Sidekiq::Manager</code>实例之后, 又同步创建了多个<code>Sidekiq::Processor</code>的实例, 实例的个数取决于<code>options[:concurrency] || 25</code>, 也就是配置的<code>concurrency</code>的值, 缺省值为<code>25</code>. 至此, 我们知晓 sidekiq中的<code>worker</code>数量就在此设置, <code>Sidekiq::Manager</code>按照配置的数量创建指定数量的 <code>worker</code>.</p>
+
+<p>继续来看我们的<code>Sidekiq::Manager#start</code>方法. 简而言之, <code>Sidekiq::Manager</code>在 <code>start</code>的时候就只做了一件事: 调用其管理的所有的<code>worker</code>的<code>start</code>方法, 就是<code>Sidekiq::Processor#start</code>.</p>
+
+<pre><code class="language-ruby"># lib/processor.rb
+def start
+  @thread ||= safe_thread("processor", &amp;method(:run))
+end
+</code></pre>
+
+<p>又是熟悉的味道, 在这里又调用了<code>safe_thread</code>来创建一个新线程, 这就意味着每个<code>worker</code>都是基于自己的一个新线程的, 在这个新线程中执行的是私有方法 <code>Sidekiq::Processor#run</code>:</p>
+
+<pre><code class="language-ruby"># lib/processor.rb
+def run
+  begin
+    while !@done
+      process_one
+    end
+    @mgr.processor_stopped(self)
+  rescue Sidekiq::Shutdown
+    @mgr.processor_stopped(self)
+  rescue Exception =&gt; ex
+    @mgr.processor_died(self, ex)
+  end
+end
+</code></pre>
+
+<p>在一个<code>while</code>循环中, 只调用了一个<code>Sidekiq::Processor#process_one</code>实例方法. 顾名思义, 这里是说每个<code>worker</code>(Processor 实例)在没被结束之前, 都重复处理一个新的任务.</p>
+
+<p><code>Sidekiq::Processor#process_one</code>又做了什么工作? 怎么决定应该先处理那个任务? 这就会在后面章节<code>Sidekiq::Processor才是做工的!</code>深入挖掘.</p>
+
+<h3 id="流程时序">流程时序</h3>
+
+<p>我们来总结一下<code>Sidekiq</code>启动之后的处理流程</p>
+
+<p><img src="" alt="Sidekiq start" /></p>
+
+<ol>
+  <li>首先创建<code>Sidekiq::CLI</code>实例, 并执行其<code>run</code>方法</li>
+  <li><code>Sidekiq::CLI</code>的实例在执行<code>#run</code>过程中, 创建了<code>Sidekiq::Launcher</code>实例, 并调用其<code>#run</code>方法</li>
+  <li><code>Sidekiq::Launcher</code>的实例在创建后, 同步创建了<code>Sidekiq::Scheduled::Poller</code>的实例以及<code>Sidekiq::Manager</code>的实例. 在其执行<code>Sidekiq::Launcher::start</code>过程中, 分别调用了这两个实例的<code>start</code>方法</li>
+  <li><code>Sidekiq::Scheduled::Poller</code>的实例在执行<code>start</code>过程中, 创建了一个内部循环执行的线程, 不断执行<code>enqueue</code> -&gt; <code>wait</code></li>
+  <li><code>Sidekiq::Manager</code>的实例在创建后, 同步创建若干个指定的<code>worker</code>, 也就是<code>Sidekiq::Processor</code>的实例, 并在执行<code>start</code>方法的过程中对每个<code>worker</code>执行<code>start</code></li>
+  <li><code>Sidekiq::Processor</code>实例<code>worker</code>在执行<code>start</code>方法的过程中创建了一个新的线程, 在其中循环执行<code>process_one</code></li>
+</ol>
+
+<p>以上就是<code>Sidekiq</code>的主要启动过程, 后续分别针对:</p>
+
+<ul>
+  <li>Sidekiq::Scheduled::Poller</li>
+  <li>Sidekiq::Manager</li>
+</ul>
+
+<p>深入研究.</p>
+
+<h2 id="定时任务拉取器">定时任务拉取器</h2>
+
+<p>我们从<code>Sidekiq::Scheduled::Poller#start</code>方法继续我们的源码之旅:</p>
+
+<pre><code class="language-ruby"># lib/scheduled.rb
+def start
+  @thread ||= safe_thread("scheduler") do
+    initial_wait
+
+    while !@done
+      enqueue
+      wait
+    end
+    Sidekiq.logger.info("Scheduler exiting...")
+  end
+end
+</code></pre>
+
+<p>我们可以看到, <code>start</code>方法的核心就在<code>while</code>循环中, 在循环之前调用了<code>initial_wait</code>方法:</p>
+
+<pre><code class="language-ruby">INITIAL_WAIT = 10
+
+def initial_wait
+  # Have all processes sleep between 5-15 seconds.  
+  # 10 seconds to give time for the heartbeat to register
+  # (if the poll interval is going to be calculated by the number of workers)
+  # 5 random seconds to ensure they don't all hit Redis at the same time.
+  total = 0
+  total += INITIAL_WAIT unless Sidekiq.options[:poll_interval_average]
+  total += (5 * rand)
+
+  @sleeper.pop(total)
+  rescue Timeout::Error
+end
+</code></pre>
+
+<p>结合注释我们可以看出, <code>initial_wait</code>为了避免所有进程在后续逻辑中同时触发<code>Redis IO</code>而做的设计.</p>
+
+<p>这里是为了防止类似雪崩之类的系统故障出现. 让当前进程随机等待一定范围的时间, 从而就可以跟其他进程错开了.</p>
+
+<p>即随其后, 我们来研究一下<code>while</code>循环体中的方法:</p>
+
+<pre><code class="language-ruby">while !@done
+  enqueue
+  wait
+end
+</code></pre>
+
+<p>继续查看<code>enqueue</code>的实现:</p>
+
+<pre><code class="language-ruby">def enqueue
+  begin
+    @enq.enqueue_jobs
+  rescue =&gt; ex
+    # Most likely a problem with redis networking.
+    # Punt and try again at the next interval
+    logger.error ex.message
+    handle_exception(ex)
+  end
 end
 
 </code></pre>
 
-<p>还可以方便地获取同时拥有多个标签的文章列表</p>
+<p><code>enqueue</code>只是调用了实例变量<code>@enq</code>的<code>enqueue_jobs</code>方法而已. <code>@enq</code>是在初始化<code>Sidekiq::Scheduled::Poller</code>实例对象中创建的:</p>
 
-<pre><code class="language-ruby">def get_articles_by_tags(tags)
-  keys = tags.map { |tag| 'tag:' + tag + 'articles' }
-  sinter(keys)
+<pre><code class="language-ruby">def initialize
+  @enq = (Sidekiq.options[:scheduled_enq] || Sidekiq::Scheduled::Enq).new
+  @sleeper = ConnectionPool::TimedStack.new
+  @done = false
+  @thread = nil
 end
-
 </code></pre>
+
+<p>缺省的情况下, <code>@enq</code>就是<code>Sidekiq::Scheduled::Enq</code>的实例, 让我们来看一下<code>@enq</code>的实例方法<code>enqueue_jobs</code>:</p>
+
+<pre><code class="language-ruby"># lib/scheduled.rb
+SETS = %w(retry schedule)
+
+def enqueue_jobs(now=Time.now.to_f.to_s, sorted_sets=SETS)
+  Sidekiq.redis do |conn|
+    sorted_sets.each do |sorted_set|
+      while job = conn.zrangebyscore(sorted_set, '-inf', now, :limit =&gt; [0, 1]).first do
+        if conn.zrem(sorted_set, job)
+          Sidekiq::Client.push(Sidekiq.load_json(job))
+          Sidekiq::Logging.logger.debug { "enqueued #{sorted_set}: #{job}" }
+        end
+      end
+    end
+  end
+end
+</code></pre>
+
+<p>我把原代码中的注释移除, 让我们来一步步研究<code>enqueue_jobs</code>是如何将定时任务和重试任务推入指定的队列中去的.</p>
+
+<p>首先传入<code>enqueue_jobs</code>的<code>now</code>默认为当前时间,<code>sorted_sets</code>默认为<code>["retry", "schedule"]</code>.</p>
+
+<ul>
+  <li>
+    <p>retry: 重试任务队列</p>
+  </li>
+  <li>
+    <p>schedule: 定时任务队列</p>
+
+    <p>在<code>Sidekiq</code>中, 重试任务和定时任务实质上都是<code>scheduled jobs</code>. 这两个队列使用了<code>Redis</code>中有序集合类型, 进入队列的任务以其执行时间作为数据的<code>score</code>, 写入<code>Redis</code>之后按照其<code>score</code>排序, 也就是按照任务的计划执行时间排序.</p>
+  </li>
+</ul>
+
+<p><code>Sidekiq</code>分别针对<code>retry</code>队列和<code>	schedule</code>队列做了一个循环, 循环体内每次通过<code>Redis</code>的<code>ZRANGEBYSCORE</code>命令取出一个计划时间小于等于当前时间的任务:</p>
+<pre><code class="language-ruby">job = conn.zrangebyscore(sorted_set, '-inf'.freeze, now, :limit =&gt; [0, 1]).first
+</code></pre>
+
+<p>拿到一个<code>job</code>之后, 将其从原队列中移除, 并调用<code>Sidekiq::Client.push</code>  方法将此任务加到指定队列中.</p>
+
+<p>此时<code>job</code>可以看作是马上执行的任务, 可以直接被推入指定的队列</p>
+
+<p><code>job</code>中的内容就是我们之前分析过的哈希 <code>payload</code>:</p>
+
+<pre><code class="language-json">{
+  "class": "Platform::ActiveUserWorker",
+  "args": ["2018-03-09"],
+  "retry": true,
+  "queue": "default",
+  "jid": "f2c20ffd382925563ffbc6b0",
+  "created_at": 1520524801.3932867,
+  "enqueued_at": 1520524801.3934016
+}
+</code></pre>
+
+<p>至此, 我们就知晓了<code>enqueue_jobs</code>就是分别从<code>retry有序集合</code>和<code>schedule</code>有序集合中取出已经到达计划时间的任务, 并将其一一加入到原来的队列.</p>
+
+<p>PS: <strong>定时任务以及重试任务的计划时间只是计划加进执行中队列的时间, 并非执行时间, 执行的时间取决于队列的长度以及队列的执行速度了</strong>.</p>
+
+<p>接着我们的<code>enqueue_jobs</code>, 后面调用<code>wait</code>方法:</p>
+
+<pre><code class="language-ruby"># lib/scheduled.rb
+def wait
+  @sleeper.pop(random_poll_interval)
+rescue Timeout::Error
+  # expected
+rescue =&gt; ex
+  # if poll_interval_average hasn't been calculated yet, we can
+  # raise an error trying to reach Redis.
+  logger.error ex.message
+  handle_exception(ex)
+  sleep 5
+end
+</code></pre>
+
+<p><code>wait</code>方法只是做了一个休眠, 休眠的实现依赖<code>@sleeper</code>的<code>pop</code>方法的实现.</p>
+
+<p><code>@sleeper</code>是在<code>Sidekiq::Scheduled::Poller#initialize</code>的实现的, 它是<code>ConnectionPool::TimeStack</code>的实例, 其<code>pop</code>方法会阻塞当前代码的执行, 直到有值返回或者到达指定的超时时间, 这里<code>Sidekiq</code>就利用了其阻塞的特性, 作为<code>wait</code>方法休眠器的实现.</p>
+
+<p>休眠时间<code>random_poll_interval</code>不固定. 一般来说, 如果没有自行配置, 每次拉取的时间间隔大约在7.5秒–22.5秒</p>
 
 <h3 id="小结">小结</h3>
 
-<p>本章对Redis进行了初步的认识,我们需要知道: Redis是一个可以用来解决问题的工具. 它既拥有其他数据库不具备的数据结构, 又拥有内存存储、远程、持久化、可扩展等多个特性, 这使得用户可以以熟悉的方式为各种不同的问题构建解决方案.</p>
+<p>从本小节的源码分析来看, 我们可以知晓<code>Sidekiq</code>对定时任务和重试任务都一视同仁,处理流程如下:</p>
 
-<p>在阅读<code>Redis 实战</code>系列文章时, 你也许会惊讶地发现, 自己思考数据问题的方式从原来的“怎样将我的想法塞进数据库的表和行中”, 变成了”使用哪种Redis数据结构来解决这个问题比较好呢“.</p>
+<ol>
+  <li>所有定时任务(包括重试任务)以其计划时间为<code>score</code>,加入到<code>retry</code>和<code>schedule</code>有序集合中</li>
+  <li>sidekiq的定时任务拉取器从<code>retry</code>以及<code>schedule</code>有序集合中取出已到达计划时间的任务, 并将其加入该任务计划的队列中, 后续的执行则和普通队列中的任务一致.</li>
+  <li>拉取器会每隔随机事件进行休眠, 然后继续从步骤2开始, 周而复始</li>
+</ol>
 
-<p>下一章我们将使用 Redis 构建Web应用.</p>
+<p>=&gt; 定时任务<code>perform_in</code>以及<code>perform_at</code>计划时间都不是确切的时间!只是允许计划任务加入到普通队列的时间, 具体执行时间还得由队列的长度以及队列的处理速度决定.</p>
 
-<h2 id="使用-redis-构建-web-应用">使用 Redis 构建 Web 应用</h2>
+<h2 id="sidekiqprocessor-才是做工的">Sidekiq::Processor 才是做工的!</h2>
 
-<p>从高层次的角度来看, Web应用就是通过HTTP协议对网页浏览器发送的请求进行响应的服务器或者服务(service). 一个Web服务器对请求进行响应的典型步骤如下:</p>
+<p>本小节我们来深入研究一下<code>Sidekiq</code>中做苦力的那个<code>worker</code>.</p>
 
-<pre><code>1. 服务器对客户端发来的请求(request)进行解析
-2. 请求被转发给一个预定义的处理器(handler)
-3. 处理器可能会从数据库中读取或写入数据
-4. 处理器根据取出的数据对模板(templete)进行渲染(render)
-5. 处理器向客户端返还渲染之后的内容作为对请求的响应(response)
+<p><code>worker</code>核心实现在于<code>process_one</code></p>
+
+<pre><code class="language-ruby"># lib/processor.rb
+def process_one
+  @job = fetch  #&lt;===== here we go
+  process(@job) if @job # &lt;=== next step
+  @job = nil
+end
 </code></pre>
 
-<p>这种情况下Web请求被认为是无状态的(stateless), 也就是说, 服务器本身不会记录过往请求有关的任何信息, 这使得失效的服务器可以很容易地被替换掉. 本章节讲解如何使用更快的Redis查询来代替传统的关系型数据库查询, 以及如何使用Redis来完成一些使用关系型数据库无法高效完成的任务.</p>
+<p>通过调用<code>fetch</code>方法抓取一个任务, 当任务成功获取后, 就将其最为参数传入<code>process</code>方法中去, 由<code>process</code>实际执行任务; 如果没有获取到任务, 则直接重新尝试获取新的任务</p>
+
+<pre><code># lib/processor.rb
+def fetch
+  j = get_one
+  if j &amp;&amp; @done
+    j.requeue
+    nil
+  else
+    j
+  end
+end
+</code></pre>
+
+<p><code>fetch</code>方法中的<code>j</code>仿佛又回到了大学期间写<code>C</code>语言的那段时光.</p>
+
+<p><code>fetch</code>方法通过<code>get_one</code>方法从队列中获取任务.</p>
+
+<p>当获取任务之后, 判断当前<code>worker</code>是否已经停止(@done == true), 如果是就将任务重新压入队列中;否则就返回抓取到的一个任务.</p>
+
+<pre><code class="language-ruby"># lib/processor.rb
+def get_one
+  begin
+    work = @strategy.retrieve_work
+    # 省略 logger
+    work
+  rescue Sidekiq::Shutdown
+  rescue =&gt; ex
+    handle_fetch_exception(ex)
+  end
+end
+</code></pre>
+
+<p>核心代码就是<code>work = @strategy.retrive_work</code>.</p>
+
+<p><code>@strategy</code>必然来自<code>Sidekiq::Processor#initialize</code> 方法:</p>
+
+<pre><code class="language-ruby"># lib/processor.rb
+def initialize(mgr)
+  # ...
+  @strategy = (mgr.options[:fetch] || Sidekiq::BasicFetch).new(mgr.options)
+end
+</code></pre>
+
+<p>默认情况下使用<code>Sidekiq::BasicFetch</code>类生成一个<code>@strategy</code>实例.</p>
+
+<p>让我们查看一下这个策略类的<code>retrive_work</code>方法:</p>
+
+<pre><code class="language-ruby"># lib/fetch.rb
+def retrieve_work
+  # 返回值有两个(key, value) queue_name, job =&gt; work
+  work = Sidekiq.redis { |conn| conn.brpop(*queues_cmd) } # &lt;===== here we go
+  UnitOfWork.new(*work) if work
+end
+</code></pre>
+
+<p><code>Sidekiq::BasicFetch</code>抓取任务的逻辑是直接通过 <code>Redis BRPOP</code> 命令从所有队列中阻塞地取出第一个任务:</p>
+
+<blockquote>
+  <p>BRPOP is a blocking list pop primitive. It is the blocking version of RPOP because it blocks the connection when there are no elements to pop from any of the given lists. An element is popped from the tail of the first list that is non-empty, with the given keys being checked in the order that they are given.</p>
+
+  <p><code>BRPOP key1 [key2 key3 ....] timeout</code></p>
+</blockquote>
+
+<p>我们来查看一下<code>queues_cmd</code>此方法究竟做了什么?</p>
+
+<pre><code class="language-ruby"># Creating the Redis#brpop command takes into account any
+# configured queue weights. By default Redis#brpop returns
+# data from the first queue that has pending elements. We
+# recreate the queue command each time we invoke Redis#brpop
+# to honor weights and avoid queue starvation.
+def queues_cmd
+  if @strictly_ordered_queues
+    @queues
+  else
+    queues = @queues.shuffle.uniq # here we go
+    queues &lt;&lt; TIMEOUT
+    queues
+  end
+end
+</code></pre>
+
+<p>上述代码中的两个实例变量设置于<code>Sidekiq::BasicFetch#initialize</code>:</p>
+
+<pre><code class="language-ruby">def initialize(options)
+  @strictly_ordered_queues = !!options[:strict]
+  # 读取 `sidekiq` 配置文件中的 `:queues`选项
+  @queues = options[:queues].map { |q| "queue:#{q}" }
+  if @strictly_ordered_queues
+    @queues = @queues.uniq
+    @queues &lt;&lt; TIMEOUT
+  end
+end
+</code></pre>
+
+<p>默认情况下我们没有设置<code>options[:strict]</code>, 因此 <code>queue_cmd</code>进入<code>else</code>分支.</p>
+
+<pre><code class="language-ruby">queues = @queues.shuffle.uniq
+</code></pre>
+
+<p>这里的<code>@queues</code>来自于<code>options[:queues]</code>中的配置.</p>
+
+<p>让我们来分析一下这个配置到底来自哪里:</p>
+
+<p><img src="" alt="options" /></p>
+
+<p>最终我们在<code>Sidekiq::CLI</code>中调用<code>parse</code>设置<code>options</code>参数的.</p>
+
+<pre><code class="language-ruby">def parse_queue(opts, q, weight=nil)
+  [weight.to_i, 1].max.times do
+   (opts[:queues] ||= []) &lt;&lt; q
+  end
+  opts[:strict] = false if weight.to_i &gt; 0
+end
+</code></pre>
+
+<p><code>Sidekiq</code>在解析<code>:queues</code>的相关配置时, 会按照每个队列及其权重, 生成了一个重复次数等于队列权重的队列的新数组. 看一下我们项目的配置文件<code>sidekiq.yml</code>:</p>
+
+<pre><code class="language-yaml">:queues:
+  - [default, 2]
+  - [review, 5]
+  - [finance, 3]
+
+</code></pre>
+
+<p>根据队列的权重, 生成的数组中就会有同等数量的队列:</p>
+
+<pre><code class="language-ruby">%w(default default review review review review review finance finance finance)
+</code></pre>
+
+<p>这里的权重主要用于后面确定每个不同队列被处理到的优先权的比重.</p>
+
+<p>让我们继续讨论:</p>
+
+<pre><code class="language-ruby">queues = @queues.shuffle.uniq
+queues &lt;&lt; TIMEOUT
+</code></pre>
+
+<p>每次<code>worker</code>在请求信的任务时, <code>Sidekiq</code>都会按照原来的<code>@queues</code>执行<code>shuffle</code>方法. <code>shuffle</code>方法将数组元素随机排序, 亦即“洗牌”. 结合前面的权重, 每个队列洗牌后排在第一位的概率与其权重挂钩.</p>
+
+<p>最后的<code>uniq</code>方法确保队列名称没有重复,避免<code>Redis</code>在执行<code>BRPOP</code>命令时重复检查同一队列.</p>
+
+<p>这里使用<code>BRPOP</code>命令还有一个好处,就是当前面优先级的队列里面没有任务时, 可以依次将机会给后面的队列.</p>
+
+<p>第二行<code>queues &lt;&lt; TIMEOUT</code>则是在<code>BRPOP</code>命令末尾追加超时设置, 也就是<code>Redis</code>命令最多阻塞2秒, 超时则直接放弃.</p>
+
+<p>了解了如何获取任务之后, 任务通过<code>Sidekiq::BasicFetch::UnitOfwork</code>结构化实例后返回给调用方:</p>
+
+<pre><code class="language-ruby">UnitOfWork = Struct.new(:queue, :job) do
+  def acknowledge
+    # nothing to do
+  end
+
+  def queue_name
+    queue.sub(/.*queue:/, '')
+  end
+
+  def requeue
+    Sidekiq.redis do |conn|
+      conn.rpush("queue:#{queue_name}", job)
+    end
+  end
+end
+</code></pre>
+
+<p>让我们重新回到<code>Sidekiq::Processor#process_one</code></p>
+
+<pre><code class="language-ruby"># lib/processor.rb
+def process_one
+  @job = fetch
+  process(@job) if @job  # here we go
+  @job = nil
+end
+</code></pre>
+
+<p><code>fetch</code>方法返回一个结构体化的实例对象, 然后交给<code>process</code>全权处理:</p>
+
+<pre><code class="language-ruby"># lib/processor.rb
+# 移除了一些异常处理代码
+def process(work)
+  jobstr = work.job
+  queue = work.queue_name
+
+  ack = false
+  begin
+    job_hash = Sidekiq.load_json(jobstr)
+    ack = true
+    # dispatch 返回经过中间件处理过的一个 SomeWorker实例
+    dispatch(job_hash, queue) do |worker|
+      # 此处的解释见 `又见中间件`
+      Sidekiq.server_middleware.invoke(worker, job_hash, queue) do
+        execute_job(worker, cloned(job_hash['args']))
+      end
+    end
+  ensure
+    work.acknowledge if ack
+  end
+end
+
+
+</code></pre>
+
+<p>我们传入的参数<code>work</code>中就包含之前被压入队列的任务信息,包括队列名称, 任务对应的类, 任务调用所需要的参数,等等.</p>
+
+<pre><code class="language-json">{
+  "class": "Platform::ActiveUserWorker",
+  "args": ["2018-03-09"],
+  "retry": true,
+  "queue": "default",
+  "jid": "f2c20ffd382925563ffbc6b0",
+  "created_at": 1520524801.3932867,
+  "enqueued_at": 1520524801.3934016
+}
+</code></pre>
+<p>根据这些信息我们重新实例化任务对象, 并且将实例化的任务对象<code>worker</code>以及任务参数都传递给<code>execute_job</code>调用.</p>
+
+<p>让我们一睹<code>execute_job</code>的实现:</p>
+
+<pre><code class="language-ruby">def execute_job(worker, cloned_args)
+  worker.perform(*cloned_args)
+end
+</code></pre>
+
+<p>原来如此嘛, 我们使用<code>	Sidekiq</code>创建的某个<code>Worker</code>, 最终在此处调用.</p>
+
+<p>至此, 任务的调度过程就到此为止, 剩下的就是周而复始的重复了.</p>
+
+<h3 id="小结-1">小结</h3>
+
+<p>经过上面的分析, 我们可以明白<code>Sidekiq</code>中<code>worker</code>的工作原理:</p>
+
+<ol>
+  <li>按照配置文件中设置的队列名称及其权重, 每次重新排列等待处理队列顺序, 高权重的队列有更高的优先级</li>
+  <li>将重新排列的队列按顺序传递给<code>Redis BRPOP</code>命令, 同时设置2秒超时</li>
+  <li><code>Sidekiq</code>将从队列中获取到实例化的任务, 并且根据携带的参数调用了具体任务的<code>perform</code>方法</li>
+</ol>
+
+<h2 id="又遇中间件">又遇中间件</h2>
+
+<p>我们前面在探究<code>Sidekiq::Processor#process</code>方法时有个关键的<code>中间件</code>代码片段:</p>
+
+<pre><code class="language-ruby">Sidekiq.server_middleware.invoke(worker, job_hash, queue) do
+  execute_job(worker, cloned(job_hash['args']))
+end
+</code></pre>
+
+<p>让我们来看一下<code>server_middleware</code>方法:</p>
+
+<pre><code class="language-ruby">def self.server_middleware
+  @server_chain ||= default_server_middleware
+  yield @server_chain if block_given?
+  @server_chain
+end
+</code></pre>
+
+<p>默认情况下 <code>@server_chain</code>为<code>default_server_middleware</code>:</p>
+
+<pre><code class="language-ruby">def self.default_server_middleware
+  Middleware::Chain.new
+end
+</code></pre>
+
+<p>这里并没有发现内置的中间件, 这是因为<code>sidekiq 5.0.0</code>版本以上的移除了原来存在的<code>RetryJobs</code>以及<code>Logging</code>:</p>
+
+<blockquote>
+  <ul>
+    <li><strong>BREAKING CHANGE</strong> Job dispatch was refactored for safer integration with
+Rails 5.  The <strong>Logging</strong> and <strong>RetryJobs</strong> server middleware were removed and
+functionality integrated directly into Sidekiq::Processor.  These aren’t
+commonly used public APIs so this shouldn’t impact most users.
+      <pre><code>Sidekiq::Middleware::Server::RetryJobs -&gt; Sidekiq::JobRetry
+Sidekiq::Middleware::Server::Logging -&gt; Sidekiq::JobLogger
+</code></pre>
+    </li>
+  </ul>
+</blockquote>
+
+<p>从<code>Sidekiq</code>更新日志可以看出, 原来的两个内置中间件现在已经直接移到了<code>Sidekiq::Processor类中</code>.</p>
+
+<p>让我们来看一下<code>Sidekiq::Processor#dispatch</code>方法的实现:</p>
+
+<pre><code class="language-ruby">def dispatch(job_hash, queue)
+  # since middleware can mutate the job hash
+  # we clone here so we report the original
+  # job structure to the Web UI
+  pristine = cloned(job_hash)
+
+  Sidekiq::Logging.with_job_hash_context(job_hash) do
+    @retrier.global(pristine, queue) do
+      @logging.call(job_hash, queue) do
+        stats(pristine, queue) do
+          # Rails 5 requires a Reloader to wrap code execution.  In order to
+          # constantize the worker and instantiate an instance, we have to call
+          # the Reloader.  It handles code loading, db connection management, etc.
+          # Effectively this block denotes a "unit of work" to Rails.
+          @reloader.call do
+            klass  = constantize(job_hash['class'])
+            worker = klass.new
+            worker.jid = job_hash['jid']
+            @retrier.local(worker, pristine, queue) do
+              yield worker
+            end
+          end
+        end
+      end
+    end
+  end
+end
+</code></pre>
+
+<p>原来的Sidekiq::Processor::<code>Logger</code>中间件以及<code>Sidekiq::Processor::Retry</code>放在了这里处理, 我们直接看一下<code>local</code>方法:</p>
+
+<pre><code class="language-ruby">def local(worker, msg, queue)
+  yield
+rescue Skip =&gt; ex
+  raise ex
+rescue Sidekiq::Shutdown =&gt; ey
+  # ignore, will be pushed back onto queue during hard_shutdown
+  raise ey
+rescue Exception =&gt; e
+  # ignore, will be pushed back onto queue during hard_shutdown
+  raise Sidekiq::Shutdown if exception_caused_by_shutdown?(e)
+
+  if msg['retry'] == nil
+    msg['retry'] = worker.class.get_sidekiq_options['retry']
+  end
+
+  raise e unless msg['retry']
+  attempt_retry(worker, msg, queue, e)
+  # We've handled this error associated with this job, don't
+  # need to handle it at the global level
+  raise Skip
+end
+</code></pre>
+
+<p>关注点还是在代码的最后<code>attempt_retry</code>. 此处表示当执行中的任务出现异常时, 除去停机的因素以及禁用了重试机制后, 尝试进行下次重试运行.</p>
+
+<pre><code class="language-ruby"># lib/processor.rb
+# 移除一些无关紧要的配置
+def attempt_retry(worker, msg, queue, exception)
+  max_retry_attempts = retry_attempts_from(msg['retry'], @max_retries)
+
+  count = if msg['retry_count']
+    msg['retried_at'] = Time.now.to_f
+    msg['retry_count'] += 1
+  else
+    msg['failed_at'] = Time.now.to_f
+    msg['retry_count'] = 0
+  end
+
+  if count &lt; max_retry_attempts
+    delay = delay_for(worker, count, exception)
+    logger.debug { "Failure! Retry #{count} in #{delay} seconds" }
+    retry_at = Time.now.to_f + delay
+    payload = Sidekiq.dump_json(msg)
+    Sidekiq.redis do |conn|
+      conn.zadd('retry', retry_at.to_s, payload)
+    end
+  else
+    # Goodbye dear message, you (re)tried your best I'm sure.
+    retries_exhausted(worker, msg, exception)
+  end
+end
+</code></pre>
+
+<p><code>Sidekiq</code>在捕获异常之后, 首先检查此任务是否已经重试过. 如果之前已经重试, 就在原来计数的基础上<code>+1</code>, 同时更新重试时间; 如果之前没有重试过, 就初始化重试次数为0, 设定初次失败的时间.</p>
+
+<p>随后<code>Sidekiq</code>检查重试的累积次数是否已经超过了最大限制次数, 如果已经超过, 则放弃重试, 毕竟努力了这么多次还失败, 还是<code>go to dead</code>吧; 如果没有超过最大限制次数, 说明还有机会成功, 此任务就会被压入<code>retry</code>队列中.</p>
+
+<p>关于下次重试的时间<code>delay_for</code>本篇文章就不再涉及, 有兴趣的同学可以深入研究一下.</p>
+
+<h3 id="小结-2">小结</h3>
+
+<ul>
+  <li><code>Sidekiq</code>在执行任务时, 通过与<code>Rack</code>类似的中间件机制即使捕获失败的任务, 针对允许再次重试的任务, 按照一定的策略计算重试时间</li>
+</ul>
+
+<h2 id="总结">总结</h2>
+
+<p>关于<code>Sidekiq</code>源码的解读暂时告一段落. 整个源码很少有弄不懂的地方, 代码的风格也很<code>Ruby</code>, 没有过多的奇异技巧.</p>
+
+<p><code>Sidekiq</code>与<code>Redis</code>的队列和有序集合等数据结构的结合恰到好处, 我们可以通过<code>Sidekiq</code>来加深对<code>Redis</code>的认识, 还可以从中学习如何高效地结合<code>Redis</code>实现业务逻辑.</p>
+
+<p>解读的过程中有一些和我们架构不甚相关的逻辑处理和异常处理都被忽略, 这也是阅读一份源码需要注意的地方,.我们要从大局出发, 将整个框架的组织结构和大的模块理清楚, 然后针对关键的方法深入挖掘.</p>
+
+<h2 id="再会">再会</h2>
+
+<p>本篇文章主要从<code>架构</code>入手, 着重分析了<code>Sidekiq</code>异步任务的调度和实现, 关于多线程以及<code>Unix</code>信号等相关的知识我打算再下一篇文章中详细解读, 敬请期待~</p>
 
   ]]></description>
 </item>

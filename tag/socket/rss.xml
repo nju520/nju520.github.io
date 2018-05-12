@@ -1313,13 +1313,9 @@ end
   <pubDate>2018-03-15T00:00:00+08:00</pubDate>
   <guid>//tcp-scokets-no-block</guid>
   <description><![CDATA[
-  <h2 id="非阻塞式-io">非阻塞式 <code>IO</code></h2>
+  <h2 id="非阻塞式读操作">非阻塞式读操作</h2>
 
-<h3 id="网络请求瓶颈">网络请求瓶颈!!</h3>
-
-<h3 id="非阻塞式读操作">非阻塞式读操作</h3>
-
-<p>还记得我们之前学过的<code>Socket#read</code>吗? <code>它会一直保持阻塞, 直到接收到</code>EOF`或者获得指定的最小字节数为止.</p>
+<p>还记得我们之前学过的<code>Socket#read</code>吗? 它会一直保持阻塞, 直到接收到<code>EOF</code>或者获得指定的最小字节数为止.</p>
 
 <p>如果客户端没有发送<code>EOF</code>, 就可能会导致阻塞. 这种情况虽然可以通过<code>readpartial</code>暂时解决, <code>readpartial</code>会立刻返回所有的可用数据. 但是如果没有数据可用, 那么<code>readpartial</code>也会陷入阻塞状态.</p>
 
@@ -1446,7 +1442,7 @@ connections = [&lt;TCPSocket&gt;, &lt;TCPSocket&gt;, &lt;TCPSocket&gt;
 
 loop do
   loop do
-    # 调用底层的 `select` 查询 `socket` 连接的读写状态 
+    # 调用底层的 `select` 查询 `socket` 连接的读写状态
     ready = IO.slect(connections)
 
     #得到可进行读操作的 socket 连接
@@ -1468,9 +1464,9 @@ end
 
 <p>让我们来深入研究一下<code>IO.select</code>.</p>
 
-<p>**<code>IO.select</code>可以告诉我们文件描述符何时可以读写.它会阻塞. **</p>
+<p>**IO.select可以告诉我们文件描述符何时可以读写.它会阻塞 **</p>
 
-<p><em>*<code>IO.select</code>是一个同步方法</em>. 按照目前的方式来使用它会造成阻塞, 直到传入的某个<code>IO</code> 对象状态发生变化, 这时候它就会立刻返回. 如果有多个对象状态发生变化, 那么它们就会通过嵌套数组返回*</p>
+<p><strong>IO.select是一个同步方法*. 按照目前的方式来使用它会造成阻塞, 直到传入的某个IO 对象状态发生变化, 这时候它就会立刻返回. 如果有多个对象状态发生变化, 那么它们就会通过嵌套数组返回</strong></p>
 
 <p><code>IO.select</code>可以接收四个参数:</p>
 
@@ -1516,7 +1512,7 @@ timeout = 5
 
 Socket.tcp_server_loop(4481) do |conn|
   begin
-    # 发起一个初始化 read 
+    # 发起一个初始化 read
     # 因为要求套接字上有被请求的数据, 有数据可读时可以避免使用 select
     conn.read_nonblock(1024 * 4)
   rescue Errno::EAGAIN
@@ -1526,7 +1522,7 @@ Socket.tcp_server_loop(4481) do |conn|
       puts conn.read_nonblock(1024 * 4)
       retry
     else
-      # 否则就会 raise 一个 Timeout::Error 
+      # 否则就会 raise 一个 Timeout::Error
       raise Timeout::Error
     end
   end
@@ -1548,7 +1544,6 @@ end
 </code></pre>
 
 <p>这些基于超时的<code>IO.select</code>机制使用广泛, 甚至在<code>Ruby</code>的标准库中也能看到, 它们比操作系统自带的套接字超时处理机制的稳定性更高.</p>
-
 
   ]]></description>
 </item>

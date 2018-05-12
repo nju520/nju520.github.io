@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- [[! Document Settings ]] -->
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- [[! Page Meta ]] -->
+    <title>
+      
+        大话 Ruby Block
+      
+    </title>
+    
+    <meta name="description" content="Ruby 代码块是Ruby语言的最诱人的语言特性, 我们可以使用代码块来进行各式各样的操作. 代码块不是独立运行的, 运行代码需要一个执行环境,局部变量, 实例变量、self等. 创建一个代码块时就会创建一个新的绑定, 然后代码块连同它的绑定传给方法.本篇文章就叫单聊一下Ruby中的代码块." />
+    
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="/assets/images/favicon.ico" >
+
+    <!-- [[! Styles'n'Scripts ]] -->
+    <link rel="stylesheet" type="text/css" href="/assets/css/screen.css" />
+    <link rel="stylesheet" type="text/css"
+      href="//fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400" />
+
+    <link rel="stylesheet" type="text/css" href="/assets/css/prism.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/toc.css" />
+
+    <!-- [[! Ghost outputs important style and meta data with this tag ]] -->
+    <link rel="canonical" href="/" />
+<meta name="referrer" content="origin" />
+<link rel="next" href="/page2/" />
+
+<meta property="og:site_name" content="雄关漫道真如铁" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="大话 Ruby Block" />
+
+<meta property="og:description" content="Ruby 代码块是Ruby语言的最诱人的语言特性, 我们可以使用代码块来进行各式各样的操作. 代码块不是独立运行的, 运行代码需要一个执行环境,局部变量, 实例变量、self等. 创建一个代码块时就会创建一个新的绑定, 然后代码块连同它的绑定传给方法.本篇文章就叫单聊一下Ruby中的代码块." />
+
+<meta property="og:url" content="http://hwbnju.com/ruby-block" />
+<meta property="og:image" content="" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="大话 Ruby Block" />
+
+<meta name="twitter:description" content="Ruby 代码块是Ruby语言的最诱人的语言特性, 我们可以使用代码块来进行各式各样的操作. 代码块不是独立运行的, 运行代码需要一个执行环境,局部变量, 实例变量、self等. 创建一个代码块时就会创建一个新的绑定, 然后代码块连同它的绑定传给方法.本篇文章就叫单聊一下Ruby中的代码块." />
+
+<meta name="twitter:url" content="http://hwbnju.com/ruby-block" />
+<meta name="twitter:image:src" content="" />
+
+<script type="application/ld+json">
+  {
+  "@context": "http://schema.org",
+  "@type": "Website",
+  "publisher": "nju520",
+  "url": "http://hwbnju.com/ruby-block",
+  "image": "",
+  "description": "Ruby 代码块是Ruby语言的最诱人的语言特性, 我们可以使用代码块来进行各式各样的操作. 代码块不是独立运行的, 运行代码需要一个执行环境,局部变量, 实例变量、self等. 创建一个代码块时就会创建一个新的绑定, 然后代码块连同它的绑定传给方法.本篇文章就叫单聊一下Ruby中的代码块."
+  }
+</script>
+
+<meta name="generator" content="Jekyll 3.0.0" />
+<link rel="alternate" type="application/rss+xml" title="雄关漫道真如铁" href="/feed.xml" />
+
+    <!-- Add Google Analytics  -->
+    <!-- Google Analytics Tracking code -->
+<script>
+ (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+ })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ ga('create', 'UA-114647632-1', 'auto');
+ ga('send', 'pageview', location.pathname);
+
+</script>
+
+<!-- Baidu Analytics  Manager -->
+<script>
+ var _hmt = _hmt || [];
+ (function() {
+   var hm = document.createElement("script");
+   hm.src = "https://hm.baidu.com/hm.js?e9208862845c46a0f79e7828f495e407";
+   var s = document.getElementsByTagName("script")[0];
+   s.parentNode.insertBefore(hm, s);
+ })();
+</script>
+
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-PWFC85B');</script>
+  <!-- End Google Tag Manager -->
+
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-114647632-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-114647632-1');
+</script>
+
+  </head>
+  <body class=" post-template nav-closed">
+    <!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PWFC85B"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+
+    <div class="nav">
+  <h3 class="nav-title">Home</h3>
+  <a href="#" class="nav-close">
+    <span class="hidden">Close</span>
+  </a>
+  <ul>
+    <li class="nav-home " role="presentation"><a href="/">Home</a></li>
+    <li class="nav-ruby  nav-current" role="presentation"><a href="/tag/ruby">Ruby</a></li>
+    <li class="nav-javascript " role="presentation"><a href="/tag/javascript">JavaScript</a></li>
+    <li class="nav-server " role="presentation"><a href="/tag/server">Server</a></li>
+    <li class="nav-database " role="presentation"><a href="/tag/database">Database</a></li>
+  </ul>
+  <a class="subscribe-button icon-feed" href="/feed.xml">Subscribe</a>
+</div>
+<span class="nav-cover"></span>
+
+
+    <div class="site-wrapper">
+
+      <!-- [[! Everything else gets inserted here ]] -->
+      <!-- < default -->
+
+<!-- The comment above "< default" means - insert everything in this file into -->
+<!-- the [body] of the default.hbs template, which contains our header/footer. -->
+
+<!-- Everything inside the #post tags pulls data from the post -->
+<!-- #post -->
+
+<header class="main-header post-head no-cover">
+  <nav class="main-nav overlay clearfix">
+    <a class="back-button icon-arrow-left" href="/">Home</a>
+    <a class="menu-button icon-menu" href="#"><span class="word">Menu</span></a>
+  </nav>
+</header>
+
+<main class="content" role="main">
+
+  <article class="post">
+
+    <header class="post-template post-header">
+      <h1 class="post-title">大话 Ruby Block</h1>
+      <section class="post-meta">
+        <time class="post-date" datetime="2016-09-20">20 Sep 2016</time>
+        <!-- <a href='/'>nju520</a> -->
+        <!-- [[tags prefix=" on "]] -->
+        
+        
+        <a href='/tag/Ruby'>Ruby</a>
+        
+        <a href='/tag/block'>block</a>
+        
+        
+      </section>
+    </header>
+
+    <section class="post-content">
+
+      <ul class="section-nav">
+<li class="toc-entry toc-h2"><a href="#代码块基础">代码块基础</a></li>
+<li class="toc-entry toc-h2"><a href="#代码块就是闭包">代码块就是闭包</a>
+<ul>
+<li class="toc-entry toc-h4"><a href="#作用域">作用域</a>
+<ul>
+<li class="toc-entry toc-h5"><a href="#什么情况可以打开一个新的作用域呢">什么情况可以打开一个新的作用域呢?</a></li>
+<li class="toc-entry toc-h5"><a href="#如何让一个变量穿越作用域呢">如何让一个变量穿越作用域呢?</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#instance_eval">instance_eval</a></li>
+<li class="toc-entry toc-h2"><a href="#可调用对象">可调用对象</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#proc对象">Proc对象</a></li>
+<li class="toc-entry toc-h3"><a href="#-操作符">& 操作符</a></li>
+<li class="toc-entry toc-h3"><a href="#proc与lambda的区别">Proc与lambda的区别</a></li>
+<li class="toc-entry toc-h3"><a href="#method对象">Method对象</a></li>
+<li class="toc-entry toc-h3"><a href="#代码块用途">代码块用途</a></li>
+</ul>
+</li>
+</ul><h2 id="代码块基础">
+<a id="代码块基础" class="anchor" href="#%E4%BB%A3%E7%A0%81%E5%9D%97%E5%9F%BA%E7%A1%80" aria-hidden="true"><span class="octicon octicon-link"></span></a>代码块基础</h2>
+
+<ol>
+  <li>只有在调用一个方法时,才可以<strong>定义一个代码块</strong>. 这在一定程度上可以将代码块看做是回调函数. 块直接传递给这个方法, 在方法内部, 可以使用yield关键字来调用代码块.</li>
+</ol>
+
+<blockquote>
+  <p>我的理解:</p>
+
+  <p>上面所说的定义一个代码块, 可以将代码块看做一个参数, 调用方法时,除了传入常规的参数外, 也可以传入代码块(匿名函数).</p>
+
+  <p>为什么不像JS那样直接传入一个函数作为参数呢?
+Ruby中方法不能作为参数, 所有才有了方法调用时挂载代码块来实现类似的效果.</p>
+</blockquote>
+
+<p>块可以有自己的参数, 当回调块时, 我可以像调用方法那样为块提供参数. 另外, 像方法一样, 块的最后一行代码执行的结果会被当做返回值.</p>
+
+<h2 id="代码块就是闭包">
+<a id="代码块就是闭包" class="anchor" href="#%E4%BB%A3%E7%A0%81%E5%9D%97%E5%B0%B1%E6%98%AF%E9%97%AD%E5%8C%85" aria-hidden="true"><span class="octicon octicon-link"></span></a>代码块就是闭包</h2>
+
+<p>局部变量, 实例变量和self等都是绑定在对象上, 把它们简称为绑定(binding).
+代码块之所以可以运行, 是因为它既包含代码, 也包含一组绑定.
+定义一个块时,它会获得环境中的绑定. 当块被传给一个方法时, 它会带着这些绑定一起进入该方法:</p>
+
+<pre><code class="language-ruby">
+def my_method
+  x = "GoodBye"
+  yield("hehe")
+end
+
+x = "Hello"
+my_method {|y| "#{x}, #{y} world"} # =&gt; Hello, hehe world
+
+</code></pre>
+<p>创建代码块时, 会获得局部绑定(比如x),然后把代码块连同它的绑定传给一个方法.
+上面的例子中,代码块的绑定包含一个名为x的变量, 虽然方法中也定义了一个变量x, 但是代码块看到的x还是在代码块定义时绑定的x,方法中的x对于代码块来说是不可见的.</p>
+
+<p>基于这样的特性, 代码块也被称之为闭包. <strong>代码块可以获得局部绑定,并一直携带它们</strong></p>
+
+<h4 id="作用域">
+<a id="作用域" class="anchor" href="#%E4%BD%9C%E7%94%A8%E5%9F%9F" aria-hidden="true"><span class="octicon octicon-link"></span></a>作用域</h4>
+<p>在某些语言中, 有”内部作用域”的概念. 在内部作用域里可以看到”外部作用域”的变量. 但是Ruby没有这种嵌套式的作用域,它的作用域都是截然分开的: 一旦进入了新的作用域, 原先的绑定会被替换成一组新的绑定.</p>
+
+<h5 id="什么情况可以打开一个新的作用域呢">
+<a id="什么情况可以打开一个新的作用域呢" class="anchor" href="#%E4%BB%80%E4%B9%88%E6%83%85%E5%86%B5%E5%8F%AF%E4%BB%A5%E6%89%93%E5%BC%80%E4%B8%80%E4%B8%AA%E6%96%B0%E7%9A%84%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%91%A2" aria-hidden="true"><span class="octicon octicon-link"></span></a>什么情况可以打开一个新的作用域呢?</h5>
+
+<ol>
+  <li>类定义(class XXX)</li>
+  <li>模块定义(module XXX)</li>
+  <li>方法定义(def XXX)</li>
+</ol>
+
+<pre><code class="language-ruby"># define a class
+class Person
+  def self.name
+    'hh'
+  end
+end
+
+# define a module
+module MyModule
+
+end
+
+# define a method
+
+def hello
+  puts 'hello world'
+end
+</code></pre>
+
+<p>每当程序进入或者离开类定义, 模块定义, 方法定义时, 就会发生作用域切换.
+每个关键字都对应一个作用域门.</p>
+
+<p>它们中间还有一点差别, 在class/module中的代码会立即执行, 在def中的代码不会立即执行.</p>
+
+<h5 id="如何让一个变量穿越作用域呢">
+<a id="如何让一个变量穿越作用域呢" class="anchor" href="#%E5%A6%82%E4%BD%95%E8%AE%A9%E4%B8%80%E4%B8%AA%E5%8F%98%E9%87%8F%E7%A9%BF%E8%B6%8A%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%91%A2" aria-hidden="true"><span class="octicon octicon-link"></span></a>如何让一个变量穿越作用域呢?</h5>
+
+<pre><code class="language-ruby">
+my_var = "Success"
+class MyClass
+# 希望在这里可以打印my_var
+  def my_method
+    #希望在这里也可以打印my_var
+  end
+end
+
+</code></pre>
+<p>class定义产生了一个作用域, 在进入新的作用域时,外部的局部变量就无法访问了.
+如果我把class关键字换成一个方法调用, 同时在方法调用的后面携带一个代码块. 因为代码块作为一个闭包,可以获得局部绑定,并一直携带它们.</p>
+
+<pre><code class="language-ruby">
+my_var = "Success"
+MyClass = Class.new do
+  puts "#{my_var} in the class defination"
+
+  def my_method
+    # 但是实例方法中还是无法获取外部的局部变量, 因为def打开了一个新的作用域
+    #puts "#{my_var} in the instance method defination"
+  end
+
+  define_method :my_method do
+    puts "#{my_var} in the instance method defination"
+  end
+end
+
+</code></pre>
+<p>使用方法调用来替代作用域门, 就可以让一个作用域看到另外一个作用域的变量. 这种技巧称之为”扁平化作用域(flatterning the scope)”,表示如果两个作用域挤压在一起, 它们就可以共享各自的变量.</p>
+
+<p><strong>闭包小结</strong>
+每个Ruby作用域都包含一组绑定. 不同的作用域之间被作用域门分割开来.
+要想让某个绑定穿越作用域门, 可以使用代码块. 一个代码块就是一个闭包, 当定义个代码块时, 它会捕获当前环境的绑定. 我们可以使用方法调用来代替作用域门, 用一个闭包获取当前的绑定, 并把这个绑定传递给方法.</p>
+
+<pre><code>Class.new --&gt; class
+
+Module.new --&gt; module
+
+Module#define_method --&gt; def
+
+</code></pre>
+
+<h2 id="instance_eval">
+<a id="instance_eval" class="anchor" href="#instance_eval" aria-hidden="true"><span class="octicon octicon-link"></span></a>instance_eval</h2>
+
+<p>BasicObject#instance_eval方法, 它在一个对象的上下文中执行块</p>
+
+<pre><code class="language-ruby">
+class MyClass
+  def initialize
+    @var = 1
+  end
+end
+
+new_var = 2
+obj = MyClass.new
+obj.instance_eval do
+  self  # =&gt; #&lt;MyClass:0x3217391, @var = 1&gt;
+  @var = new_var  
+  @var  # =&gt; 2
+end
+
+</code></pre>
+<p>运行时,代码块的接收者会成为self, 因此它可以访问接收者的私有方法和实例变量, 还可以修改实例变量.
+由于上述instance_eval是方法调用, 类定义后面的代码属于一个扁平作用域中,因此代码块内部可以访问到外部变量new_var. 由于代码块运行时它的对象为self,所以它能访问到obj对象的实例变量.</p>
+
+<h2 id="可调用对象">
+<a id="可调用对象" class="anchor" href="#%E5%8F%AF%E8%B0%83%E7%94%A8%E5%AF%B9%E8%B1%A1" aria-hidden="true"><span class="octicon octicon-link"></span></a>可调用对象</h2>
+<p>使用代码块分为两步.
+第一步, 将代码打包备用;
+第二步, 通过方法内部的yield调用代码块执行代码</p>
+
+<p>在Ruby中, 还有以下几种方式可以用来打包代码:</p>
+<ol>
+  <li>使用proc, proc是由块转换来的对象</li>
+  <li>使用lambda, 它是proc的变种</li>
+  <li>使用方法</li>
+</ol>
+
+<h3 id="proc对象">
+<a id="proc对象" class="anchor" href="#proc%E5%AF%B9%E8%B1%A1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Proc对象</h3>
+
+<p>在Ruby中,绝大多数的东西都是对象, 包括类,模块等,但是代码块却不是.</p>
+
+<p>如果想将存储一个代码块供以后调用, 我就需要一个相关对象.</p>
+
+<p>Ruby标准库中提供了一个名为Proc的类, Proc就是由块转换来的对象. 我可以将代码传给Proc.new方法来创建一个Proc对象.
+后续可以使用Proc#call方法来指向这个对象</p>
+
+<pre><code class="language-ruby"># =&gt; 1. Proc.new
+inc1 = Proc.new {|x| x + 1}
+inc1.call(100)
+
+
+# =&gt; 2. proc
+inc2 = proc {|x| x + 1}
+inc2.call(100)
+
+# =&gt; 3. lambda
+inc3 = lambda {|x| x + 1}
+inc3.call(100)
+
+# =&gt; 4. -&gt;
+inc4 = -&gt;(x) {x + 1}
+inc4.call(100)
+
+</code></pre>
+<p>这个技巧成为延迟执行(Deferred Evaluation)</p>
+
+<h3 id="-操作符">
+<a id="-操作符" class="anchor" href="#-%E6%93%8D%E4%BD%9C%E7%AC%A6" aria-hidden="true"><span class="octicon octicon-link"></span></a>&amp; 操作符</h3>
+
+<p>代码块就像是一个方法额外的匿名参数, 定义函数时我可以不写上这个匿名参数, 方法内部可以使用关键字yield来调用代码块.
+但是下面两种情况下, yield就力不从心了:</p>
+<ol>
+  <li>我想把代码块传递给另外一个方法(甚至传给另外一个代码块), 另外一个方法执行时可以调用代码块</li>
+  <li>我想把代码块转换成Proc对象.</li>
+</ol>
+
+<p>在这两种情况下, 我需要给代码块起个名字. 要将代码块附加到一个绑定上, 我可以给这个方法添加一个特殊的参数, 这个参数是参数列表中的最后一项, 并且以&amp;开头.
+形参列表中&amp;xx作用就是捕获方法运行时挂载于方法最后的代码块, 并将其转换为可调用对象proc.
+&amp;block &lt;=&gt; Proc.new block
+此后在方法内部, 可以使用block(proc对象)了. 不仅可以将其传给另外一个方法, 还可以使用block.call的形式调用</p>
+
+<pre><code class="language-ruby">
+def math(a, b)
+  yield(a, b)
+end
+
+def do_math(a, b, &amp;operation)
+  math(a, b, &amp;operation)
+  # =&gt; math(a, b) 直接这样调用math(a, b)并不会将挂载于do_math的方法传递给math方法, 需要在参数列表中显式添加可调用参数
+end
+
+do_math(2, 3) {|x, y| x * y} # =&gt; 6
+
+# =&gt; 6,这样调用,方法math内部直接根据关键字yield去调用挂载的代码块, 并将参数传给代码块
+# =&gt; 此时方法后面挂载的代码块就相当于一个参数, 所以关键字yield才会去执行代码块中相关的代码
+math(2, 3) {|x, y| x * y}
+
+# =&gt; math(2, 3, &amp;operation) 在一个方法内部这样调用时, 需要将代码块传递给方法math, 没办法直接向上面的调用那样直接挂载代码块,因为代码块是挂载到外部方法上, 内部函数如果不显式传入参数的话, 是无法获取挂载到外部方法的代码块的
+
+</code></pre>
+<p><strong>总结</strong></p>
+
+<p>PS: &amp;符号很有用, 可以进行代码块和可调用对象之间的转换</p>
+
+<ul>
+  <li><strong>&amp;block在形参列表中出现时, &amp; 将方法后面挂载的代码块转换为可调用对象,并保存到block变量上. 此时block.class == Proc</strong></li>
+  <li><strong>&amp;block在方法调用中作为实参时, &amp; 将传入方法的可调用对象转换为代码块, 再传给当前调用的方法中</strong></li>
+</ul>
+
+<blockquote>
+
+  <p>&amp;block 作为形参 =&gt; &amp; 将代码块转换为可调用对象
+&amp;block 作为实参 =&gt; &amp; 将可调用对象转换为代码块</p>
+</blockquote>
+
+<h3 id="proc与lambda的区别">
+<a id="proc与lambda的区别" class="anchor" href="#proc%E4%B8%8Elambda%E7%9A%84%E5%8C%BA%E5%88%AB" aria-hidden="true"><span class="octicon octicon-link"></span></a>Proc与lambda的区别</h3>
+
+<ol>
+  <li>return
+  在lambda中, return仅表示从这个lambda中返回, proc会直接从定义proc的作用域返回</li>
+</ol>
+
+<pre><code class="language-ruby">
+def double(callabel_object)
+  callabel_object.call * 2
+end
+
+double(lambda {return 10}) # =&gt; 20
+
+def another_double
+  p = Proc.new {return 10}
+  result = p.call # =&gt; another_double方法运行到此就直接return了
+  return result * 2
+end
+another_double # =&gt; 10
+</code></pre>
+
+<ol>
+  <li>参数数量
+lambda会检查参数的数量, 如果参数不对, 就会抛出ArgumentError错误, 而proc会把传来的参数调整为自己期望的参数形式.</li>
+</ol>
+
+<p><strong>总结</strong></p>
+
+<p>lambda更为直观, 因为它更像一个方法. 它对参数的要求严格一些, 而且在调用return时从代码中返回.
+因此lambda作为第一选择, 除非需要用到proc的特殊功能, 否则很少用到proc.</p>
+
+<h3 id="method对象">
+<a id="method对象" class="anchor" href="#method%E5%AF%B9%E8%B1%A1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Method对象</h3>
+
+<pre><code class="language-ruby">
+class MyClass
+  def initialize(value)
+    @var = value
+  end
+
+  def my_method
+    puts @var
+    self
+  end
+end
+
+obj = MyClass.new("hello world")
+m = obj.method :my_method
+m.call # =&gt; hello world, #&lt;MyClass:0x007fb841924388 @var="hello world"&gt;
+
+</code></pre>
+
+<p>Method对象类似于代码块或者lambda.
+Method#to_proc可以将Method对象转换为proc对象, 还可以通过define_method将代码块转换为方法.</p>
+
+<p>它们之间的区别:
+lambda在定义它的作用域中执行(它是一个闭包)
+Method对象会在他自身所在对象的作用域中执行</p>
+
+<h3 id="代码块用途">
+<a id="代码块用途" class="anchor" href="#%E4%BB%A3%E7%A0%81%E5%9D%97%E7%94%A8%E9%80%94" aria-hidden="true"><span class="octicon octicon-link"></span></a>代码块用途</h3>
+
+<ol>
+  <li>
+    <p>定义一个代码块会获得当前环境的绑定, 当块传给一个方法时, 代码块会带着绑定进入方法, 这样方法就可以获得方法外的绑定</p>
+  </li>
+  <li>
+    <p>代码块作为回调函数, 将处理的逻辑放在代码块中, 调用方法中使用yield加上参数就可以调用代码块</p>
+  </li>
+</ol>
+
+
+      <h3>关于图片和转载</h3>
+
+      <a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="知识共享许可协议" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br />本作品采用<a rel="license" href="http://creativecommons.org/licenses/by/4.0/">知识共享署名 4.0 国际许可协议</a>进行许可。
+
+      转载时请注明原文链接，图片在使用时请保留图片中的全部内容，可适当缩放并在引用处附上图片所在的文章链接，图片使用 Sketch 进行绘制。
+
+      <h3>关于评论和留言</h3>
+
+      如果对本文 <a href="/ruby-block">大话 Ruby Block</a> 的内容有疑问，请在下面的评论系统中留言，谢谢。
+
+      <blockquote>
+        <p>原文链接：<a href="/ruby-block">大话 Ruby Block · 雄关漫道真如铁</a></p>
+
+        <p>Follow: <a href="https://github.com/nju520">nju520 · GitHub</a></p>
+      </blockquote>
+
+    </section>
+
+    <footer class="post-footer">
+
+      <!-- Everything inside the #author tags pulls data from the author -->
+      <!-- #author-->
+
+      
+      <figure class="author-image">
+        <a class="img" href="https://github.com/nju520" style="background-image: url(/assets/images/hacker.png)"><span class="hidden">'s Picture</span></a>
+      </figure>
+      
+
+      <section class="author">
+        <h4><a href="https://github.com/nju520">nju520</a></h4>
+
+        
+        <p> Ruby / Python / JS</p>
+        
+        <div class="author-meta">
+          <span class="author-location icon-location"> Hangzhou, China</span>
+          <span class="author-link icon-link"><a href="http://hwbnju.com"> hwbnju.com</a></span>
+        </div>
+      </section>
+
+      <!-- /author  -->
+
+      <section class="share">
+        <h4>Share this post</h4>
+        <a class="icon-twitter" href="http://twitter.com/share?text=大话 Ruby Block&amp;url=http://hwbnju.comruby-block"
+          onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+          <span class="hidden">Twitter</span>
+        </a>
+        <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://hwbnju.comruby-block"
+          onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+          <span class="hidden">Facebook</span>
+        </a>
+        <a class="icon-google-plus" href="https://plus.google.com/share?url=http://hwbnju.comruby-block"
+          onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+          <span class="hidden">Google+</span>
+        </a>
+      </section>
+
+      <div id="gitalk-container"></div>
+      <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+      <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+      <script>
+       const gitalk = new Gitalk({
+         clientID: 'e552ed507a5a4581d8a1',
+         clientSecret: '0abbd4193a0f9b2700936214ff6fda088c665a73',
+         repo: 'bobo-comments',
+         owner: 'nju520',
+         admin: ['nju520'],
+         // labels: ['Gitalk', 'gitment'].concat(["Ruby","block"]),
+         // id: location.origin + location.pathname,
+         id: "http://hwbnju.com/ruby-block",
+         distractionFreeMode: false
+       });
+
+       gitalk.render('gitalk-container')
+      </script>
+
+    </footer>
+
+  </article>
+
+</main>
+
+<aside class="read-next">
+
+  <!-- [[! next_post ]] -->
+  
+  <a class="read-next-story no-cover" href="javascript-object">
+    <section class="post">
+      <h2>JavaScript 深入理解 对象 (一)</h2>
+      <p>## Javascript对象 ```javascript var person = { name: 'hanwenbo', age: 29, job: "code" } ```...</p>
+    </section>
+  </a>
+  
+  <!-- [[! /next_post ]] -->
+  <!-- [[! prev_post ]] -->
+  
+  <a class="read-next-story prev no-cover" href="javascript-event">
+    <section class="post">
+      <h2>JavaScript 与 事件</h2>
+      <p>事件机制 与浏览器进行交互的时候浏览器就会触发各种事件。比如当我们打开某一个网页的时候，浏览器加载完成了这个网页，就会触发一个 load 事件；当我们点击页面中的某一个“地方”，浏览器就会在那个“地方”触发一个 click 事件。 这样，我们就可以编写 JavaScript，通过监听某一个事件，来实现某些功能扩展。例如监听 load 事件，显示欢迎信息，那么当浏览器加载完一个网页之后，就会显示欢迎信息。 JavaScript 与 HTML 之间的交互式通过事件实现的. 事件:...</p>
+    </section>
+  </a>
+  
+  <!-- [[! /prev_post ]] -->
+</aside>
+
+<!-- /post -->
+
+
+      <footer class="site-footer clearfix">
+        <section class="copyright"><a href="/">雄关漫道真如铁</a> &copy; 2018</section>
+        <section class="poweredby">Proudly published with <a href="https://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/biomadeira/jasper">Jasper</a></section>
+      </footer>
+    </div>
+    <!-- [[! Ghost outputs important scripts and data with this tag ]] -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <!-- [[! The main JavaScript file for Casper ]] -->
+    <script type="text/javascript" src="/assets/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="/assets/js/index.js"></script>
+    <script type="text/javascript" src="/assets/js/prism.js"></script>
+    <script type="text/javascript" src="/assets/js/toc.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+  </body>
+</html>

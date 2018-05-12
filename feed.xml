@@ -13,43 +13,6 @@
 		
 			
 				<item>
-					<title>Rails includes and joins</title>
-					
-						<description>&lt;p&gt;在使用 Rails ActiveRecord期间,我们经常使用 &lt;code&gt;includes&lt;/code&gt;来预加载数据, 使用 &lt;code&gt;joins&lt;/code&gt;来生成联接表. 但是有时候我们会生成一个小而精悍的SQL, 有时候却得到一个巨大的SQL. 与此同时, Rails中存在 &lt;code&gt;preload&lt;/code&gt;、 &lt;code&gt;eager_load&lt;/code&gt;、&lt;code&gt;includes&lt;/code&gt;等三种形式来预加载数据,  存在 &lt;code&gt;joins&lt;/code&gt;、&lt;code&gt;left_outer_joins&lt;/code&gt;来生成联接表. 深入研究它们的使用场景和差异会让我们使用 ActiveRecord 处理数据时更加得心应手.&lt;/p&gt;
-
-</description>
-					
-					<pubDate>Thu, 26 Apr 2018 00:00:00 +0800</pubDate>
-					<link>
-						http://hwbnju.com/rails-includes-and-joins
-					</link>
-					<guid isPermaLink="true">http://hwbnju.com/rails-includes-and-joins</guid>
-				</item>
-			
-		
-			
-				<item>
-					<title>Redis 实战 (一)</title>
-					
-						<description>&lt;blockquote&gt;
-  &lt;ol&gt;
-    &lt;li&gt;本系列文章参考 《Redis 入门指南》  《Redis IN ACTION》&lt;/li&gt;
-    &lt;li&gt;本系列文章的代码采用 Ruby实现.&lt;/li&gt;
-  &lt;/ol&gt;
-&lt;/blockquote&gt;
-
-</description>
-					
-					<pubDate>Fri, 06 Apr 2018 00:00:00 +0800</pubDate>
-					<link>
-						http://hwbnju.com/redis-in-action
-					</link>
-					<guid isPermaLink="true">http://hwbnju.com/redis-in-action</guid>
-				</item>
-			
-		
-			
-				<item>
 					<title>Sidekiq 异步任务调度与执行</title>
 					
 						<description>&lt;p&gt;sidekiq 是 Ruby 中一款非常优秀的后台任务处理软件, 其本身提供的API十分简洁, 源代码也易于阅读, 没有太多花哨的代码. Sidekiq 将 Redis 的各种数据结构用得都起到好处, 我们可以通过 Sidekiq 加深对 Redis 的印象以及学习如何恰当高效地结合 Redis 实现业务逻辑.本篇文章从 Sidekiq 的启动开始,详细解读 Sidekiq 的异步任务调度和执行.  除此之外, 我还会介绍中间件机制以及在此基础上实现的任务重试机制.&lt;/p&gt;
@@ -84,7 +47,7 @@
 				<item>
 					<title>TCP Socket 编程 -- 非阻塞式 IO</title>
 					
-						<description>&lt;h2 id=&quot;非阻塞式-io&quot;&gt;非阻塞式 &lt;code&gt;IO&lt;/code&gt;&lt;/h2&gt;
+						<description>&lt;h2 id=&quot;非阻塞式读操作&quot;&gt;非阻塞式读操作&lt;/h2&gt;
 
 </description>
 					
@@ -194,6 +157,22 @@
 		
 			
 				<item>
+					<title>Promise 点滴</title>
+					
+						<description>&lt;h2 id=&quot;promise的含义&quot;&gt;Promise的含义&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Tue, 05 Dec 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/javascript-promise
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/javascript-promise</guid>
+				</item>
+			
+		
+			
+				<item>
 					<title>JavaScript bind 原理和实现</title>
 					
 						<description>&lt;h2 id=&quot;bind-原理&quot;&gt;bind 原理&lt;/h2&gt;
@@ -247,6 +226,43 @@
 		
 			
 				<item>
+					<title>Rails includes and joins</title>
+					
+						<description>&lt;p&gt;在使用 Rails ActiveRecord期间,我们经常使用 &lt;code&gt;includes&lt;/code&gt;来预加载数据, 使用 &lt;code&gt;joins&lt;/code&gt;来生成联接表. 但是有时候我们会生成一个小而精悍的SQL, 有时候却得到一个巨大的SQL. 与此同时, Rails中存在 &lt;code&gt;preload&lt;/code&gt;、 &lt;code&gt;eager_load&lt;/code&gt;、&lt;code&gt;includes&lt;/code&gt;等三种形式来预加载数据,  存在 &lt;code&gt;joins&lt;/code&gt;、&lt;code&gt;left_outer_joins&lt;/code&gt;来生成联接表. 深入研究它们的使用场景和差异会让我们使用 ActiveRecord 处理数据时更加得心应手.&lt;/p&gt;
+
+</description>
+					
+					<pubDate>Wed, 26 Apr 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/rails-includes-and-joins
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/rails-includes-and-joins</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>Redis 实战 (一)</title>
+					
+						<description>&lt;blockquote&gt;
+  &lt;ol&gt;
+    &lt;li&gt;本系列文章参考 《Redis 入门指南》  《Redis IN ACTION》&lt;/li&gt;
+    &lt;li&gt;本系列文章的代码采用 Ruby实现.&lt;/li&gt;
+  &lt;/ol&gt;
+&lt;/blockquote&gt;
+
+</description>
+					
+					<pubDate>Thu, 06 Apr 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/redis-in-action
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/redis-in-action</guid>
+				</item>
+			
+		
+			
+				<item>
 					<title>JavaScript 继承模式</title>
 					
 						<description>&lt;h2 id=&quot;继承&quot;&gt;继承&lt;/h2&gt;
@@ -292,6 +308,22 @@
 						http://hwbnju.com/javascript-object
 					</link>
 					<guid isPermaLink="true">http://hwbnju.com/javascript-object</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>大话 Ruby Block</title>
+					
+						<description>&lt;h2 id=&quot;代码块基础&quot;&gt;代码块基础&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Tue, 20 Sep 2016 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/ruby-block
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/ruby-block</guid>
 				</item>
 			
 		

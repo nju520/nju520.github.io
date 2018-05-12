@@ -108,7 +108,7 @@
 </script>
 
   </head>
-  <body class=" home-template nav-closed">
+  <body class=" paged archive-template nav-closed">
     <!-- Google Tag Manager (noscript) -->
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PWFC85B"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
@@ -164,9 +164,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   
   <nav class="pagination" role="pagination">
   
-  <span class="page-number"> Page 1 of 4 </span>
   
-  <a class="older-posts" href="/page2/" title="Next Page">Older Posts &raquo;</a>
+  <a class="newer-posts" href="/page3/" title="Previous Page">&laquo; Newer Posts</a>
+  
+  
+  <span class="page-number"> Page 4 of 4 </span>
   
 </nav>
 
@@ -177,177 +179,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <article class="post">
   <header class="post-header">
-    <h2 class="post-title"><a href="/sidekiq">Sidekiq 异步任务调度与执行</a></h2>
+    <h2 class="post-title"><a href="/javascript-closure">JavaScript 闭包</a></h2>
   </header>
   <section class="post-excerpt">
     
-    <p>sidekiq 是 Ruby 中一款非常优秀的后台任务处理软件, 其本身提供的API十分简洁, 源代码也易于阅读, 没有太多花哨的代码. Sidekiq 将 Redis 的各种数据结构用得都起到好处, 我们可以通过 Sidekiq 加深对 Redis 的印象以及学习如何恰当高效地结合 Redis 实现业务逻辑.本篇文章从 Sidekiq 的启动开始,详细解读 Sidekiq 的异步任务调度和执行. <a class="read-more" href="/sidekiq">&raquo;</a></p>
+    <p>closure(闭包)是JavaScript语言的一个难点, 也是它的特色, 很多高级应用都要依靠闭包来实现. 本篇文章就闭包进行深入阐述 <a class="read-more" href="/javascript-closure">&raquo;</a></p>
     
   </section>
   <footer class="post-meta">
     <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
     
-    <a href='/tag/Ruby'>Ruby</a>
+    <a href='/tag/JavaScript'>JavaScript</a>
     
-    <a href='/tag/Sidekiq'>Sidekiq</a>
+    <a href='/tag/closure'>closure</a>
     
-    <a href='/tag/workers'>workers</a>
-    
-    <a href='/tag/Redis'>Redis</a>
-    
-    <time class="post-date" datetime="2018-03-18">18 Mar 2018</time>
-  </footer>
-</article>
-
-<article class="post">
-  <header class="post-header">
-    <h2 class="post-title"><a href="/tcp-scokets-arch">TCP Socket 编程 -- 网络架构模式</a></h2>
-  </header>
-  <section class="post-excerpt">
-    
-    <p>本篇文件会详细介绍架构网络应用程序的常见方式. 如何处理并发? 如何处理错误? 处理缓慢的客户端的最好的方法是什么? 如何最有效地利用资源?这类问题都能在本篇文章中找到答案. <a class="read-more" href="/tcp-scokets-arch">&raquo;</a></p>
-    
-  </section>
-  <footer class="post-meta">
-    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
-    
-    <a href='/tag/TCP'>TCP</a>
-    
-    <a href='/tag/socket'>socket</a>
-    
-    <a href='/tag/Ruby'>Ruby</a>
-    
-    <a href='/tag/process'>process</a>
-    
-    <a href='/tag/prefork'>prefork</a>
-    
-    <a href='/tag/thread'>thread</a>
-    
-    <a href='/tag/threadpool'>threadpool</a>
-    
-    <a href='/tag/Reactor'>Reactor</a>
-    
-    <time class="post-date" datetime="2018-03-15">15 Mar 2018</time>
-  </footer>
-</article>
-
-<article class="post">
-  <header class="post-header">
-    <h2 class="post-title"><a href="/tcp-scokets-no-block">TCP Socket 编程 -- 非阻塞式 IO</a></h2>
-  </header>
-  <section class="post-excerpt">
-    
-    <p>网络请求的瓶颈一般来自于 `IO`. 在常规的编程模式下, 比如程序做一次数据库的SQL查询, 先向数据库发起查询请求, 通常要等到数据库查询返回数据时才执行接下来的任务. 在这段时间内, 程序啥也干不了, 只能干等着; 服务器的CPU资源也就空闲, 这就是我们常见的阻塞. 本篇文章通过介绍几种非阻塞式读写来避免阻塞. <a class="read-more" href="/tcp-scokets-no-block">&raquo;</a></p>
-    
-  </section>
-  <footer class="post-meta">
-    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
-    
-    <a href='/tag/TCP'>TCP</a>
-    
-    <a href='/tag/socket'>socket</a>
-    
-    <a href='/tag/Ruby'>Ruby</a>
-    
-    <time class="post-date" datetime="2018-03-15">15 Mar 2018</time>
-  </footer>
-</article>
-
-<article class="post">
-  <header class="post-header">
-    <h2 class="post-title"><a href="/tcp-scokets">TCP Socket 编程 -- 基础</a></h2>
-  </header>
-  <section class="post-excerpt">
-    
-    <p>套接字 `socket` 连接起了数字世界. 正是网络编程--更确切的说, 是一组特定的套接字编程API -- 的出现, 才使得世界越来越小. 本文会介绍套接字编程的基础知识, 包括如何创建套接字, 如何连接套接字以及如何共享数据. 所有的示例代码均为 `Ruby` <a class="read-more" href="/tcp-scokets">&raquo;</a></p>
-    
-  </section>
-  <footer class="post-meta">
-    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
-    
-    <a href='/tag/TCP'>TCP</a>
-    
-    <a href='/tag/socket'>socket</a>
-    
-    <a href='/tag/Ruby'>Ruby</a>
-    
-    <time class="post-date" datetime="2018-03-10">10 Mar 2018</time>
-  </footer>
-</article>
-
-<article class="post">
-  <header class="post-header">
-    <h2 class="post-title"><a href="/rack-webrick">WEBrick 源码分析</a></h2>
-  </header>
-  <section class="post-excerpt">
-    
-    <p>WEBrick是 Ruby 最古老的一款 Web Server, 本文就从源码入手, 解读 WEBrick的实现原理, 从线程和进程的角度分析 WEBrick的优缺点. <a class="read-more" href="/rack-webrick">&raquo;</a></p>
-    
-  </section>
-  <footer class="post-meta">
-    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
-    
-    <a href='/tag/rack'>rack</a>
-    
-    <a href='/tag/webrick'>webrick</a>
-    
-    <a href='/tag/socket'>socket</a>
-    
-    <a href='/tag/thread'>thread</a>
-    
-    <time class="post-date" datetime="2018-03-09">09 Mar 2018</time>
-  </footer>
-</article>
-
-<article class="post">
-  <header class="post-header">
-    <h2 class="post-title"><a href="/rack-rails">Ruby Rack 协议及其应用(三)</a></h2>
-  </header>
-  <section class="post-excerpt">
-    
-    <p>Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本篇文章着重讲述 `Ruby on Rails`框架的启动过程. <a class="read-more" href="/rack-rails">&raquo;</a></p>
-    
-  </section>
-  <footer class="post-meta">
-    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
-    
-    <a href='/tag/Rack系列'>Rack系列</a>
-    
-    <a href='/tag/rack'>rack</a>
-    
-    <a href='/tag/ruby'>ruby</a>
-    
-    <a href='/tag/rails'>rails</a>
-    
-    <a href='/tag/server'>server</a>
-    
-    <time class="post-date" datetime="2018-03-05">05 Mar 2018</time>
-  </footer>
-</article>
-
-<article class="post">
-  <header class="post-header">
-    <h2 class="post-title"><a href="/rack-working">Ruby Rack 协议及其应用(二)</a></h2>
-  </header>
-  <section class="post-excerpt">
-    
-    <p>Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本系列文章就深入探讨Rack协议的原理以及实现. <a class="read-more" href="/rack-working">&raquo;</a></p>
-    
-  </section>
-  <footer class="post-meta">
-    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
-    
-    <a href='/tag/Rack系列'>Rack系列</a>
-    
-    <a href='/tag/rack'>rack</a>
-    
-    <a href='/tag/ruby'>ruby</a>
-    
-    <a href='/tag/rails'>rails</a>
-    
-    <a href='/tag/server'>server</a>
-    
-    <time class="post-date" datetime="2018-03-04">04 Mar 2018</time>
+    <time class="post-date" datetime="2016-03-07">07 Mar 2016</time>
   </footer>
 </article>
 
@@ -356,9 +202,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <nav class="pagination" role="pagination">
   
-  <span class="page-number"> Page 1 of 4 </span>
   
-  <a class="older-posts" href="/page2/" title="Next Page">Older Posts &raquo;</a>
+  <a class="newer-posts" href="/page3/" title="Previous Page">&laquo; Newer Posts</a>
+  
+  
+  <span class="page-number"> Page 4 of 4 </span>
   
 </nav>
 
