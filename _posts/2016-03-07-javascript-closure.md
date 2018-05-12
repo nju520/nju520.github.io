@@ -1,0 +1,370 @@
+---
+layout: post
+toc: true
+permalink: /javascript-closure
+title: JavaScript 闭包
+tags: JavaScript closure
+desc: closure(闭包)是JavaScript语言的一个难点, 也是它的特色, 很多高级应用都要依靠闭包来实现. 本篇文章就闭包进行深入阐述
+---
+
+## 闭包产生的条件
+- 调用的函数是内部声明
+- 调用的函数是在声明位置函数之外调用的
+- 调用的函数引用外部变量
+
+直白一些
+- 调用的函数是父级作用域内部声明的
+- 调用的函数是在父级作用域外进行调用
+
+```javascript
+var outer = function() {
+  var x;
+  var inner = function(){
+    return x;
+  };
+  return inner;
+};
+var fn = outer();
+fn();
+
+```
+
+## 闭包的判断(不是闭包的例子)
+1. 只满足第一个条件， 调用的函数是父级作用域内部声明的
+```javascript
+var r = (function(x) {
+  return {
+    x: x
+  };
+})(100);
+//这跟先声明一个有名字的函数，再调用，没啥区别。
+
+var func1 = function() {
+  var func2 = function(x) {
+    alert(x);
+  }
+  func2('xxx');
+}
+fun1();// xxx
+// fun2也只满足第一个条件，因此也不是。
+
+```
+2. 只满足条件1和条件3 调用的函数是父级作用域内部声明的  调用的函数内部使用了父级函数作用域的内部变量
+**第二个条件是最重要的，必须在父级作用域外调用**
+因此闭包必须是局部函数才行
+```javascript
+
+
+var a = function() {
+  var x = 0;
+  function b() {
+    alert(x);
+  }
+  b();
+}
+
+a();//0 因为b的调用没有在外部函数a 的外部，因此b不是闭包。
+```
+
+## 闭包的实例
+这里主要来看看怎么个外部调用法
+1. 作为函数返回结构的一部分
+```javascript
+var fun = function() {
+  var x = 0;
+  return {
+    fn: function() {
+      alert(++x);
+    }
+  };
+}
+var r = fun();
+r.fn();
+r.fn();
+// r.fn是fun的内部函数（注意函数是引用类型的），调用是在fun的外部调用的。
+
+```
+
+2.赋给外部变量
+```javascript
+var fun1;
+var fun2 = function() {
+        var x = 0;
+        fun1 = function() {
+                alert(x);
+        }
+}
+fun2();
+fun1();
+// fun1是一个闭包
+```
+
+3.异步操作， 绑定到DOM事件
+```javascript
+var fun2 = function() {
+  var btn = document.querySelector("#myBtn");
+  var x;
+  btn.onclick = function() {
+    alert(x);
+  }
+}
+fun2();
+```
+
+4. 异步操作， setTimeout setInterval
+```javascript
+var fun = function(x) {
+  setInterval(function() {
+    console.log(x++);
+  }, 3000)
+}
+fun(1);
+// setInterval第一个参数，是一个函数，此函数的执行必须是在全局调用的。因此是闭包。
+
+```
+
+5. 特权函数
+```javascript
+var Person = function() {
+  this.sayName = function() {
+    alert(name);
+  }
+  var name = "hehe";
+}
+var p = new Person();
+p.sayName();
+// 我故意把sayName和name写反的，没有问题的。
+// 只要是闭包，使用的外部变量位置“在哪”都可以的。当然闭包不是本质原因，只要在函数调用之前就行了。而闭包是在外部调用的。
+// 这里来说说它为啥是闭包呢？
+// p.sayName是个构造函数内部声明的匿名函数，没问题。
+// 调用时也是在构造函数之外调用。
+```
+
+
+## 应用场景
+```javascript
+var foo = (function() {
+    var secret = 'secret';
+    // “闭包”内的函数可以访问 secret 变量，而 secret 变量对于外部却是隐藏的
+    return {
+        get_secret: function () {
+            // 通过定义的接口来访问 secret
+            return secret;
+        },
+        new_secret: function ( new_secret ) {
+            // 通过定义的接口来修改 secret
+            secret = new_secret;
+        }
+    };
+} ());
+
+foo.get_secret (); // 得到 'secret'
+foo.secret; // Type error，访问不能
+foo.new_secret ('a new secret'); // 通过函数接口，我们访问并修改了 secret 变量
+foo.get_secret (); // 得到 'a new secret'
+```
+之所以可能通过这种方式在 JavaScript 中实现公有，私有，特权变量正是因为闭包，闭包是指在 JavaScript 中，内部函数总是可以访问其所在的外部函数中声明的参数和变量，即使在其外部函数被返回了之后。
+需要注意的一点时，内部函数访问的是被创建的内部变量本身，而不是它的拷贝。所以在闭包函数内加入loop时要格外注意。另外当然的是，闭包特性也可以用于创建私有函数或方法。
+
+关于为什么在 JavaScript 中闭包的应用都有关键词“return”，引用 JavaScript 秘密花园中的一段话：
+闭包是 JavaScript 一个非常重要的特性，这意味着当前作用域总是能够访问外部作用域中的变量。 因为 函数 是 JavaScript 中唯一拥有自身作用域的结构，因此闭包的创建依赖于函数。
+
+
+## 用一道面试题考察对闭包的理解
+1. 题目描述
+
+```javascript
+var name = 'global';
+
+var obj = {
+    name : 'obj',
+    dose : function(){
+        this.name = 'dose';
+        return function(){
+            return this.name;
+        }
+    }
+}
+
+alert(obj.dose().call(this))
+
+```
+分析
+```javascript
+var hehe = obj.dose()
+hehe.call(this);
+// hehe函数绑定的当前对象是this执行的对象，也就是window对象。
+// call的作用:
+// 1. 替换函数运行环境中的this。
+// 2. 传递参数
+// 3. 运行函数
+```
+
+2. 如何修改函数，让其绑定我们需要的this呢
+```javascript
+var name = 'global';
+
+var obj = {
+    name : 'obj',
+    dose : function(){
+        this.name = 'dose';
+        return function(){
+            return this.name;
+        }.bind(this)
+    }
+}
+
+alert(obj.dose().call(this));
+// 由于return的function中用了bind，所以相当于固定了this，外边再call什么进来，也只是碍眼法而已。
+// 由于内部函数已经绑定了this到当前对象obj. 所以使用call 无法修改this
+```
+
+3. 浏览器不支持bind呢
+```javascript
+var name = 'global';
+
+var obj = {
+    name : 'obj',
+    dose : function(){
+        var that = this;
+        this.name = 'dose';
+        return function(){
+            return that.name;
+        }
+    }
+}
+
+alert(obj.dose().call(this))
+
+```
+
+## 闭包的优点 缺点
+优点:
+  - 延长作用域链
+  ```javascript
+  function wrap () {
+  var out = '外部变量';
+  return  function (){
+     //这里可以访问外部函数中的变量
+     //实际上就是创建了一个闭包函数
+      alert(out);
+    }
+  }
+
+  var inner = wrap();
+  //虽然wrap运行完毕了，但是inner依然可以访问它所创建的作用域中的变量
+  //这就是闭包第一个用法
+  inner();
+  ```
+  - 生成预编译函数
+  ```javascript
+  var fn = [];
+  for(var i = 0;i<3;i++){
+
+      (function(n){
+          fn.push(function(){
+              alert(n)
+          })
+      })(i)
+
+  }
+
+  ```
+
+  - 函数的curry化
+  ```javascript
+  function addGenerator(num){
+
+    return function(toAdd){
+      return num + toAdd;
+    };
+  }
+  //创建一个新的函数
+  var addFive = addGenerator(5);
+  alert(addFive(4)==9) //true
+  ```
+
+  - 处理异步造成的变量不能即时传递的问题
+  ```javascript
+  var items = document.querySelectorAll('li');
+
+     for(var i=0;i<items.length;i++){
+
+         items[i].onclick = function(){
+             alert(i)
+         }
+     }
+
+     //上面的程序结果是：每次都弹出10;
+       //为了在用户点击的时候，能弹出对应的数字
+      // 需要构建一个闭包，将参数缓存起来
+        for(var i=0;i<items.length;i++){
+
+         items[i].onclick = (function(n){
+             return function(){
+                 alert(n)
+             }
+         })(i)
+     }
+     // 这时点击的时候就会弹出邦定的数字了，强烈推荐试一下
+  ```
+
+坏处
+  - 增加了内存的消耗。
+
+  - 某些浏览器上垃圾回收有问题，有内存溢出的风险
+
+  -  
+
+
+## 如何释放闭包引起的内存泄漏
+[参考文章](http://blog.leanote.com/post/rongdee/%E6%B5%85%E6%9E%90%E9%97%AD%E5%8C%85%E5%92%8C%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E7%9A%84%E9%97%AE%E9%A2%98)
+总结:
+1.由于闭包产生的循环引用，导致浏览器不能及时释放内存，从而内存泄露。
+
+2.当一个循环中同时包含DOM元素和常规JavaScript对象时，IE无法释放任何一个对象——因为这两类对象是由不同的内存管理程序负责管理的。
+
+- 循环引用:
+```javascript
+function outerFn() {
+  var outerVar = 'hello';
+  function innerFn() {
+    console.log('hehe');
+  }
+  outerFn.fn = innerFn;
+  return innerFn;
+}
+
+```
+
+虽然innerFn没有直接调用outerFn内的变量，但是outerFn仍然位于innerFn的封闭环境中。由于闭包的原因，位于outerFn中的所有变量都隐式地被innerFn所引用。这种情况下就会造成循环引用。
+
+**上述情况通常不是什么问题，JavaScript能够检测到这些情况并在它们孤立时将其清除。**
+
+－ DOM与JavaScript的循环
+当一个循环中同时包含DOM元素和常规JavaScript对象时，IE无法释放任何一个对象——因为这两类对象是由不同的内存管理程序负责管理的。
+除非关闭浏览器，否则这种循环在IE中永远得不到释放。为此，随着时间的推移，这可能会导致大量内存被无效地占用。
+```javascript
+$(document).ready(function() {
+  var button = document.getElementById('button-1');
+  button.onclick = function() {
+    console.log('hehe');
+    return false;
+  };
+});
+
+```
+当指定单击事件处理程序时，就创建了一个在其封闭的环境中包含button变量的闭包。而且现在的button也包括一个指向闭包(onclick属性自身)的引用。这样就导致了在IE浏览器中即使离开页面也不会释放这个循环。
+为了释放内存，就需要断开循环引用。例如关闭窗口，删除onclick引用。
+另外还可以使用如下:
+```javascript
+function hello() {
+  console.log('hello');
+  return false;
+}
+$(document).ready(function() {
+  var button = document.getElementById('button-1');
+  button.onclick = hello;
+});
+// 因为hello()函数不再包含 button，引用就成了单向的（从button到hello）,不存的循环，所以就不会造成内存泄漏了。
+```

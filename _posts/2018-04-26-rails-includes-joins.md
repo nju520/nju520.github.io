@@ -177,6 +177,24 @@ Client.joins(:orders).where(orders: { created_at: time_range })
 
 
 
+### 使用 merge
+
+> Merges in the conditions from `other`, if `other` is an [ActiveRecord::Relation](http://api.rubyonrails.org/classes/ActiveRecord/Relation.html). Returns an array representing the intersection of the resulting records with `other`, if `other` is an array.
+
+通过官方的文档我们可以看出 `merge`是可以连接其他的`ActiveRecord::Relation`的,这样可以简化我们的查询方法.
+
+~~~ruby
+Post.where(published: true).joins(:comments).merge( Comment.where(spam: false) )
+# Performs a single join query with both where conditions.
+
+recent_posts = Post.order('created_at DESC').first(5)
+Post.where(published: true).merge(recent_posts)
+# Returns the intersection of all published posts with the 5 most recently created posts.
+# (This is just an example. You'd probably want to do this with a single query!)
+~~~
+
+
+
 ### LEFT_OUTER_JOINS
 
 Rails 5提供了`left_outer_joins`来实现左外联结.
@@ -191,6 +209,10 @@ User.left_outer_joins(:orders).distinct.select('users.name AS name, orders.numbe
 # => SELECT DISTINCT users.name AS name, orders.number AS number
 LEFT OUTER JOIN orders ON orders.user_id = users.id
 ~~~
+
+
+
+PS: 不论是`joins`还是`left_joins`,如果在后面添加`where`条件过滤, 返回的结果都是经过过滤之后的数据集合.
 
 
 
