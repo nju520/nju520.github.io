@@ -1,0 +1,306 @@
+---
+layout: post
+toc: true
+permalink: /ruby-block
+title: 大话 Ruby Block
+tags: Ruby block
+desc: Ruby 代码块是Ruby语言的最诱人的语言特性, 我们可以使用代码块来进行各式各样的操作. 代码块不是独立运行的, 运行代码需要一个执行环境,局部变量, 实例变量、self等. 创建一个代码块时就会创建一个新的绑定, 然后代码块连同它的绑定传给方法.本篇文章就叫单聊一下Ruby中的代码块.
+---
+
+## 代码块基础
+
+1. 只有在调用一个方法时,才可以**定义一个代码块**. 这在一定程度上可以将代码块看做是回调函数. 块直接传递给这个方法, 在方法内部, 可以使用yield关键字来调用代码块.
+
+>我的理解:
+>
+>上面所说的定义一个代码块, 可以将代码块看做一个参数, 调用方法时,除了传入常规的参数外, 也可以传入代码块(匿名函数).
+>
+>为什么不像JS那样直接传入一个函数作为参数呢?
+>Ruby中方法不能作为参数, 所有才有了方法调用时挂载代码块来实现类似的效果.
+
+
+块可以有自己的参数, 当回调块时, 我可以像调用方法那样为块提供参数. 另外, 像方法一样, 块的最后一行代码执行的结果会被当做返回值.
+
+## 代码块就是闭包
+
+局部变量, 实例变量和self等都是绑定在对象上, 把它们简称为绑定(binding).
+代码块之所以可以运行, 是因为它既包含代码, 也包含一组绑定.
+定义一个块时,它会获得环境中的绑定. 当块被传给一个方法时, 它会带着这些绑定一起进入该方法:
+
+```ruby
+
+def my_method
+  x = "GoodBye"
+  yield("hehe")
+end
+
+x = "Hello"
+my_method {|y| "#{x}, #{y} world"} # => Hello, hehe world
+
+```
+创建代码块时, 会获得局部绑定(比如x),然后把代码块连同它的绑定传给一个方法.
+上面的例子中,代码块的绑定包含一个名为x的变量, 虽然方法中也定义了一个变量x, 但是代码块看到的x还是在代码块定义时绑定的x,方法中的x对于代码块来说是不可见的.
+
+基于这样的特性, 代码块也被称之为闭包. **代码块可以获得局部绑定,并一直携带它们**
+
+#### 作用域
+在某些语言中, 有"内部作用域"的概念. 在内部作用域里可以看到"外部作用域"的变量. 但是Ruby没有这种嵌套式的作用域,它的作用域都是截然分开的: 一旦进入了新的作用域, 原先的绑定会被替换成一组新的绑定.
+
+##### 什么情况可以打开一个新的作用域呢?
+
+1. 类定义(class XXX)
+2. 模块定义(module XXX)
+3. 方法定义(def XXX)
+
+~~~ruby
+# define a class
+class Person
+  def self.name
+    'hh'
+  end
+end
+
+# define a module
+module MyModule
+
+end
+
+# define a method
+
+def hello
+  puts 'hello world'
+end
+~~~
+
+
+
+每当程序进入或者离开类定义, 模块定义, 方法定义时, 就会发生作用域切换.
+每个关键字都对应一个作用域门.
+
+它们中间还有一点差别, 在class/module中的代码会立即执行, 在def中的代码不会立即执行.
+
+##### 如何让一个变量穿越作用域呢?
+
+```ruby
+
+my_var = "Success"
+class MyClass
+# 希望在这里可以打印my_var
+  def my_method
+    #希望在这里也可以打印my_var
+  end
+end
+
+```
+class定义产生了一个作用域, 在进入新的作用域时,外部的局部变量就无法访问了.
+如果我把class关键字换成一个方法调用, 同时在方法调用的后面携带一个代码块. 因为代码块作为一个闭包,可以获得局部绑定,并一直携带它们.
+
+```ruby
+
+my_var = "Success"
+MyClass = Class.new do
+  puts "#{my_var} in the class defination"
+
+  def my_method
+    # 但是实例方法中还是无法获取外部的局部变量, 因为def打开了一个新的作用域
+    #puts "#{my_var} in the instance method defination"
+  end
+
+  define_method :my_method do
+    puts "#{my_var} in the instance method defination"
+  end
+end
+
+```
+使用方法调用来替代作用域门, 就可以让一个作用域看到另外一个作用域的变量. 这种技巧称之为"扁平化作用域(flatterning the scope)",表示如果两个作用域挤压在一起, 它们就可以共享各自的变量.
+
+**闭包小结**
+每个Ruby作用域都包含一组绑定. 不同的作用域之间被作用域门分割开来.
+要想让某个绑定穿越作用域门, 可以使用代码块. 一个代码块就是一个闭包, 当定义个代码块时, 它会捕获当前环境的绑定. 我们可以使用方法调用来代替作用域门, 用一个闭包获取当前的绑定, 并把这个绑定传递给方法.
+
+~~~
+Class.new --> class
+
+Module.new --> module
+
+Module#define_method --> def
+
+~~~
+
+
+
+## instance_eval
+
+BasicObject#instance_eval方法, 它在一个对象的上下文中执行块
+
+```ruby
+
+class MyClass
+  def initialize
+    @var = 1
+  end
+end
+
+new_var = 2
+obj = MyClass.new
+obj.instance_eval do
+  self  # => #<MyClass:0x3217391, @var = 1>
+  @var = new_var  
+  @var  # => 2
+end
+
+```
+运行时,代码块的接收者会成为self, 因此它可以访问接收者的私有方法和实例变量, 还可以修改实例变量.
+由于上述instance_eval是方法调用, 类定义后面的代码属于一个扁平作用域中,因此代码块内部可以访问到外部变量new_var. 由于代码块运行时它的对象为self,所以它能访问到obj对象的实例变量.
+
+## 可调用对象
+使用代码块分为两步.
+第一步, 将代码打包备用;
+第二步, 通过方法内部的yield调用代码块执行代码
+
+在Ruby中, 还有以下几种方式可以用来打包代码:
+1. 使用proc, proc是由块转换来的对象
+2. 使用lambda, 它是proc的变种
+3. 使用方法
+
+### Proc对象
+
+在Ruby中,绝大多数的东西都是对象, 包括类,模块等,但是代码块却不是.
+
+如果想将存储一个代码块供以后调用, 我就需要一个相关对象.
+
+Ruby标准库中提供了一个名为Proc的类, Proc就是由块转换来的对象. 我可以将代码传给Proc.new方法来创建一个Proc对象.
+后续可以使用Proc#call方法来指向这个对象
+
+```ruby
+# => 1. Proc.new
+inc1 = Proc.new {|x| x + 1}
+inc1.call(100)
+
+
+# => 2. proc
+inc2 = proc {|x| x + 1}
+inc2.call(100)
+
+# => 3. lambda
+inc3 = lambda {|x| x + 1}
+inc3.call(100)
+
+# => 4. ->
+inc4 = ->(x) {x + 1}
+inc4.call(100)
+
+```
+这个技巧成为延迟执行(Deferred Evaluation)
+
+
+
+### & 操作符
+
+代码块就像是一个方法额外的匿名参数, 定义函数时我可以不写上这个匿名参数, 方法内部可以使用关键字yield来调用代码块.
+但是下面两种情况下, yield就力不从心了:
+1. 我想把代码块传递给另外一个方法(甚至传给另外一个代码块), 另外一个方法执行时可以调用代码块
+2. 我想把代码块转换成Proc对象.
+
+在这两种情况下, 我需要给代码块起个名字. 要将代码块附加到一个绑定上, 我可以给这个方法添加一个特殊的参数, 这个参数是参数列表中的最后一项, 并且以&开头.
+形参列表中&xx作用就是捕获方法运行时挂载于方法最后的代码块, 并将其转换为可调用对象proc.
+&block <=> Proc.new block
+此后在方法内部, 可以使用block(proc对象)了. 不仅可以将其传给另外一个方法, 还可以使用block.call的形式调用
+
+```ruby
+
+def math(a, b)
+  yield(a, b)
+end
+
+def do_math(a, b, &operation)
+  math(a, b, &operation)
+  # => math(a, b) 直接这样调用math(a, b)并不会将挂载于do_math的方法传递给math方法, 需要在参数列表中显式添加可调用参数
+end
+
+do_math(2, 3) {|x, y| x * y} # => 6
+
+# => 6,这样调用,方法math内部直接根据关键字yield去调用挂载的代码块, 并将参数传给代码块
+# => 此时方法后面挂载的代码块就相当于一个参数, 所以关键字yield才会去执行代码块中相关的代码
+math(2, 3) {|x, y| x * y}
+
+# => math(2, 3, &operation) 在一个方法内部这样调用时, 需要将代码块传递给方法math, 没办法直接向上面的调用那样直接挂载代码块,因为代码块是挂载到外部方法上, 内部函数如果不显式传入参数的话, 是无法获取挂载到外部方法的代码块的
+
+```
+**总结**
+
+PS: &符号很有用, 可以进行代码块和可调用对象之间的转换
+
+* **&block在形参列表中出现时, & 将方法后面挂载的代码块转换为可调用对象,并保存到block变量上. 此时block.class == Proc**
+* **&block在方法调用中作为实参时, & 将传入方法的可调用对象转换为代码块, 再传给当前调用的方法中**
+
+>
+&block 作为形参 => & 将代码块转换为可调用对象
+&block 作为实参 => & 将可调用对象转换为代码块
+
+
+
+### Proc与lambda的区别
+
+1. return
+  在lambda中, return仅表示从这个lambda中返回, proc会直接从定义proc的作用域返回
+
+```ruby
+
+def double(callabel_object)
+  callabel_object.call * 2
+end
+
+double(lambda {return 10}) # => 20
+
+def another_double
+  p = Proc.new {return 10}
+  result = p.call # => another_double方法运行到此就直接return了
+  return result * 2
+end
+another_double # => 10
+```
+
+2. 参数数量
+lambda会检查参数的数量, 如果参数不对, 就会抛出ArgumentError错误, 而proc会把传来的参数调整为自己期望的参数形式.
+
+**总结**
+
+lambda更为直观, 因为它更像一个方法. 它对参数的要求严格一些, 而且在调用return时从代码中返回.
+因此lambda作为第一选择, 除非需要用到proc的特殊功能, 否则很少用到proc.
+
+### Method对象
+
+```ruby
+
+class MyClass
+  def initialize(value)
+    @var = value
+  end
+
+  def my_method
+    puts @var
+    self
+  end
+end
+
+obj = MyClass.new("hello world")
+m = obj.method :my_method
+m.call # => hello world, #<MyClass:0x007fb841924388 @var="hello world">
+
+```
+
+Method对象类似于代码块或者lambda.
+Method#to_proc可以将Method对象转换为proc对象, 还可以通过define_method将代码块转换为方法.
+
+它们之间的区别:
+lambda在定义它的作用域中执行(它是一个闭包)
+Method对象会在他自身所在对象的作用域中执行
+
+
+
+### 代码块用途
+
+1. 定义一个代码块会获得当前环境的绑定, 当块传给一个方法时, 代码块会带着绑定进入方法, 这样方法就可以获得方法外的绑定
+
+2. 代码块作为回调函数, 将处理的逻辑放在代码块中, 调用方法中使用yield加上参数就可以调用代码块

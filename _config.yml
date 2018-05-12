@@ -9,7 +9,7 @@ kramdown:
   toc_levels: 1..2
 
 highlighter: none
-paginate: 15
+paginate: 7
 language: 'en-uk'
 host_url: 'http://hwbnju.com'
 

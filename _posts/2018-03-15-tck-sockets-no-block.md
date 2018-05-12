@@ -3,23 +3,13 @@ layout: post
 toc: true
 permalink: /tcp-scokets-no-block
 title: TCP Socket 编程 -- 非阻塞式 IO
-tags: TCP socket Ruby 
-desc: 网络请求的瓶颈一般来自于 `IO`
+tags: TCP socket Ruby
+desc: 网络请求的瓶颈一般来自于 `IO`. 在常规的编程模式下, 比如程序做一次数据库的SQL查询, 先向数据库发起查询请求, 通常要等到数据库查询返回数据时才执行接下来的任务. 在这段时间内, 程序啥也干不了, 只能干等着; 服务器的CPU资源也就空闲, 这就是我们常见的阻塞. 本篇文章通过介绍几种非阻塞式读写来避免阻塞.
 ---
 
+## 非阻塞式读操作
 
-
-## 非阻塞式 `IO`
-
-
-
-### 网络请求瓶颈!!
-
-
-
-### 非阻塞式读操作
-
-还记得我们之前学过的`Socket#read`吗? `它会一直保持阻塞, 直到接收到`EOF`或者获得指定的最小字节数为止.
+还记得我们之前学过的`Socket#read`吗? 它会一直保持阻塞, 直到接收到`EOF`或者获得指定的最小字节数为止.
 
 如果客户端没有发送`EOF`, 就可能会导致阻塞. 这种情况虽然可以通过`readpartial`暂时解决, `readpartial`会立刻返回所有的可用数据. 但是如果没有数据可用, 那么`readpartial`也会陷入阻塞状态.
 
@@ -29,7 +19,7 @@ desc: 网络请求的瓶颈一般来自于 `IO`
 
 
 
-和`readpartial` 非常类似, `read_nonblock`需要一个整数的参数, 指定需要读取的最大字节数. 如果可用的数据小于最大字节数, 那就只返回可用数据. 
+和`readpartial` 非常类似, `read_nonblock`需要一个整数的参数, 指定需要读取的最大字节数. 如果可用的数据小于最大字节数, 那就只返回可用数据.
 
 ~~~ruby
 require 'socket'
@@ -149,7 +139,7 @@ end
 
 
 
-每一次调用`read_nonblock`都要使用至少一个系统调用, 如果没有数据可读, 服务器就会浪费大量处理的周期. 
+每一次调用`read_nonblock`都要使用至少一个系统调用, 如果没有数据可读, 服务器就会浪费大量处理的周期.
 
 如前所述, `read_nonblock`会调用底层的`select`.
 
@@ -163,7 +153,7 @@ connections = [<TCPSocket>, <TCPSocket>, <TCPSocket>
 
 loop do
   loop do
-    # 调用底层的 `select` 查询 `socket` 连接的读写状态 
+    # 调用底层的 `select` 查询 `socket` 连接的读写状态
     ready = IO.slect(connections)
 
     #得到可进行读操作的 socket 连接
@@ -179,7 +169,7 @@ end
 
 ~~~
 
-我们使用`IO.select`可极大降低处理多个连接的开销. 
+我们使用`IO.select`可极大降低处理多个连接的开销.
 
 `IO.select`的作用就是接收若干`IO`对象, 然后告知哪一个可以进行读写, 这样我们就不必像刚才那样一直重试了.
 
@@ -187,11 +177,11 @@ end
 
 让我们来深入研究一下`IO.select`.
 
-**`IO.select`可以告诉我们文件描述符何时可以读写.它会阻塞. **
+**IO.select可以告诉我们文件描述符何时可以读写.它会阻塞 **
 
 
 
-**`IO.select`是一个同步方法*. 按照目前的方式来使用它会造成阻塞, 直到传入的某个`IO` 对象状态发生变化, 这时候它就会立刻返回. 如果有多个对象状态发生变化, 那么它们就会通过嵌套数组返回*
+**IO.select是一个同步方法*. 按照目前的方式来使用它会造成阻塞, 直到传入的某个IO 对象状态发生变化, 这时候它就会立刻返回. 如果有多个对象状态发生变化, 那么它们就会通过嵌套数组返回**
 
 `IO.select`可以接收四个参数:
 
@@ -215,8 +205,6 @@ ready = IO.select(for_reading, for_writing, for_writing)
 
 
 
-
-
 #### 高性能复用
 
 `IO.select`来自`Ruby`的核心代码库. 它是在`Ruby`中进行复用的唯一手段. 大多数现代操作系统支持多种复用方法.  `select`几乎总是最古老的, 也是用的最少的那个.
@@ -235,7 +223,7 @@ ready = IO.select(for_reading, for_writing, for_writing)
 
  `Ruby`有自己自带的`timeout`库, 它提供了一种通用的超时机制, 但是操作系统也有一套针对套接字的超时机制, 效果更好而且更直观.
 
-虽然操作系统提供了自带的套接字超时处理机制, 可以通过套接字选项`SNDTIMEO`以及`RCVTIMO`进行设置. 不过自`Ruby1.9`之后, 这个特性就不能再使用了. 由于`Ruby`在有线程存在时对于阻塞式`IO`所采用的处理方式. 它将`poll`相关的套接字进行了包装, 这样操作系统自带的套接字超时就没有优势了. 
+虽然操作系统提供了自带的套接字超时处理机制, 可以通过套接字选项`SNDTIMEO`以及`RCVTIMO`进行设置. 不过自`Ruby1.9`之后, 这个特性就不能再使用了. 由于`Ruby`在有线程存在时对于阻塞式`IO`所采用的处理方式. 它将`poll`相关的套接字进行了包装, 这样操作系统自带的套接字超时就没有优势了.
 
 
 
@@ -250,7 +238,7 @@ timeout = 5
 
 Socket.tcp_server_loop(4481) do |conn|
   begin
-    # 发起一个初始化 read 
+    # 发起一个初始化 read
     # 因为要求套接字上有被请求的数据, 有数据可读时可以避免使用 select
     conn.read_nonblock(1024 * 4)
   rescue Errno::EAGAIN
@@ -260,7 +248,7 @@ Socket.tcp_server_loop(4481) do |conn|
       puts conn.read_nonblock(1024 * 4)
       retry
     else
-      # 否则就会 raise 一个 Timeout::Error 
+      # 否则就会 raise 一个 Timeout::Error
       raise Timeout::Error
     end
   end
@@ -288,6 +276,3 @@ read_timeout.rb:15:in `rescue in block in <main>': Timeout::Error (Timeout::Erro
 
 
 这些基于超时的`IO.select`机制使用广泛, 甚至在`Ruby`的标准库中也能看到, 它们比操作系统自带的套接字超时处理机制的稳定性更高.
-
-
-
