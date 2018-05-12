@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    
+    <title>hwbnju.com</title>
+    
+    <link>http://hwbnju.com</link>
+    <description>nju520's Blog</description>
+    <language>en-uk</language>
+    <managingEditor> nju520</managingEditor>
+    <atom:link href="rss" rel="self" type="application/rss+xml" />
+    
+<item>
+  <title>JavaScript 继承模式</title>
+  <link>//javascript-inherit</link>
+  <author>nju520</author>
+  <pubDate>2016-12-27T00:00:00+08:00</pubDate>
+  <guid>//javascript-inherit</guid>
+  <description><![CDATA[
+  <h2 id="继承">继承</h2>
+
+<h3 id="原型链">原型链</h3>
+<p><strong>利用原型让一个引用类型继承另一个引用类型的属性和方法</strong></p>
+
+<h4 id="阐述原型继承连">阐述原型继承连</h4>
+
+<p>JavaScript中的每个对象，都有一个内置的_proto_属性,它实际上是对另一个对象或者null的引用。</p>
+
+<p>当一个对象需要引用一个属性时，JavaScript引擎首先会从这个对象自身的属性表中寻找这个属性标识，如果找到则进行相应读写操作，若没有在自身的属性表中找到，则在_proto_属性引用的对象的属性表中查找，如此往复，直到找到这个属性或者_proto_属性指向null为止。</p>
+
+<p>这个_proto_的引用链，被称作原型链。</p>
+
+<pre><code class="language-javascript">
+function SuperType() {
+  this.property = true;
+}
+
+SuperType.prototype.getSuperValue = function() {
+  return this.property;
+}
+
+function SubType() {
+  this.subproperty = false;
+}
+
+//SubType 继承了 SuperType
+//实现的本质是重写了 SubType.prototype 原型对象
+//但是有个问题是现在 SubType.prototype.constructor指向的是 SuperType,在 javascript 对象章节已经阐述过原因
+//var obj =  new SuperType() 实例对象
+// obj.__proto__.constructor == SuperType
+//所以 SubType.prototype.constructor == SuperType
+SubType.prototype = new SuperType();
+
+SubType.prototype.getSubValue = function() {
+  return this.subproperty;
+}
+
+var instance = new SubType();
+console.log(instance.getSuperValue());//true
+console.log(instance.getSubValue());//false
+
+</code></pre>
+
+<p>如果需要添加方法,需谨慎</p>
+
+<pre><code class="language-javascript">
+function SuperType() {
+  this.property = true;
+}
+
+SuperType.prototype.getSuperValue = function() {
+  return this.property;
+}
+
+function SubType() {
+  this.subproperty = false;
+}
+
+SubType.prototype = new SuperType();
+
+//添加新方法
+SubType.prototype.getSubValue = function() {
+  return this.subproperty;
+}
+
+//重写超类型中的方法
+SubType.prototype.getSuperValue = function() {
+  return false;
+}
+
+//子类重写了超类的 getSuperValue
+var instance = new SubType();
+instance.getSuperValue();//false
+
+//SuperType的实例还是调用原来的 getSuperValue 方法
+var superInstance = new SuperType();
+superInstance.getSuperValue();// true
+
+</code></pre>
+
+<h4 id="原型链继承的问题">原型链继承的问题</h4>
+<ol>
+  <li>包含引用类型值得原型, 原型属性会被所有实例共享</li>
+  <li>在创建子类实例时,无法向超类的构造函数中传递参数.</li>
+</ol>
+
+<h3 id="借助构造函数实现继承经典继承">借助构造函数实现继承(经典继承)</h3>
+<p><strong>在子类型构造函数的内部调用超类型的构造函数</strong>,函数只不过是在特定环境下执行代码的对象,因此可以通过 call 或者 apply 方法可以在(将来)新创建的对象上执行构造函数</p>
+<pre><code class="language-javascript">
+function SuperType() {
+  this.colors = ["red", "blue", "green"];
+
+  function SubType() {
+    //继承了 SuperType
+    //通过 call 或者 apply,在(未来将要)创建的 SubType 实例的环境下调用 SuperType 构造函数
+    //这样一来,我们在新的 SubType对象上执行 SuperType()函数中定义的所有对象初始化代码.
+    SuperType.call(this);
+  }
+
+  var instance = new SubType();
+  instance.colors.push("black");
+  alert(instance.colors); // red, blue, green, black
+
+  var instance2 = new SubType();
+  alert(instance.colors); // red, blue, green
+}
+
+
+</code></pre>
+
+<ol>
+  <li>可以传递参数</li>
+</ol>
+
+<p>在子类型构造函数中向超类构造函数传递参数.</p>
+
+<pre><code class="language-javascript">
+function SuperType(name) {
+  this.name = name;
+}
+function SubType(name) {
+  //继承了 SuperType
+  SuperType.call(this, name);
+}
+
+var instance = new SubType("bobo");
+alert(instance.name); // rbobo
+
+}
+
+
+</code></pre>
+
+<h3 id="组合继承原型链构造函数">组合继承(原型链+构造函数)</h3>
+<p>使用原型链实现对原型属性和方法的继承,通过借助构造函数实现实例属性的继承.</p>
+
+<pre><code class="language-javascript">
+function SuperType(name) {
+  this.name = name;
+  this.colors = ["red", "blue", "green"];
+}
+
+SuperType.prototype.sayName = function() {
+  console.log(this.name);
+}
+
+
+function SubType(name, age) {
+  SuperType.call(this, name);
+  this.age = age;
+}
+
+
+SubType.prototype = new SuperType();
+
+SubType.prototype.constructor = SubType;
+
+SubType.prototype.sayAge = function() {
+  console.log(this.age);
+}
+
+var instance = new SubType("bobo", 27);
+instance.colors.push("black");
+console.log(instance.colors);
+console.log(instance.sayName());
+console.log(instance.sayAge());
+
+
+var instance2 = new SuperType("yanzi");
+console.log(instance2.colors);
+console.log(instance2.sayName());
+
+</code></pre>
+
+  ]]></description>
+</item>
+
+
+  </channel>
+</rss>

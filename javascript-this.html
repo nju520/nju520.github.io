@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- [[! Document Settings ]] -->
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- [[! Page Meta ]] -->
+    <title>
+      
+        JavaScript 深入理解 this
+      
+    </title>
+    
+    <meta name="description" content="JavaScript支持函数式编程, 闭包, 原型继承等高级特性. 由于其运行期绑定的特性, JavaScript中的this具有丰富的含义. 它可以支持全局对象, 当前对象, 或者任意对象, 这完全取决于函数的调用方式. 本文采撷一些例子来说明this在不同调用方式下的不同含义." />
+    
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="/assets/images/favicon.ico" >
+
+    <!-- [[! Styles'n'Scripts ]] -->
+    <link rel="stylesheet" type="text/css" href="/assets/css/screen.css" />
+    <link rel="stylesheet" type="text/css"
+      href="//fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400" />
+
+    <link rel="stylesheet" type="text/css" href="/assets/css/prism.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/toc.css" />
+
+    <!-- [[! Ghost outputs important style and meta data with this tag ]] -->
+    <link rel="canonical" href="/" />
+<meta name="referrer" content="origin" />
+<link rel="next" href="/page2/" />
+
+<meta property="og:site_name" content="雄关漫道真如铁" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="JavaScript 深入理解 this" />
+
+<meta property="og:description" content="JavaScript支持函数式编程, 闭包, 原型继承等高级特性. 由于其运行期绑定的特性, JavaScript中的this具有丰富的含义. 它可以支持全局对象, 当前对象, 或者任意对象, 这完全取决于函数的调用方式. 本文采撷一些例子来说明this在不同调用方式下的不同含义." />
+
+<meta property="og:url" content="http://hwbnju.com/javascript-this" />
+<meta property="og:image" content="" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="JavaScript 深入理解 this" />
+
+<meta name="twitter:description" content="JavaScript支持函数式编程, 闭包, 原型继承等高级特性. 由于其运行期绑定的特性, JavaScript中的this具有丰富的含义. 它可以支持全局对象, 当前对象, 或者任意对象, 这完全取决于函数的调用方式. 本文采撷一些例子来说明this在不同调用方式下的不同含义." />
+
+<meta name="twitter:url" content="http://hwbnju.com/javascript-this" />
+<meta name="twitter:image:src" content="" />
+
+<script type="application/ld+json">
+  {
+  "@context": "http://schema.org",
+  "@type": "Website",
+  "publisher": "nju520",
+  "url": "http://hwbnju.com/javascript-this",
+  "image": "",
+  "description": "JavaScript支持函数式编程, 闭包, 原型继承等高级特性. 由于其运行期绑定的特性, JavaScript中的this具有丰富的含义. 它可以支持全局对象, 当前对象, 或者任意对象, 这完全取决于函数的调用方式. 本文采撷一些例子来说明this在不同调用方式下的不同含义."
+  }
+</script>
+
+<meta name="generator" content="Jekyll 3.0.0" />
+<link rel="alternate" type="application/rss+xml" title="雄关漫道真如铁" href="/feed.xml" />
+
+    <!-- Add Google Analytics  -->
+    <!-- Google Analytics Tracking code -->
+<script>
+ (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+ })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ ga('create', 'UA-114647632-1', 'auto');
+ ga('send', 'pageview', location.pathname);
+
+</script>
+
+<!-- Baidu Analytics  Manager -->
+<script>
+ var _hmt = _hmt || [];
+ (function() {
+   var hm = document.createElement("script");
+   hm.src = "https://hm.baidu.com/hm.js?e9208862845c46a0f79e7828f495e407";
+   var s = document.getElementsByTagName("script")[0];
+   s.parentNode.insertBefore(hm, s);
+ })();
+</script>
+
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-PWFC85B');</script>
+  <!-- End Google Tag Manager -->
+
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-114647632-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-114647632-1');
+</script>
+
+  </head>
+  <body class=" post-template nav-closed">
+    <!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PWFC85B"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+
+    <div class="nav">
+  <h3 class="nav-title">Home</h3>
+  <a href="#" class="nav-close">
+    <span class="hidden">Close</span>
+  </a>
+  <ul>
+    <li class="nav-home " role="presentation"><a href="/">Home</a></li>
+    <li class="nav-ruby " role="presentation"><a href="/tag/ruby">Ruby</a></li>
+    <li class="nav-javascript  nav-current" role="presentation"><a href="/tag/javascript">JavaScript</a></li>
+    <li class="nav-server " role="presentation"><a href="/tag/server">Server</a></li>
+    <li class="nav-database " role="presentation"><a href="/tag/database">Database</a></li>
+  </ul>
+  <a class="subscribe-button icon-feed" href="/feed.xml">Subscribe</a>
+</div>
+<span class="nav-cover"></span>
+
+
+    <div class="site-wrapper">
+
+      <!-- [[! Everything else gets inserted here ]] -->
+      <!-- < default -->
+
+<!-- The comment above "< default" means - insert everything in this file into -->
+<!-- the [body] of the default.hbs template, which contains our header/footer. -->
+
+<!-- Everything inside the #post tags pulls data from the post -->
+<!-- #post -->
+
+<header class="main-header post-head no-cover">
+  <nav class="main-nav overlay clearfix">
+    <a class="back-button icon-arrow-left" href="/">Home</a>
+    <a class="menu-button icon-menu" href="#"><span class="word">Menu</span></a>
+  </nav>
+</header>
+
+<main class="content" role="main">
+
+  <article class="post">
+
+    <header class="post-template post-header">
+      <h1 class="post-title">JavaScript 深入理解 this</h1>
+      <section class="post-meta">
+        <time class="post-date" datetime="2017-05-05">05 May 2017</time>
+        <!-- <a href='/'>nju520</a> -->
+        <!-- [[tags prefix=" on "]] -->
+        
+        
+        <a href='/tag/JavaScript'>JavaScript</a>
+        
+        <a href='/tag/this'>this</a>
+        
+        <a href='/tag/OOP'>OOP</a>
+        
+        
+      </section>
+    </header>
+
+    <section class="post-content">
+
+      <ul class="section-nav">
+<li class="toc-entry toc-h3"><a href="#什么是this">什么是this</a></li>
+<li class="toc-entry toc-h3"><a href="#为什么需要this">为什么需要this?</a></li>
+<li class="toc-entry toc-h3"><a href="#常见错误">常见错误</a>
+<ul>
+<li class="toc-entry toc-h4"><a href="#指向自身">指向自身</a></li>
+<li class="toc-entry toc-h4"><a href="#this指向函数的作用域">this指向函数的作用域</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h3"><a href="#如何使用this">如何使用this</a>
+<ul>
+<li class="toc-entry toc-h4"><a href="#函数的调用位置">函数的调用位置</a></li>
+<li class="toc-entry toc-h4"><a href="#绑定的规则">绑定的规则</a>
+<ul>
+<li class="toc-entry toc-h5"><a href="#1-默认绑定">1. 默认绑定</a></li>
+<li class="toc-entry toc-h5"><a href="#2-隐式绑定">2. 隐式绑定</a></li>
+<li class="toc-entry toc-h5"><a href="#3-显式绑定call-apply-bind">3. 显式绑定(call apply bind)</a></li>
+<li class="toc-entry toc-h5"><a href="#4-new绑定">4. new绑定</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h4"><a href="#优先级">优先级</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h3"><a href="#总结">总结</a></li>
+</ul><h3 id="什么是this">
+<a id="什么是this" class="anchor" href="#%E4%BB%80%E4%B9%88%E6%98%AFthis" aria-hidden="true"><span class="octicon octicon-link"></span></a>什么是this</h3>
+<ol>
+  <li>
+    <p>this: 顾名思义就是这个对象，this到底指向哪个对象呢?
+  this的指向取决于函数执行上下文.
+  当一个函数被调用时, 会创建一个执行上下文. 这个记录会包含函数在哪里被调用, 传入的参数, 函数内部的声明, 以及this的指向.</p>
+  </li>
+  <li>
+    <p>要明确一点就是this只存在函数调用中，无法在对象中直接使用this.</p>
+  </li>
+  <li>
+    <p>如果函数作为对象的方法调用，其this就执行这个对象；如果作为嵌套函数调用，其this值要么是全局对象(非严格模式)，要么是undefined(严格模式)。如果想访问外部函数的this值，需要将this值保存在一个变量中</p>
+  </li>
+  <li>
+    <p>this是一个关键字， 不是变量， 也不是属性名。 JavaScript不允许给this赋值！！</p>
+  </li>
+</ol>
+
+<h3 id="为什么需要this">
+<a id="为什么需要this" class="anchor" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81this" aria-hidden="true"><span class="octicon octicon-link"></span></a>为什么需要this?</h3>
+
+<pre><code class="language-javascript">function identify() {
+  return this.name.toUpperCase();
+}
+
+function speak() {
+  var greeting = "Hello, I'm " + identify.call(this);
+  console.log(greeting);
+}
+
+var me = {
+  name: "bobo"
+};
+
+var her = {
+  name: "yanzi"
+};
+
+identify.call(me); //BOBO
+identify.call(her);//YANZI
+
+speak.call(me); // Hello, I'm BOBO
+speak.call(her);// Hello, I'm YANZI
+</code></pre>
+<p>speak.call(me);为例: 通过调用call方法，可以将this绑定到传入的对象中，也就是执行函数speak时，this绑定的对象是me.speak函数里面identify.call(this)其中的this也是绑定的me对象。
+这段代码可以在不同的上下文对象(me和her)中重复使用函数identify()和speak(),不需要针对每个对象编写不同版本的函数。</p>
+
+<p>如果不使用this，就需要给identify()和speak()函数显式传入一个上下文对象</p>
+
+<pre><code class="language-javascript">function identify(context) {
+  return context.name.toUpperCase();
+}
+
+function speak(context) {
+  var greeting = "Hello, I'm " + identify(context);
+  console.log(greeting);
+}
+
+var me = {
+  name: "bobo"
+};
+
+var her = {
+  name: "yanzi"
+};
+
+identify(me); //BOBO
+identify(her);//YANZI
+
+speak(me); // Hello, I'm BOBO
+speak(her);// Hello, I'm YANZI
+</code></pre>
+<p>上面的代码是未采用this,必须得传入一个具体的上下文对象，然后才能操作对象的属性。</p>
+
+<p>通过上面的对比可以看出，this提供了一种优雅的方式来隐式“传递”一个对象引用， 可以将API设计地更加简介且已用(这个暂时还未阅读过一些开源项目的API，还不清楚)。</p>
+
+<h3 id="常见错误">
+<a id="常见错误" class="anchor" href="#%E5%B8%B8%E8%A7%81%E9%94%99%E8%AF%AF" aria-hidden="true"><span class="octicon octicon-link"></span></a>常见错误</h3>
+
+<h4 id="指向自身">
+<a id="指向自身" class="anchor" href="#%E6%8C%87%E5%90%91%E8%87%AA%E8%BA%AB" aria-hidden="true"><span class="octicon octicon-link"></span></a>指向自身</h4>
+<p>虽然函数在JavaScript中也是一种对象，但是this并不是指向函数本身。</p>
+
+<h4 id="this指向函数的作用域">
+<a id="this指向函数的作用域" class="anchor" href="#this%E6%8C%87%E5%90%91%E5%87%BD%E6%95%B0%E7%9A%84%E4%BD%9C%E7%94%A8%E5%9F%9F" aria-hidden="true"><span class="octicon octicon-link"></span></a>this指向函数的作用域</h4>
+<p>这个错误是最容易犯的了。我有时候也会想当然的this就会指向函数的作用域对象， 然后通过this.XX去获取一些属性。</p>
+<ol>
+  <li>this在任何情况下都不指向函数的词法作用域。在JavaScript内部，作用域(是不是就是我之前说的执行上下文对象)和对象比较相似，可见的标识符都是它的属性。但是作用域对象无法通过JavaScript代码访问，它存在与JavaScript引擎内部，供引擎访问。</li>
+</ol>
+
+<p>一个错误的例子:</p>
+<pre><code class="language-javascript">function foo() {
+  var a = 2;
+  this.bar();
+}
+
+function bar() {
+  console.log(this.a);
+}
+
+foo();//error: a is not defined
+
+</code></pre>
+
+<p>这个代码的错误不止一处。</p>
+<ul>
+  <li>首先，这堵代码试图通过this.bar()来引用bar函数，这样调用成功纯属意外。因为此时this执行的是全局对象，在全局环境定义的函数都是全局对象的属性。一般情况下，i调用bar()函数最直接的就是省略前面的this.</li>
+  <li>开发者试图采用this联通foo()和bar()de的词法作用域，从而让 bar()可以访问foo()作用域的变量a.这是不可能实现的，使用this无法在词法作用域查到信息。</li>
+</ul>
+
+<ol>
+  <li>this到底是什么？</li>
+</ol>
+
+<p>this是在函数运行时绑定的，并不是在编写时绑定，它的上下文取决于函数调用时的各种条件。</p>
+
+<p>this的绑定和函数声明的位置没有关系， 只取决于函数的调用方式。</p>
+
+<p>当一个函数被调用时，会创建一个活动记录(也就是执行上下文)。这个记录会包含函数在哪里调用(调用栈)，函数的调用方式，传入的参数等现象， this就是这个记录的一个属性， 它绑定一个对象，会在函数执行的过程中用到。this究竟绑定到那个对象，在下面的”如何使用this”会有详细说明.</p>
+
+<p><strong>记住一点:this是在函数调用时发生的绑定，它指向什么完全取决于函数在哪里被调用</strong></p>
+
+<h3 id="如何使用this">
+<a id="如何使用this" class="anchor" href="#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8this" aria-hidden="true"><span class="octicon octicon-link"></span></a>如何使用this</h3>
+
+<h4 id="函数的调用位置">
+<a id="函数的调用位置" class="anchor" href="#%E5%87%BD%E6%95%B0%E7%9A%84%E8%B0%83%E7%94%A8%E4%BD%8D%E7%BD%AE" aria-hidden="true"><span class="octicon octicon-link"></span></a>函数的调用位置</h4>
+<p>理解this的绑定过程之前，首先要理解函数的调用位置，调用位置就是函数在代码中被调用的位置。</p>
+
+<p>最重要的就是分析调用栈(就是为了到达当前执行位置所调用的所有函数)。我们关心的
+<strong>调用位置(函数在哪里调用)</strong>
+就是在当前正在执行的函数的前一个调用中。</p>
+<pre><code class="language-javascript">
+function baz() {
+  //当前调用栈是baz
+  // 因此当前调用位置是上一个调用，全局作用域中
+  console.log("baz");
+  bar(); //&lt;---- bar的调用位置(就是在函数baz中)
+}
+
+function bar() {
+  //当前调用栈是baz- ---&gt;bar
+  //因此当前的调用位置在baz中
+  console.log("bar");
+  foo(); //&lt;---- foo的调用位置
+}
+
+function foo() {
+  //当前调用栈是baz ----&gt; bar ----&gt; foo
+  //因此当前的调用位置在bar中
+  debugger;
+  console.log("foo");
+}
+
+baz(); //&lt;---- baz的调用位置
+
+</code></pre>
+
+<h4 id="绑定的规则">
+<a id="绑定的规则" class="anchor" href="#%E7%BB%91%E5%AE%9A%E7%9A%84%E8%A7%84%E5%88%99" aria-hidden="true"><span class="octicon octicon-link"></span></a>绑定的规则</h4>
+
+<h5 id="1-默认绑定">
+<a id="1-默认绑定" class="anchor" href="#1-%E9%BB%98%E8%AE%A4%E7%BB%91%E5%AE%9A" aria-hidden="true"><span class="octicon octicon-link"></span></a>1. 默认绑定</h5>
+<p>首先是最常见的函数调用方式: 独立函数调用。</p>
+<pre><code class="language-javascript">
+function foo() {
+  console.log(this.a);
+}
+
+var a = 2;
+
+foo();//2
+
+</code></pre>
+<p>PS:声明在全局作用域的变量a就是全局对象的一个同名属性。</p>
+
+<p>当我们调用foo()函数时，this.a被解析成全局变量a.为什么？因为在本例中，函数调用时调用位置是在全局作用域中，应用了this的默认绑定，因此this执行全局对象。</p>
+
+<p>如何判断这里应用了默认绑定呢？分析调用位置来看foo()是如何调用的。foo()是直接使用不带任何修饰的函数引用进行的调用，因此只能使用默认绑定， 无法应用其他规则。</p>
+
+<p>如果使用严格模式，则无法将全局对象应用于默认绑定，因此this会绑定到undefined</p>
+
+<h5 id="2-隐式绑定">
+<a id="2-隐式绑定" class="anchor" href="#2-%E9%9A%90%E5%BC%8F%E7%BB%91%E5%AE%9A" aria-hidden="true"><span class="octicon octicon-link"></span></a>2. 隐式绑定</h5>
+<p>调用位置是否有上下文对象，或者说是否被某个对象拥有或包含。</p>
+
+<pre><code class="language-javascript">
+function foo() {
+  debugger;
+  console.log(this.a);
+}
+
+var obj = {
+  a: 2,
+  foo: foo
+}
+
+obj.foo();
+//当采用obj.foo()调用函数时，一个新的执行上下文被创建出来，通过之前的分析我们知道，创建一个执行上下文分为两个过程，一个是建立阶段，一个是代码执行阶段。this的绑定就发生在建立阶段。由于foo()函数的调用是通过obj.foo()实现的，所以此时this是绑定到obj对象上的。
+
+//通过chrome代码调试工具我们也可以看到，只有进入了函数foo()内部，local Scope中的this才会变为obj对象，这也验证了我们之前的总结。
+//
+
+</code></pre>
+<p>需要注意的是foo()函数的声明方式，以及之后是如何被当作引用属性添加到obj对象中的。
+无论是直接在obj中定义还是先定义然后再为obj对象添加引用属性，这个foo函数严格意义上说都不属于obj对象。
+然而调用位置会使用obj上下文来引用函数，因为我们可以认为函数被调用时obj对象”拥有”或者”包含”它。</p>
+
+<p>当foo被调用时，它的前面确实加上了对obj的引用。当函数引用有上下文对象时，隐式绑定规则会把函数调用的this绑定到这个上下文对象。</p>
+
+<p><strong>隐式丢失</strong>
+常见的this绑定问题就是被隐式绑定的函数会丢失绑定对象，也就是说此函数会应用默认绑定，从而把this绑定到全局对象或者undefined上去。</p>
+<pre><code class="language-javascript">function foo() {
+  console.log(this.a);''
+}
+
+var obj = {
+  a: 2,
+  foo: foo
+}
+
+var bar = obj.foo;
+
+var a = "oops, global";
+
+bar(); // oops, global
+
+</code></pre>
+<p>虽然bar是obj.foo的一个引用，但是实际上 bar引用的是foo函数本身，因此此时的bar()其实是一个不带任何修饰的函数调用，因此应用了默认绑定。</p>
+
+<p><strong>嵌套函数this绑定</strong></p>
+<pre><code class="language-javascript">
+var name = "clever coder";
+var person = {
+    name : "foocoder",
+    hello : function(sth){
+        var sayhello = function(sth) {
+            console.log(this.name + " says " + sth);
+        };
+    }
+}
+person.hello("hello world");
+//clever coder says hello world
+
+</code></pre>
+
+<p>在内部函数中，this没有按预想的绑定到外层函数对象上，而是绑定到了全局对象。这里普遍被认为是JavaScript语言的设计错误，因为没有人想让内部函数中的this指向全局对象。一般的处理方式是将this作为变量保存下来，一般约定为that或者self：</p>
+
+<pre><code class="language-javascript">
+var name = "clever coder";
+var person = {
+    name : "foocoder",
+    hello : function(sth){
+        var that = this; // 将外部函数绑定的this保存下来，然后在内部函数sayhello中使用
+        var sayhello = function(sth) {
+            console.log(that.name + " says " + sth);
+        };
+        sayhello(sth);
+    }
+}
+person.hello("hello world");
+//foocoder says hello world
+</code></pre>
+
+<p><strong>回调函数丢失this绑定也是非常常见的</strong></p>
+
+<pre><code class="language-javascript">
+function foo() {
+  console.log(this.a);
+}
+
+function doFoo(fn) {
+  //fn其实引用的是foo
+
+  fn();//&lt;---- 调用位置！
+}
+
+var obj = {
+  a: 2,
+  foo: foo
+};
+
+var a = "oops, global";
+
+doFoo(obj.foo); // oops, global
+
+
+</code></pre>
+<p>将obj.foo作为参数传递给doFoo，实际上就相当于var  bar = obj.foo, doFoo(bar).参数传递其实就是一种隐式赋值， 实际传递的就是一个没有任何修饰的函数，所以最后的绑定方式为默认绑定.</p>
+
+<p>可以通过bind绑定来修正上述问题。</p>
+<pre><code class="language-javascript">//prototype.js源码中bind的实现：可以参考一下
+Function.prototype.bind = function(){
+  var fn = this；//因为bind函数调用者为一个函数fn,函数实际上都是通过new Function得到的一个函数对象，这里的this其实就是指向函数fn本身。
+  var args = Array.prototype.slice.call(arguments);
+  var object = args.shift();
+
+  return function(){
+    return fn.apply(object,
+      args.concat(Array.prototype.slice.call(arguments)));
+  };
+};
+
+var person = {
+    name : "foocoder",
+    hello : function(sth){
+        var sayhello = function(sth) {
+            console.log(this.name + " says " + sth);
+        };
+    }
+}
+
+$("#some-ele").click(person.hello.bind(person));
+//相应元素被点击时，输出foocoder says hello world
+
+</code></pre>
+
+<h5 id="3-显式绑定call-apply-bind">
+<a id="3-显式绑定call-apply-bind" class="anchor" href="#3-%E6%98%BE%E5%BC%8F%E7%BB%91%E5%AE%9Acall-apply-bind" aria-hidden="true"><span class="octicon octicon-link"></span></a>3. 显式绑定(call apply bind)</h5>
+
+<p>在分析隐式绑定时，我们必须在一个对象的内部包含一个指向函数的属性，通过这个属性间接引用函数，从而把this间接绑定到这个对象上。
+如果我们不想在对象内部包含h函数引用，而想在某个对象上强制调用函数，此时就需要用到apply()函数或者call()函数了。</p>
+
+<p>它们的第一个参数是一个对象，在调用函数时，将其绑定到this上。</p>
+<pre><code class="language-javascript">
+function foo() {
+  console.log(this.a);
+}
+
+var obj = {
+  a: 2
+};
+
+foo.call(obj); // 2
+
+</code></pre>
+<p>通过foo.call(obj)我们可以在调用foo时强制把它的this绑定到obj上。</p>
+
+<p>可以使用bind实现硬绑定</p>
+<pre><code class="language-javascript">function bind(fn, obj) {
+  return function() {
+    return fn.apply(obj, arguments);
+  }
+}
+
+// bind具体使用以后补充
+</code></pre>
+
+<h5 id="4-new绑定">
+<a id="4-new绑定" class="anchor" href="#4-new%E7%BB%91%E5%AE%9A" aria-hidden="true"><span class="octicon octicon-link"></span></a>4. new绑定</h5>
+<p>在JavaScript中，构造函数只是一些使用new操作符时被调用的函数。它们不属于某个类，也不会实例化一个类。使用new函数来调用函数，会自动执行下面的操作:</p>
+
+<ol>
+  <li>创建一个全新的对象</li>
+  <li>这个新对象会被执行[[Prototype]]连接</li>
+  <li>这个新对象会绑定到函数调用的this</li>
+  <li>如果函数没有返回其他对象，那么new表达式中的函数调用就会自动返回这个新对象。</li>
+</ol>
+
+<pre><code class="language-javascript">
+function Person(name, age) {
+  this.name = name;
+  this.age = age;
+}
+
+var bobo = new Person("Hanwenbo", 26);
+console.log(bobo.name);
+
+</code></pre>
+
+<h4 id="优先级">
+<a id="优先级" class="anchor" href="#%E4%BC%98%E5%85%88%E7%BA%A7" aria-hidden="true"><span class="octicon octicon-link"></span></a>优先级</h4>
+
+<p>new绑定 &gt; 显式绑定 &gt; 隐式绑定 &gt; 默认绑定</p>
+
+<h3 id="总结">
+<a id="总结" class="anchor" href="#%E6%80%BB%E7%BB%93" aria-hidden="true"><span class="octicon octicon-link"></span></a>总结</h3>
+<ol>
+  <li>
+    <p>当函数作为单独函数调用时，this指向全局对象（严格模式时，为undefined）</p>
+  </li>
+  <li>
+    <p>当函数作为对象的方法调用时，this指向该对象。</p>
+  </li>
+  <li>
+    <p>构造函数中的this指向新创建的对象</p>
+  </li>
+  <li>
+    <p>嵌套函数中的this不会继承上层函数的this，如果需要，可以用一个变量保存上层函数的this。</p>
+  </li>
+  <li>
+    <p>再总结的简单点，如果在函数中使用了this，只有在该函数直接被某对象调用时，该this才指向该对象。</p>
+  </li>
+  <li>
+    <p>多看开源项目代码,就会熟悉 this 的使用,现在只是一些简单的使用方法,没有形成很深刻的印象.</p>
+  </li>
+</ol>
+
+
+      <h3>关于图片和转载</h3>
+
+      <a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="知识共享许可协议" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br />本作品采用<a rel="license" href="http://creativecommons.org/licenses/by/4.0/">知识共享署名 4.0 国际许可协议</a>进行许可。
+
+      转载时请注明原文链接，图片在使用时请保留图片中的全部内容，可适当缩放并在引用处附上图片所在的文章链接，图片使用 Sketch 进行绘制。
+
+      <h3>关于评论和留言</h3>
+
+      如果对本文 <a href="/javascript-this">JavaScript 深入理解 this</a> 的内容有疑问，请在下面的评论系统中留言，谢谢。
+
+      <blockquote>
+        <p>原文链接：<a href="/javascript-this">JavaScript 深入理解 this · 雄关漫道真如铁</a></p>
+
+        <p>Follow: <a href="https://github.com/nju520">nju520 · GitHub</a></p>
+      </blockquote>
+
+    </section>
+
+    <footer class="post-footer">
+
+      <!-- Everything inside the #author tags pulls data from the author -->
+      <!-- #author-->
+
+      
+      <figure class="author-image">
+        <a class="img" href="https://github.com/nju520" style="background-image: url(/assets/images/hacker.png)"><span class="hidden">'s Picture</span></a>
+      </figure>
+      
+
+      <section class="author">
+        <h4><a href="https://github.com/nju520">nju520</a></h4>
+
+        
+        <p> Ruby / Python / JS</p>
+        
+        <div class="author-meta">
+          <span class="author-location icon-location"> Hangzhou, China</span>
+          <span class="author-link icon-link"><a href="http://hwbnju.com"> hwbnju.com</a></span>
+        </div>
+      </section>
+
+      <!-- /author  -->
+
+      <section class="share">
+        <h4>Share this post</h4>
+        <a class="icon-twitter" href="http://twitter.com/share?text=JavaScript 深入理解 this&amp;url=http://hwbnju.comjavascript-this"
+          onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+          <span class="hidden">Twitter</span>
+        </a>
+        <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://hwbnju.comjavascript-this"
+          onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+          <span class="hidden">Facebook</span>
+        </a>
+        <a class="icon-google-plus" href="https://plus.google.com/share?url=http://hwbnju.comjavascript-this"
+          onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+          <span class="hidden">Google+</span>
+        </a>
+      </section>
+
+      <div id="gitalk-container"></div>
+      <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+      <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+      <script>
+       const gitalk = new Gitalk({
+         clientID: 'e552ed507a5a4581d8a1',
+         clientSecret: '0abbd4193a0f9b2700936214ff6fda088c665a73',
+         repo: 'bobo-comments',
+         owner: 'nju520',
+         admin: ['nju520'],
+         // labels: ['Gitalk', 'gitment'].concat(["JavaScript","this","OOP"]),
+         // id: location.origin + location.pathname,
+         id: "http://hwbnju.com/javascript-this",
+         distractionFreeMode: false
+       });
+
+       gitalk.render('gitalk-container')
+      </script>
+
+    </footer>
+
+  </article>
+
+</main>
+
+<aside class="read-next">
+
+  <!-- [[! next_post ]] -->
+  
+  <a class="read-next-story no-cover" href="javascript-execution-content">
+    <section class="post">
+      <h2>JavaScript 深入理解 执行上下文</h2>
+      <p>## 什么是执行上下文(执行环境) 每次当控制器转到JS可执行代码的时候，就会进入到一个执行上下文。 "执行上下文"就是 **当前代码的运行环境或者作用域**。 javascript中代码运行环境分为三种: * 全局级别的代码: 这个是默认的代码运行环境， 一旦代码被载入，javascript引擎最先进入的就是这个全局环境 * 函数级别的代码: 当执行一个函数时， 运行函数体的代码 *...</p>
+    </section>
+  </a>
+  
+  <!-- [[! /next_post ]] -->
+  <!-- [[! prev_post ]] -->
+  
+  <a class="read-next-story prev no-cover" href="javascript-inherit">
+    <section class="post">
+      <h2>JavaScript 继承模式</h2>
+      <p>继承 原型链 利用原型让一个引用类型继承另一个引用类型的属性和方法 阐述原型继承连 JavaScript中的每个对象，都有一个内置的_proto_属性,它实际上是对另一个对象或者null的引用。 当一个对象需要引用一个属性时，JavaScript引擎首先会从这个对象自身的属性表中寻找这个属性标识，如果找到则进行相应读写操作，若没有在自身的属性表中找到，则在_proto_属性引用的对象的属性表中查找，如此往复，直到找到这个属性或者_proto_属性指向null为止。 这个_proto_的引用链，被称作原型链。 function SuperType() { this.property = true; } SuperType.prototype.getSuperValue...</p>
+    </section>
+  </a>
+  
+  <!-- [[! /prev_post ]] -->
+</aside>
+
+<!-- /post -->
+
+
+      <footer class="site-footer clearfix">
+        <section class="copyright"><a href="/">雄关漫道真如铁</a> &copy; 2018</section>
+        <section class="poweredby">Proudly published with <a href="https://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/biomadeira/jasper">Jasper</a></section>
+      </footer>
+    </div>
+    <!-- [[! Ghost outputs important scripts and data with this tag ]] -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <!-- [[! The main JavaScript file for Casper ]] -->
+    <script type="text/javascript" src="/assets/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="/assets/js/index.js"></script>
+    <script type="text/javascript" src="/assets/js/prism.js"></script>
+    <script type="text/javascript" src="/assets/js/toc.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+  </body>
+</html>

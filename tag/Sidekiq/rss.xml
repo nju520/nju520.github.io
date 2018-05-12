@@ -32,7 +32,7 @@
 
 <pre><code class="language-ruby">class HardWorker
   include Sidekiq::Worker
-    
+
   def perform(name, count)
   # do something you want
   end
@@ -75,13 +75,13 @@ HardWorker.perform_at(Time.now + 1.day, 'run', 200)
 <p>当我们对需要异步执行的任务执行<code>Worker.perform_async</code>的方法时, <code>Sidekiq</code>其实并不会真正取创建一个<code>HardWroker</code>等具体<code>Worker</code>对象, 它实际上会调用<code>Worker.client_push</code>方法将当前的<code>class</code>和<code>args</code>参数传进去, 也就是我们需要异步执行的类和<code>perform</code>方法所需要的参数, 以及<code>Sidekiq</code>添加的额外参数:</p>
 
 <pre><code class="language-json">{
-  class: "Platform::ActiveUserWorker", 
-  args: ["2018-03-09"], 
-  retry: true, 
-  queue: "default", 
-  jid: "f2c20ffd382925563ffbc6b0", 
-  created_at: 1520524801.3932867, 
-  enqueued_at: 1520524801.3934016
+  "class": "Platform::ActiveUserWorker",
+  "args": ["2018-03-09"],
+  "retry": true,
+  "queue": "default",
+  "jid": "f2c20ffd382925563ffbc6b0",
+  "created_at": 1520524801.3932867,
+  "enqueued_at": 1520524801.3934016
 }
 </code></pre>
 
@@ -142,13 +142,13 @@ alias_method :perform_at, :perform_in
 <p>以上三种创建异步任务的方式, 最终都执行了<code>Worker.client_push</code>方法. 该方法接受一个哈希参数, 参数大致形式如下:</p>
 
 <pre><code class="language-ruby">{
-  class: "Platform::ActiveUserWorker", 
-  args: ["2018-03-09"], 
+  class: "Platform::ActiveUserWorker",
+  args: ["2018-03-09"],
   at: '60.0'
  }
 </code></pre>
 
-<p>在方法的实现中, 首先获取上下文中的<code>Redis</code>线程池, 并将传入的<code>item</code>对象压入Redis`队列中</p>
+<p>在方法的实现中, 首先获取上下文中的<code>Redis</code>线程池, 并将传入的<code>item</code>对象压入<code>Redis</code>队列中</p>
 
 <pre><code class="language-ruby">[3] pry(main)&gt; $ Sidekiq::Worker::ClassMethods#client_push
 
@@ -243,15 +243,15 @@ end
 <p>从<code>Worker.perform_async</code>到<code>Client#push</code>方法, 都对即将加入到<code>Redis</code>队列的哈希进行处理, 从添加<code>at</code>字段到字符串化、再到<code>Client#normalize_item</code>方法中添加默认参数<code>retry</code>、<code>queue</code>, <code>jid</code>、<code>created_at</code>. 经过 <code>process_single</code>的处理, 传入 <code>raw_push</code>的哈希值大致如下:</p>
 
 <pre><code class="language-json">{
- jobstr: 
+ "jobstr":
      {
-      class: "Platform::ActiveUserWorker", 
-      args: ["2018-03-09"], 
-      retry: true, 
-      queue: "default", 
-      jid: "f2c20ffd382925563ffbc6b0", 
-      created_at: 1520524801.3932867, 
-      enqueued_at: 1520524801.3934016
+      "class": "Platform::ActiveUserWorker",
+      "args": ["2018-03-09"],
+      "retry": true,
+      "queue": "default",
+      "jid": "f2c20ffd382925563ffbc6b0",
+      "created_at": 1520524801.3932867,
+      "enqueued_at": 1520524801.3934016
      }
 }
 </code></pre>
@@ -259,7 +259,7 @@ end
 <p>所有添加异步任务的方法最终都调用了私有方法<code>Client#raw_push</code> , 此方法继续调用<code>atomc_push</code>向<code>Redis</code>添加数据.</p>
 
 <pre><code class="language-ruby">def raw_push(payloads)
-  # # 
+  # #
   @redis_pool.with do |conn|
     conn.multi do
       atomic_push(conn, payloads)
@@ -405,7 +405,7 @@ end
 <pre><code class="language-ruby">def run
   # 打印控制台 banner 信息, 打印日志及运行环境
   # 信号处理
-    
+
   self_read, self_write = IO.pipe
   require 'sidekiq/launcher'
   @launcher = Sidekiq::Launcher.new(options)
@@ -457,7 +457,7 @@ end
 
 <p>让我们回顾一下前面的<code>lib/cli.rb</code>中的<code>CLI#run</code>方法, 它会负责创建<code>Sidekiq::Launcher</code>的实例, 让我们来看一下<code>Sidekiq::Launcher#initialize</code>定义:</p>
 
-<pre><code class="language-ruby"># lib/launcher.rb 
+<pre><code class="language-ruby"># lib/launcher.rb
 def initialize(options)
   @manager = Sidekiq::Manager.new(options)
   @poller = Sidekiq::Scheduled::Poller.new
@@ -511,7 +511,7 @@ end
 def initialize(options={})
    @options = options
    @count = options[:concurrency] || 25
-   
+
    @done = false
    @workers = Set.new
    @count.times do
@@ -602,7 +602,7 @@ end
 
 def initial_wait
   # Have all processes sleep between 5-15 seconds.  
-  # 10 seconds to give time for the heartbeat to register 
+  # 10 seconds to give time for the heartbeat to register
   # (if the poll interval is going to be calculated by the number of workers)
   # 5 random seconds to ensure they don't all hit Redis at the same time.
   total = 0
@@ -696,17 +696,17 @@ end
 <p><code>job</code>中的内容就是我们之前分析过的哈希 <code>payload</code>:</p>
 
 <pre><code class="language-json">{
-  class: "Platform::ActiveUserWorker", 
-  args: ["2018-03-09"], 
-  retry: true, 
-  queue: "default", 
-  jid: "f2c20ffd382925563ffbc6b0", 
-  created_at: 1520524801.3932867, 
-  enqueued_at: 1520524801.3934016
+  "class": "Platform::ActiveUserWorker",
+  "args": ["2018-03-09"],
+  "retry": true,
+  "queue": "default",
+  "jid": "f2c20ffd382925563ffbc6b0",
+  "created_at": 1520524801.3932867,
+  "enqueued_at": 1520524801.3934016
 }
 </code></pre>
 
-<p>至此, 我们就知晓了<code>enqueue_jobs</code>就是分别从<code>retry有序集合和</code>schedule`有序集合中取出已经到达计划时间的任务, 并将其一一加入到原来的队列.</p>
+<p>至此, 我们就知晓了<code>enqueue_jobs</code>就是分别从<code>retry有序集合</code>和<code>schedule</code>有序集合中取出已经到达计划时间的任务, 并将其一一加入到原来的队列.</p>
 
 <p>PS: <strong>定时任务以及重试任务的计划时间只是计划加进执行中队列的时间, 并非执行时间, 执行的时间取决于队列的长度以及队列的执行速度了</strong>.</p>
 
@@ -963,13 +963,13 @@ end
 <p>我们传入的参数<code>work</code>中就包含之前被压入队列的任务信息,包括队列名称, 任务对应的类, 任务调用所需要的参数,等等.</p>
 
 <pre><code class="language-json">{
-  class: "Platform::ActiveUserWorker", 
-  args: ["2018-03-09"], 
-  retry: true, 
-  queue: "default", 
-  jid: "f2c20ffd382925563ffbc6b0", 
-  created_at: 1520524801.3932867, 
-  enqueued_at: 1520524801.3934016
+  "class": "Platform::ActiveUserWorker",
+  "args": ["2018-03-09"],
+  "retry": true,
+  "queue": "default",
+  "jid": "f2c20ffd382925563ffbc6b0",
+  "created_at": 1520524801.3932867,
+  "enqueued_at": 1520524801.3934016
 }
 </code></pre>
 <p>根据这些信息我们重新实例化任务对象, 并且将实例化的任务对象<code>worker</code>以及任务参数都传递给<code>execute_job</code>调用.</p>
@@ -1035,7 +1035,7 @@ Sidekiq::Middleware::Server::Logging -&gt; Sidekiq::JobLogger
   </ul>
 </blockquote>
 
-<p>从<code>Sidekiq</code>更新日志可以看出, 原来的两个内置中间件现在已经直接移到了`Sidekiq::Processor类中.</p>
+<p>从<code>Sidekiq</code>更新日志可以看出, 原来的两个内置中间件现在已经直接移到了<code>Sidekiq::Processor类中</code>.</p>
 
 <p>让我们来看一下<code>Sidekiq::Processor#dispatch</code>方法的实现:</p>
 
@@ -1146,7 +1146,6 @@ end
 <h2 id="再会">再会</h2>
 
 <p>本篇文章主要从<code>架构</code>入手, 着重分析了<code>Sidekiq</code>异步任务的调度和实现, 关于多线程以及<code>Unix</code>信号等相关的知识我打算再下一篇文章中详细解读, 敬请期待~</p>
-
 
   ]]></description>
 </item>

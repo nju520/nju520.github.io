@@ -122,12 +122,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </a>
   <ul>
     <li class="nav-home " role="presentation"><a href="/">Home</a></li>
-    <!-- <li class="nav-about " role="presentation"><a href="/about">About</a></li>
-    <li class="nav-author " role="presentation"><a href="/author/casper">Author</a></li> -->
-    <li class="nav-ios " role="presentation"><a href="/tag/iOS">iOS</a></li>
-    <li class="nav-mvc " role="presentation"><a href="/tag/MVC">MVC</a></li>
-    <li class="nav-server " role="presentation"><a href="/tag/server">Server</a></li>
     <li class="nav-ruby " role="presentation"><a href="/tag/ruby">Ruby</a></li>
+    <li class="nav-javascript " role="presentation"><a href="/tag/javascript">JavaScript</a></li>
+    <li class="nav-server " role="presentation"><a href="/tag/server">Server</a></li>
+    <li class="nav-database " role="presentation"><a href="/tag/database">Database</a></li>
   </ul>
   <a class="subscribe-button icon-feed" href="/feed.xml">Subscribe</a>
 </div>
@@ -422,7 +420,7 @@ def parse_options(args)
 
   # @options = {}
   @options = opt_parser.parse!(args)
-  
+
   # `options`为 `Rack::Server`类中定义的一个实例方法
   # `@options[:config] = 'config.ru'
   @options[:config] = ::File.expand_path(options[:config])
@@ -461,7 +459,7 @@ def parse!(args)
   options[:config] = args.last if args.last &amp;&amp; !args.last.empty?
   options
 end
-  
+
 -------------------------------------------------------------------------
 [7] pry(main)&gt; $ Rack::Server#options
 
@@ -476,7 +474,7 @@ def options
   merged_options = @use_default_options ? default_options.merge(@options) : @options
   merged_options.reject { |k, v| @ignore_options.include?(k) }
 end
- 
+
 -------------------------------------------------------------------------    
 [8] pry(main)&gt; $ Rack::Server#default_options
 
@@ -501,7 +499,7 @@ def default_options
     :config      =&gt; "config.ru"
   }
 end
-  
+
 </code></pre>
 
 <h4 id="包装应用">
@@ -518,7 +516,7 @@ Number of lines: 41
 
 def start &amp;blk
   # 删除了多余不重要的代码
-    
+
   # Touch the wrapped app, so that the config.ru is loaded before
   # daemonization (i.e. before chdir, etc).
   # 通过注释我们可以知晓 `wrapped_app`方法是在启动守护进程之前就加载了 `config.ru`配置文件来创建好最终的应用程序
@@ -657,6 +655,8 @@ end
 
 <p><img src="" alt="WRAPPED APP"></p>
 
+<p><strong>FBI Warning</strong></p>
+
 <p>请求进来 -&gt; 从最外层的中间件进入, 每个中间件都会处理<code>request</code>, 在<code>#call</code>方法内部调用另外一个中间件或者应用. 当<code>request</code>进入到最初的<code>Rack应用程序</code>后, 程序返回<code>response</code>, 在经过一层一层的中间件处理, 最后返回 <code>HTTP响应</code></p>
 
 <h4 id="中间件的实现分析">
@@ -701,11 +701,11 @@ def use(middleware, *args, &amp;block)
   end
   @use &lt;&lt; proc { |app| middleware.new(app, *args, &amp;block) }
 end
-      
+
 def run(app)
   @run = app
 end
-      
+
 def to_app
   app = @map ? generate_map(@run, @map) : @run
   fail "missing run or map statement" unless app
@@ -713,7 +713,7 @@ def to_app
   @warmup.call(app) if @warmup
   app
 end
-      
+
 </code></pre>
 
 <p><code>Rack::Builder#use</code>方法会将传入的参数组合成一个接收<code>app</code>作为参数的<code>Proc</code>对象, 然后加入到<code>@use</code>数组中存储起来.</p>
@@ -782,7 +782,7 @@ result3 = e[a] = proc {|app| WrapWithHtml.new(app, *args, &amp;block)}.call(a)
 
 </code></pre>
 
-<p><strong>Rack::Builder</strong>类其实就是将非常晦涩的代码, 利用<code>Ruby</code>元编程能力变成清晰可读的<code>DSL</code>, 最终返回了一个最终应用对象.</p>
+<p><strong>Rack::Builder</strong> 类其实就是将非常晦涩的代码, 利用<code>Ruby</code>元编程能力变成清晰可读的<code>DSL</code>, 最终返回了一个最终应用对象.</p>
 
 <p>当一个请求到来时, 我们的Web Server<code>就会</code>call<code>我们的</code>Rack应用,传入环境变量<code>env</code>作为参数.</p>
 
@@ -824,7 +824,7 @@ def middleware
 end
 
 -------------------------------------------------------------------------
-    
+
 def middleware
   default_middleware_by_environment
 end
@@ -1030,22 +1030,22 @@ end
 <pre><code class="language-ruby">module Rack
   module Auth
     class Basic &lt; AbstractHandler
-    
+
       def call(env)
       #...
       end
-      
+
       class Request &lt; Auth::AbstractRequest
       end
     end
-    
+
     class AbstractHandler
-    
+
       def initialize(app, realm = nil, &amp;authenticator)
       #...
       end
     end
-    
+
     class AbstractRequest
     end
   end
@@ -1353,10 +1353,10 @@ X-XSS-Protection: 1; mode=block
 
   <!-- [[! next_post ]] -->
   
-  <a class="read-next-story no-cover" href="rack-webrick">
+  <a class="read-next-story no-cover" href="rack-rails">
     <section class="post">
-      <h2>WEBrick 源码分析</h2>
-      <p>`WEBrick`是`Rack`自带的一个 `Web Server`, 历史悠久, 代码量一共才 4000多行. 本文就从源码入手, 解读 `WEBrick`实现原理, 并从多线程和`IO`的角度来分析 `WEBrick` 的优缺点. ## 源码分析 我们知道...</p>
+      <h2>Ruby Rack 协议及其应用(三)</h2>
+      <p>## Ruby on Rails 启动流程 我们从 `rails server` 这个指令开始来解读`Ruby on Rails`的启动流程. ### 源码阅读前的准备 #### Pry...</p>
     </section>
   </a>
   

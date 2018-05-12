@@ -29,6 +29,27 @@
 		
 			
 				<item>
+					<title>Redis 实战 (一)</title>
+					
+						<description>&lt;blockquote&gt;
+  &lt;ol&gt;
+    &lt;li&gt;本系列文章参考 《Redis 入门指南》  《Redis IN ACTION》&lt;/li&gt;
+    &lt;li&gt;本系列文章的代码采用 Ruby实现.&lt;/li&gt;
+  &lt;/ol&gt;
+&lt;/blockquote&gt;
+
+</description>
+					
+					<pubDate>Fri, 06 Apr 2018 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/redis-in-action
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/redis-in-action</guid>
+				</item>
+			
+		
+			
+				<item>
 					<title>Sidekiq 异步任务调度与执行</title>
 					
 						<description>&lt;p&gt;sidekiq 是 Ruby 中一款非常优秀的后台任务处理软件, 其本身提供的API十分简洁, 源代码也易于阅读, 没有太多花哨的代码. Sidekiq 将 Redis 的各种数据结构用得都起到好处, 我们可以通过 Sidekiq 加深对 Redis 的印象以及学习如何恰当高效地结合 Redis 实现业务逻辑.本篇文章从 Sidekiq 的启动开始,详细解读 Sidekiq 的异步任务调度和执行.  除此之外, 我还会介绍中间件机制以及在此基础上实现的任务重试机制.&lt;/p&gt;
@@ -61,6 +82,38 @@
 		
 			
 				<item>
+					<title>TCP Socket 编程 -- 非阻塞式 IO</title>
+					
+						<description>&lt;h2 id=&quot;非阻塞式-io&quot;&gt;非阻塞式 &lt;code&gt;IO&lt;/code&gt;&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Thu, 15 Mar 2018 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/tcp-scokets-no-block
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/tcp-scokets-no-block</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>TCP Socket 编程 -- 基础</title>
+					
+						<description>&lt;p&gt;网络编程归根结底是关于共享和通信的, 很大程度上要归功于一组特定地套接字编程API的出现.  &lt;code&gt;Berkely Socket API&lt;/code&gt;真正经受住了时间的考验, 它之所以能够屹立不倒的原因就是&lt;strong&gt;我可以在无需了解底层协议的情况下使用套接字&lt;/strong&gt;. &lt;code&gt;Bekeley Socket API&lt;/code&gt;是一种编程&lt;code&gt;API&lt;/code&gt;, 它运作在实际的协议实现之上. 它所关注的是连接两个端点&lt;code&gt;endpoint&lt;/code&gt;共享数据, 而非处理分组和序列号等底层操作.&lt;/p&gt;
+
+</description>
+					
+					<pubDate>Sat, 10 Mar 2018 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/tcp-scokets
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/tcp-scokets</guid>
+				</item>
+			
+		
+			
+				<item>
 					<title>WEBrick 源码分析</title>
 					
 						<description>&lt;p&gt;&lt;code&gt;WEBrick&lt;/code&gt;是&lt;code&gt;Rack&lt;/code&gt;自带的一个 &lt;code&gt;Web Server&lt;/code&gt;, 历史悠久, 代码量一共才 4000多行. 本文就从源码入手, 解读 &lt;code&gt;WEBrick&lt;/code&gt;实现原理, 并从多线程和&lt;code&gt;IO&lt;/code&gt;的角度来分析 &lt;code&gt;WEBrick&lt;/code&gt; 的优缺点.&lt;/p&gt;
@@ -72,6 +125,22 @@
 						http://hwbnju.com/rack-webrick
 					</link>
 					<guid isPermaLink="true">http://hwbnju.com/rack-webrick</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>Ruby Rack 协议及其应用(三)</title>
+					
+						<description>&lt;h2 id=&quot;ruby-on-rails-启动流程&quot;&gt;Ruby on Rails 启动流程&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Mon, 05 Mar 2018 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/rack-rails
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/rack-rails</guid>
 				</item>
 			
 		
@@ -104,6 +173,180 @@
 						http://hwbnju.com/rack-start
 					</link>
 					<guid isPermaLink="true">http://hwbnju.com/rack-start</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>手动实现 MVVM 架构中的双向绑定</title>
+					
+						<description>&lt;h2 id=&quot;mvvm-实现双向绑定&quot;&gt;MVVM 实现双向绑定&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Mon, 08 Jan 2018 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/vue-mvvm
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/vue-mvvm</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>JavaScript bind 原理和实现</title>
+					
+						<description>&lt;h2 id=&quot;bind-原理&quot;&gt;bind 原理&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Sat, 10 Jun 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/javascript-bind
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/javascript-bind</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>JavaScript 深入理解 执行上下文</title>
+					
+						<description>&lt;h2 id=&quot;什么是执行上下文执行环境&quot;&gt;什么是执行上下文(执行环境)&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Fri, 12 May 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/javascript-execution-content
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/javascript-execution-content</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>JavaScript 深入理解 this</title>
+					
+						<description>&lt;h3 id=&quot;什么是this&quot;&gt;什么是this&lt;/h3&gt;
+&lt;ol&gt;
+  &lt;li&gt;this: 顾名思义就是这个对象，this到底指向哪个对象呢?
+  this的指向取决于函数执行上下文.
+  当一个函数被调用时, 会创建一个执行上下文. 这个记录会包含函数在哪里被调用, 传入的参数, 函数内部的声明, 以及this的指向.&lt;/li&gt;
+&lt;/ol&gt;
+
+</description>
+					
+					<pubDate>Fri, 05 May 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/javascript-this
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/javascript-this</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>JavaScript 继承模式</title>
+					
+						<description>&lt;h2 id=&quot;继承&quot;&gt;继承&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Tue, 27 Dec 2016 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/javascript-inherit
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/javascript-inherit</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>JavaScript 深入理解 prototype</title>
+					
+						<description>&lt;h2 id=&quot;原型对象&quot;&gt;原型对象&lt;/h2&gt;
+&lt;p&gt;[[Prototype]]
+ 在面向对象语言中,类可以被复制(也就是实例化)多次,就像用模具制作东西一样.之所以会这样是因为实例化一个类就意味着”把类的行为复制到对象中”,对于每一个实例来说都会重复这个过程.&lt;/p&gt;
+
+</description>
+					
+					<pubDate>Sun, 20 Nov 2016 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/javascript-prototype
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/javascript-prototype</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>JavaScript 深入理解 对象 (一)</title>
+					
+						<description>&lt;h2 id=&quot;javascript对象&quot;&gt;Javascript对象&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Fri, 04 Nov 2016 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/javascript-object
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/javascript-object</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>JavaScript 与 事件</title>
+					
+						<description>&lt;h2 id=&quot;事件机制&quot;&gt;事件机制&lt;/h2&gt;
+&lt;p&gt;与浏览器进行交互的时候浏览器就会触发各种事件。比如当我们打开某一个网页的时候，浏览器加载完成了这个网页，就会触发一个 load 事件；当我们点击页面中的某一个“地方”，浏览器就会在那个“地方”触发一个 click 事件。&lt;/p&gt;
+
+</description>
+					
+					<pubDate>Tue, 13 Sep 2016 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/javascript-event
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/javascript-event</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>妙用JavaScript中的apply/call/bind</title>
+					
+						<description>&lt;h2 id=&quot;applycall&quot;&gt;apply/call&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;call和apply都是为了改变某个函数运行时的上下文(context)而存在的.换句话说, 就是为了改变函数体内部的this指向.&lt;/strong&gt;&lt;/p&gt;
+
+</description>
+					
+					<pubDate>Sat, 09 Jul 2016 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/javascript-call-apply-bind
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/javascript-call-apply-bind</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>JavaScript 闭包</title>
+					
+						<description>&lt;h2 id=&quot;闭包产生的条件&quot;&gt;闭包产生的条件&lt;/h2&gt;
+&lt;ul&gt;
+  &lt;li&gt;调用的函数是内部声明&lt;/li&gt;
+  &lt;li&gt;调用的函数是在声明位置函数之外调用的&lt;/li&gt;
+  &lt;li&gt;调用的函数引用外部变量&lt;/li&gt;
+&lt;/ul&gt;
+
+</description>
+					
+					<pubDate>Mon, 07 Mar 2016 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/javascript-closure
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/javascript-closure</guid>
 				</item>
 			
 		

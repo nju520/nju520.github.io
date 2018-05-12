@@ -122,12 +122,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </a>
   <ul>
     <li class="nav-home  nav-current" role="presentation"><a href="/">Home</a></li>
-    <!-- <li class="nav-about " role="presentation"><a href="/about">About</a></li>
-    <li class="nav-author " role="presentation"><a href="/author/casper">Author</a></li> -->
-    <li class="nav-ios " role="presentation"><a href="/tag/iOS">iOS</a></li>
-    <li class="nav-mvc " role="presentation"><a href="/tag/MVC">MVC</a></li>
-    <li class="nav-server " role="presentation"><a href="/tag/server">Server</a></li>
     <li class="nav-ruby " role="presentation"><a href="/tag/ruby">Ruby</a></li>
+    <li class="nav-javascript " role="presentation"><a href="/tag/javascript">JavaScript</a></li>
+    <li class="nav-server " role="presentation"><a href="/tag/server">Server</a></li>
+    <li class="nav-database " role="presentation"><a href="/tag/database">Database</a></li>
   </ul>
   <a class="subscribe-button icon-feed" href="/feed.xml">Subscribe</a>
 </div>
@@ -166,7 +164,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   
   <nav class="pagination" role="pagination">
   
-  <span class="page-number"> Page 1 of 1 </span>
+  <span class="page-number"> Page 1 of 2 </span>
+  
+  <a class="older-posts" href="/page2/" title="Next Page">Older Posts &raquo;</a>
   
 </nav>
 
@@ -202,6 +202,26 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <a href='/tag/left_outer_joins'>left_outer_joins</a>
     
     <time class="post-date" datetime="2018-04-26">26 Apr 2018</time>
+  </footer>
+</article>
+
+<article class="post">
+  <header class="post-header">
+    <h2 class="post-title"><a href="/redis-in-action">Redis 实战 (一)</a></h2>
+  </header>
+  <section class="post-excerpt">
+    
+    <p>Redis 是一个远程内存数据库, 它可以提供五种不同类型的数据结构, 很多问题都可以很自然地映射到这些数据结构上. 用户还可以通过复制、持久化(persistance)和客户端分片(clien-side sharding)等特性, 方便地将 Redis 扩展成一个能够包含数百G数据, 每秒处理上百万次请求的系统.本章主要熟悉 Redis 的基本实用, 并通过一个虚拟的 Web 应用来使用 Redis 解决实际问题. <a class="read-more" href="/redis-in-action">&raquo;</a></p>
+    
+  </section>
+  <footer class="post-meta">
+    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
+    
+    <a href='/tag/redis'>redis</a>
+    
+    <a href='/tag/database'>database</a>
+    
+    <time class="post-date" datetime="2018-04-06">06 Apr 2018</time>
   </footer>
 </article>
 
@@ -263,6 +283,50 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <article class="post">
   <header class="post-header">
+    <h2 class="post-title"><a href="/tcp-scokets-no-block">TCP Socket 编程 -- 非阻塞式 IO</a></h2>
+  </header>
+  <section class="post-excerpt">
+    
+    <p>网络请求的瓶颈一般来自于 `IO` <a class="read-more" href="/tcp-scokets-no-block">&raquo;</a></p>
+    
+  </section>
+  <footer class="post-meta">
+    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
+    
+    <a href='/tag/TCP'>TCP</a>
+    
+    <a href='/tag/socket'>socket</a>
+    
+    <a href='/tag/Ruby'>Ruby</a>
+    
+    <time class="post-date" datetime="2018-03-15">15 Mar 2018</time>
+  </footer>
+</article>
+
+<article class="post">
+  <header class="post-header">
+    <h2 class="post-title"><a href="/tcp-scokets">TCP Socket 编程 -- 基础</a></h2>
+  </header>
+  <section class="post-excerpt">
+    
+    <p>套接字 `socket` 连接起了数字世界. 正是网络编程--更确切的说, 是一组特定的套接字编程API -- 的出现, 才使得世界越来越小. 本文会介绍套接字编程的基础知识, 包括如何创建套接字, 如何连接套接字以及如何共享数据. 所有的示例代码均为 `Ruby` <a class="read-more" href="/tcp-scokets">&raquo;</a></p>
+    
+  </section>
+  <footer class="post-meta">
+    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
+    
+    <a href='/tag/TCP'>TCP</a>
+    
+    <a href='/tag/socket'>socket</a>
+    
+    <a href='/tag/Ruby'>Ruby</a>
+    
+    <time class="post-date" datetime="2018-03-10">10 Mar 2018</time>
+  </footer>
+</article>
+
+<article class="post">
+  <header class="post-header">
     <h2 class="post-title"><a href="/rack-webrick">WEBrick 源码分析</a></h2>
   </header>
   <section class="post-excerpt">
@@ -282,6 +346,32 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <a href='/tag/thread'>thread</a>
     
     <time class="post-date" datetime="2018-03-09">09 Mar 2018</time>
+  </footer>
+</article>
+
+<article class="post">
+  <header class="post-header">
+    <h2 class="post-title"><a href="/rack-rails">Ruby Rack 协议及其应用(三)</a></h2>
+  </header>
+  <section class="post-excerpt">
+    
+    <p>Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本篇文章着重讲述 `Ruby on Rails`框架的启动过程. <a class="read-more" href="/rack-rails">&raquo;</a></p>
+    
+  </section>
+  <footer class="post-meta">
+    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
+    
+    <a href='/tag/Rack系列'>Rack系列</a>
+    
+    <a href='/tag/rack'>rack</a>
+    
+    <a href='/tag/ruby'>ruby</a>
+    
+    <a href='/tag/rails'>rails</a>
+    
+    <a href='/tag/server'>server</a>
+    
+    <time class="post-date" datetime="2018-03-05">05 Mar 2018</time>
   </footer>
 </article>
 
@@ -337,12 +427,120 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </footer>
 </article>
 
+<article class="post">
+  <header class="post-header">
+    <h2 class="post-title"><a href="/vue-mvvm">手动实现 MVVM 架构中的双向绑定</a></h2>
+  </header>
+  <section class="post-excerpt">
+    
+    <p>随着 Web 应用的发展, 直接操作DOM的应用已渐行渐远, 取而代之的是时下最流行的MVVM框架. MVVM框架的双向绑定使得开发效率大大提高; 在实现这些双向绑定时, 目前大多数的方案都是采用Object.defineProperty和Object.defineProperties方法. 本篇文章主要参考了同仁的实现, 并在此基础上加上自己的理解注释, 希望能够对阅读者有所帮助. <a class="read-more" href="/vue-mvvm">&raquo;</a></p>
+    
+  </section>
+  <footer class="post-meta">
+    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
+    
+    <a href='/tag/JavaScript'>JavaScript</a>
+    
+    <a href='/tag/Vue'>Vue</a>
+    
+    <a href='/tag/MVVM'>MVVM</a>
+    
+    <time class="post-date" datetime="2018-01-08">08 Jan 2018</time>
+  </footer>
+</article>
+
+<article class="post">
+  <header class="post-header">
+    <h2 class="post-title"><a href="/javascript-bind">JavaScript bind 原理和实现</a></h2>
+  </header>
+  <section class="post-excerpt">
+    
+    <p>JavaScript中的函数绑定(Function binding)很可能是开发者在使用JavaScript时最少关注的一点. 但是当我们意识到需要一个解决方案来解决如何在另外一个函数中保持this上下文的时候, 我们真正需要的就是 Function.prototype.bind(). 本篇文章就从bind原理开始, 阐述 bind 的存在价值以及手动实现 bind <a class="read-more" href="/javascript-bind">&raquo;</a></p>
+    
+  </section>
+  <footer class="post-meta">
+    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
+    
+    <a href='/tag/JavaScript'>JavaScript</a>
+    
+    <a href='/tag/bind'>bind</a>
+    
+    <time class="post-date" datetime="2017-06-10">10 Jun 2017</time>
+  </footer>
+</article>
+
+<article class="post">
+  <header class="post-header">
+    <h2 class="post-title"><a href="/javascript-execution-content">JavaScript 深入理解 执行上下文</a></h2>
+  </header>
+  <section class="post-excerpt">
+    
+    <p>JavaScript中执行上下文是非常重要的概念之一. 理解了执行上下文对变量提升, this对象的深入理解以及函数作用域等概念会有更深刻的认识. 读完本篇文章, 你就可以清楚地了解JavaScript解释器究竟在干什么, 为什么可以在一些函数和变量声明之前就能使用以及他们的值是怎样被确定的. <a class="read-more" href="/javascript-execution-content">&raquo;</a></p>
+    
+  </section>
+  <footer class="post-meta">
+    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
+    
+    <a href='/tag/JavaScript'>JavaScript</a>
+    
+    <a href='/tag/execute'>execute</a>
+    
+    <a href='/tag/content'>content</a>
+    
+    <time class="post-date" datetime="2017-05-12">12 May 2017</time>
+  </footer>
+</article>
+
+<article class="post">
+  <header class="post-header">
+    <h2 class="post-title"><a href="/javascript-this">JavaScript 深入理解 this</a></h2>
+  </header>
+  <section class="post-excerpt">
+    
+    <p>JavaScript支持函数式编程, 闭包, 原型继承等高级特性. 由于其运行期绑定的特性, JavaScript中的this具有丰富的含义. 它可以支持全局对象, 当前对象, 或者任意对象, 这完全取决于函数的调用方式. 本文采撷一些例子来说明this在不同调用方式下的不同含义. <a class="read-more" href="/javascript-this">&raquo;</a></p>
+    
+  </section>
+  <footer class="post-meta">
+    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
+    
+    <a href='/tag/JavaScript'>JavaScript</a>
+    
+    <a href='/tag/this'>this</a>
+    
+    <a href='/tag/OOP'>OOP</a>
+    
+    <time class="post-date" datetime="2017-05-05">05 May 2017</time>
+  </footer>
+</article>
+
+<article class="post">
+  <header class="post-header">
+    <h2 class="post-title"><a href="/javascript-inherit">JavaScript 继承模式</a></h2>
+  </header>
+  <section class="post-excerpt">
+    
+    <p>上一篇文章我们对JavaScript的原型有了深入的了解, 本篇文章继续阐述 JavaScript中的继承模式. <a class="read-more" href="/javascript-inherit">&raquo;</a></p>
+    
+  </section>
+  <footer class="post-meta">
+    <img class="author-thumb" src="/assets/images/hacker.png" alt="Author image" nopin="nopin" />
+    
+    <a href='/tag/JavaScript'>JavaScript</a>
+    
+    <a href='/tag/inherit'>inherit</a>
+    
+    <time class="post-date" datetime="2016-12-27">27 Dec 2016</time>
+  </footer>
+</article>
+
 
 <!-- Previous/next page links - displayed on every page -->
 
 <nav class="pagination" role="pagination">
   
-  <span class="page-number"> Page 1 of 1 </span>
+  <span class="page-number"> Page 1 of 2 </span>
+  
+  <a class="older-posts" href="/page2/" title="Next Page">Older Posts &raquo;</a>
   
 </nav>
 

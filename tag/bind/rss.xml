@@ -1,0 +1,614 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    
+    <title>hwbnju.com</title>
+    
+    <link>http://hwbnju.com</link>
+    <description>nju520's Blog</description>
+    <language>en-uk</language>
+    <managingEditor> nju520</managingEditor>
+    <atom:link href="rss" rel="self" type="application/rss+xml" />
+    
+<item>
+  <title>JavaScript bind 原理和实现</title>
+  <link>//javascript-bind</link>
+  <author>nju520</author>
+  <pubDate>2017-06-10T00:00:00+08:00</pubDate>
+  <guid>//javascript-bind</guid>
+  <description><![CDATA[
+  <h2 id="bind-原理">bind 原理</h2>
+
+<p>bind是 ECMAScript 新增的方法, 这个方法的主要作用就是将函数绑定到某个对象.</p>
+
+<p>当在函数 func()上调用 bind()方法并传入一个对象比如 bobo 作为参数, 返回一个新的函数.
+返回的函数运行时以传入的第一个对象作为 this. 当这个新的函数以函数调用的方式调用时, 就会把this 指向之前绑定的对象上, 也就相当于对象 bobo 将 func()函数当做自己的方法来调用.</p>
+
+<p>bind 方法不仅仅是将函数绑定到一个对象上, 还可以将传入的除对象之外的参数包裹起来, 返回函数调用的时候使用.比如下面的第二个参数23.</p>
+
+<pre><code class="language-javascript">function func(age, job) {
+  console.log(this.name);
+  console.log(age);
+  console.log(job);
+}
+
+var bobo = {name: "bobo"};
+var bindFunc = func.bind(bobo, 23);
+bindFunc("coder"); // bobo 23 coder
+
+</code></pre>
+
+<h2 id="bind-实现">bind 实现</h2>
+<p>如果想要对 bind 函数更深层次的理解, 最好可以自己实现原生的 bind 函数.
+bind 是 Function.prototype 上定义的方法, 因此每个函数作为 Function 的实例对象, 通过原型继承的方式都能够调用 bind 方法.
+我可以在 Function.prototype 上实现自定义的 bind 方法.</p>
+
+<h3 id="基础版本">基础版本</h3>
+
+<pre><code class="language-javascript">
+Function.prototype.myBind = function(context) {
+  //!!这个 this 其实就是我们被绑定的函数. 因为被绑定的函数实际上就是 Function 的一个实例
+  // 实例通过原型继承拥有 bind 方法, 因此 func.bind()运行时, this指向的就是 func.
+  // 这里将 this 保存下来, 因为返回一个闭包时外层的 this 将不会得到保存.
+  var self = this;
+  return function() {
+    self.apply(context);//apply可以将函数func 运行时的 this 绑定到传入的第一个参数上
+  }
+}
+
+var obj = {
+  name: 'bobo',
+  age: 23
+}
+
+function func() {
+  console.log(this.name + " " + this.age);
+}
+
+var bindFunc = func.myBind(obj);
+bindFunc(); //bobo 23
+
+</code></pre>
+
+<h3 id="可以实现柯里化">可以实现柯里化</h3>
+<p>我们可以在 bind 时传入一部分参数, 在调用返回的绑定函数时,将剩余的参数传入.
+这个技术是一种常见的函数式编程, 被称为”柯里化”</p>
+
+<pre><code class="language-javascript">
+Function.prototype.myBind = function(context) {
+  var self = this;
+  //将除了第一个 context 参数保存到 args 变量中
+  var args = Array.prototype.slice.call(arguments, 1); //返回值是一个数组
+
+  return function() {
+    var bindArgs = Array.prototype.slice.call(arguments); //返回值同样是一个数组
+    self.apply(context, args.concat(bindArgs) )
+  }
+}
+
+var bobo = {
+  name: 'bobo',
+}
+
+function func(age, job) {
+  console.log(this.name);
+  console.log(age);
+  console.log(job);
+}
+
+var bindFunc = func.myBind(bobo, 23);
+bindFunc("coder");
+// bobo
+// 23
+// coder
+
+</code></pre>
+
+<h3 id="绑定的函数可以作为构造函数使用">绑定的函数可以作为构造函数使用</h3>
+
+<p>ECMAScript5定义的 bind 方法,可以使用 new操作符来创建新对象: 这种行为就是把原函数当成构造器.
+我们提供的上下文对象被忽略, 但是剩下的参数还是可以提供给绑定函数使用的.
+==&gt;当 bind 返回的函数作为构造函数使用时, bind 时指定的 this 就会失效, 此时的 this 应该是执行new绑定规则.</p>
+
+<p>下面的代码最难理解的就是this的指向问题.</p>
+
+<pre><code class="language-javascript">//this的指向是在函数调用时确定的, 一共有四种形式的绑定: 默认绑定, 隐式绑定, 显式绑定, new绑定.
+//第一行的目的就是保存外部函数的this, 如果不保存的话,我们就无法在闭包中使用外部函数绑定的this.
+var self = this;
+
+//这一行更难理解, 难点在于容易将this和self混淆.
+//此时的self就是第一行保存的this,self指向原始函数func, 第一个参数就是func需要绑定的对象.
+//当内部闭包的this是func的一个实例时, func的调用形式是构造函数new bindFunc, this指向的是新创建的一个对象
+//当内部闭包的this不是指向func的一个实例时, 说明调用的bindFunc是普通的函数调用, 此时bindFunc就绑定到传入的第一个参数
+self.apply(this instanceof self ? this : context, args.concat(bindArgs));
+
+//这一行让bindFunc的原型继承自func的原型, 当采用构造函数的调用形式调用binfFunc时,创建的新对象就会继承func.prototype上的方法
+//当以普通形式调用bindFunc时,这一行代码自动忽略
+bindFunc.prototype = this.prototype;
+
+</code></pre>
+
+<pre><code class="language-javascript">
+Function.prototype.myBind = function(context) {
+  // self指向的就是我们被绑定的函数, eg: func.bind(obj). self指向的是 func
+  // bindFunc 为闭包,因为必须先把 self 保存下来作为一个变量传入 闭包.
+  var self = this;
+  var args = [].slice.call(arguments, 1);
+
+  var bindFunc = function() {
+    //闭包中的this取决于bindFunc运行时的情况
+
+    var bindArgs = [].slice.call(arguments);
+    //当通过new 构造出一个实例的时候, 会将 this 指向构造出的新对象.
+    // 虽然我们最后构造对象时是采用new bindFunc的形式. 但是构造函数实际上是我们的被绑定函数 func
+    // 构造函数调用四部曲
+    // 1. 创建一个新的对象
+    // 2. 新的对象的原型继承自构造函数的原型
+    // 3. 构造函数中 this 执行这个新对象.!!!!此时就相当于新对象将构造函数当做自己的方法调用, 所以才会有 this.name = name 这种操作
+    // 4. 构造函数返回值这个心对象
+
+    // (this instanceof self) === true时, this 就是运行 new bindFunc 时 this 的指向对象, 它指向的就是新创建的实例对象
+    // (this instanceof self) === false时,调用bindFunc的形式是直接调用, 此时让 this 指向我们传入的第一个参数
+    self.apply(this instanceof self ? this : context, args.concat(bindArgs));
+  }
+
+
+  //绑定函数的 prototype 指向 this.prototype,也就是 func.prototype
+  //在使用 new bindFunc 创建出的实例就可以继承构造函数原型中的值.
+  // 这里的this和第一行var self = this;是一样的, 都是指向我们的原始函数func
+  // 这里并不是上面的bindFunc作用域中!!!!
+  bindFunc.prototype = this.prototype;
+
+  return bindFunc;
+}
+
+
+var bobo = {
+  name: 'bobo'
+};
+
+function func(age, job) {
+  this.hobbit = "programming";
+  console.log(this.name);
+  this.age = age;
+  this.job = job;
+}
+func.prototype.friend = "Mac";
+func.prototype.sayHi = function() {
+  console.log("Hi, " + this.friend);
+};
+
+
+var Func = func.myBind(bobo, 23);
+
+//采用直接调用的形式调用Func, func中的this是指向的bobo对象
+var hehe = Func("coder"); //打印bobo.name属性 --&gt; bobo
+//以普通形式调用FUnc时, Func("coder")的返回值为undefined
+
+//当我们采用 new 操作符调用 Func 时, 此时就创建了一个新的实例对象, 实例对象将构造函数作为自己的方法调用, 此时根据 this 的指向规则, this 指向调用方法的对象!!!!
+var obj = new Func('coder');
+
+console.log(obj.name);
+console.log(obj.age);
+console.log(obj.job);
+
+console.log(obj.sayHi());
+
+</code></pre>
+<p>上面的自定义 bind 基本上可以完成我们的需求,但是有一个需要改进的地方就是返回的闭包函数的原型继承.
+如果直接采用上述的方式:</p>
+
+<pre><code class="language-javascript">bindFunc.prototype = this.prototype;
+</code></pre>
+<p>根据之前继承的几种方式,这种情况下如果我们修改 bindFunc 的原型,就会影响被绑定函数的 prototype.
+这个时候就需要一个空对象来作为继承链的中间对象过渡.</p>
+
+<pre><code class="language-javascript">
+Function.prototype.myBind = function(context) {
+  // self指向的就是我们被绑定的函数, eg: func.bind(obj). self指向的是 func
+  var self = this;
+  var args = [].slice.call(arguments, 1);
+
+  var Ctor = function() {}
+
+  // bindFunc 为闭包,因为必须先把 self 保存下来作为一个变量传入 闭包.
+  var bindFunc = function() {
+    var bindArgs = [].slice.call(arguments);
+    //当通过new 构造出一个实例的时候, 会将 this 执行构造出的新对象.
+    // 虽然我们最后构造对象时是采用new bindFunc的形式. 但是构造函数实际上是我们的被绑定函数 func
+    // 构造函数调用四部曲
+    // 1. 创建一个新的对象
+    // 2. 新的对象的原型继承自构造函数的原型
+    // 3. 构造函数中 this 执行这个新对象.!!!!此时就相当于新对象将构造函数当做自己的方法调用, 所以才会有 this.name = name 这种操作
+    // 4. 构造函数返回值这个心对象
+    self.apply(this instanceof self ? this : context, args.concat(bindArgs));
+  }
+
+  //典型的原型链继承形式. &lt;JavaScript 高级程序设计&gt; P169
+  Ctor.prototype = this.prototype
+  bindFunc.prototype = new Ctor();
+
+  return bindFunc;
+}
+
+var bobo = {
+  name: 'bobo'
+};
+
+function func(age, job) {
+  this.hobbit = "programming";
+  console.log(this.name);
+  this.age = age;
+  this.job = job;
+}
+func.prototype.friend = "Mac";
+func.prototype.sayHi = function() {
+  console.log("Hi, " + this.friend);
+};
+
+var Func = func.myBind(bobo, 23);
+//当我们采用 new 操作符调用 Func 时, 此时就创建了一个新的实例对象, 实例对象将构造函数作为自己的方法调用, 此时根据 this 的指向规则, this 指向调用方法的对象!!!!
+var obj = new Func('coder');
+
+console.log(obj.name);
+console.log(obj.age);
+console.log(obj.job);
+
+console.log(obj.sayHi());
+
+</code></pre>
+
+<h3 id="最终版本">最终版本</h3>
+<ol>
+  <li>调用 bind 时调用者不是函数如何处理?
+  直接报错</li>
+</ol>
+
+<pre><code class="language-javascript">
+if(typeof this != "function") {
+  throw new Error("Function.prototype.bind--what is trying is not callable");
+}
+
+</code></pre>
+
+<ol>
+  <li>版本兼容
+  如果存在原生的 bind 方法就采用原生bind方法, 否则采用我们自己定义的 bind方法</li>
+</ol>
+
+<pre><code class="language-javascript">
+Function.prototype.bind = Function.prototype.bind || function() {
+  ...
+}
+</code></pre>
+
+<ol>
+  <li>最终版本</li>
+</ol>
+
+<pre><code class="language-javascript">
+Function.prototype.bind = function(context) {
+  if(Function.prototype.bind) {
+    return Function.prototype.bind;
+  }
+
+  if(typeof this != "function") {
+    throw new Error("Function.prototype.bind--what is trying is not callable");
+  }
+
+  var self = this;
+  var args = [].slice.call(arguments, 1);
+
+  var Ctor = function() {}
+
+  var bindFunc = function() {
+    var bindArgs = [].slice.call(arguments);
+    self.apply(this instanceof self ? this : context, args.concat(bindArgs));
+  }
+
+  //典型的原型链继承形式. &lt;JavaScript 高级程序设计&gt; P169
+  Ctor.prototype = this.prototype
+  bindFunc.prototype = new Ctor();
+
+  return bindFunc;
+}
+
+</code></pre>
+
+  ]]></description>
+</item>
+
+<item>
+  <title>妙用JavaScript中的apply/call/bind</title>
+  <link>//javascript-call-apply-bind</link>
+  <author>nju520</author>
+  <pubDate>2016-07-09T00:00:00+08:00</pubDate>
+  <guid>//javascript-call-apply-bind</guid>
+  <description><![CDATA[
+  <h2 id="applycall">apply/call</h2>
+<p><strong>call和apply都是为了改变某个函数运行时的上下文(context)而存在的.换句话说, 就是为了改变函数体内部的this指向.</strong></p>
+
+<blockquote>
+  <p>JavaScript的一大特点就是, 函数存在 定义时上下文/运行时上下文/上下文可以动态改变 这样的概念 –</p>
+</blockquote>
+
+<pre><code class="language-javascript">function Fruits() {}
+// Fruits.prototype = {
+//   color: 'red',
+//   sayColor: function() {
+//   console.log('My color is ' + this.color);
+//   }
+// }
+Fruits.prototype.color = 'red'
+Fruits.prototype.sayColor = function() {
+  console.log('My color is ' + this.color);
+}
+var apple = new Fruits();
+apple.sayColor();// My color is red
+</code></pre>
+<p>但是如果我们与一个对象 banana = {color: ‘yellow’}, 我并不想重新为它定义sayColor方法,那么我就可以使用call或者apply来调用apple的sayColor方法</p>
+<pre><code class="language-javascript">var banana = {color: 'yellow'}
+apple.sayColor.apply(banana);// My color is yellow
+apple.sayColor.call(banana); // My color is yellow
+
+</code></pre>
+<p>从上面的示例可以看出, call或者apply是为了动态改变this而出现的,当一个object没有某个方法, 但是其他对象已经定义了实现某个功能的方法, 我就可以借助call或apply让此object调用指定对象的方法.</p>
+
+<h2 id="call与apply的区别">call与apply的区别</h2>
+<p>唯一区别就是接收的参数形式不太一样.
+call  需要把参数按照顺序传递进去
+apply 把参数放到一个数组(也包括类数组)中传入  array apply !!</p>
+<pre><code class="language-javascript">var func = function(arg1, arg2) {
+
+};
+func.call(this, arg1, arg2);
+func.apply(this, [arg1, arg2]);
+
+</code></pre>
+<p>其中this是我想要指定的上下文, 它可以是任何一个javascript对象</p>
+
+<ul>
+  <li>使用情景:
+    <ul>
+      <li>JavaScript中, 如果某个函数的参数数量是不固定的, 所以当我的参数是明确的, 就使用call, 而不确定参数数量的话 就使用apply, 然后把参数push进数组中</li>
+      <li>当参数数量不确定时, 函数内部也可以通过arguments这个类数组对象来遍历所有的参数.</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="更多示例">更多示例</h2>
+
+<ol>
+  <li>数组之间追加
+    <pre><code class="language-javascript">var array1 = [12 , "foo" , {name "Joe"} , -2458];
+var array2 = ["Doe" , 555 , 100];
+// array1.push("Doe", 555, 100); // 正常调用
+Array.prototype.push.apply(array1, array2);
+/* array1 值为  [12 , "foo" , {name "Joe"} , -2458 , "Doe" , 555 , 100] */
+</code></pre>
+  </li>
+  <li>获取数组中的最大值和最小值
+    <pre><code class="language-javascript">var  numbers = [5, 458 , 120 , -215 ];
+var max = Math.max.apply(Math, numbers);//458
+// var max = Math.max(5,458,120,-215);//正常调用
+var min = Math.min.apply(Math, numbers);//-215
+// var min = Math.min(5,458,120,-215);//正常调用
+//数组numbers本身没有max方法, 我可以借助apply使用Math中的max方法
+</code></pre>
+  </li>
+  <li>验证对象是否是数组(前提是toString方法没有被重写)
+    <pre><code class="language-javascript">function isArray(obj) {
+  return Object.prototype.toString.call(obj) === '[object Array]'
+}
+</code></pre>
+  </li>
+</ol>
+
+<p>4 类数组使用数组方法(比较常见的就是函数参数对象arguments)
+Javascript中存在一种名为伪数组的对象结构。比较特别的是 arguments 对象，还有像调用 getElementsByTagName , document.childNodes 之类的，它们返回NodeList对象都属于伪数组, 不能应用 Array下的push, pop等方法。
+但是我们能通过 Array.prototype.slice.call 转换为真正的数组的带有length属性的对象，这样domNodes就可以应用Array下的所有方法了。</p>
+<pre><code class="language-javascript">var domNodes = Array.prototype.slice.call(document.getElementsByTagName('*'));
+var domNodes = [].slice.call(document.getElementsByTagName('*'));
+
+// 我还可以通过bind进行简化
+var unboundSlice = Array.prototype.slice;
+var slice = Function.prototype.call.bind(unboundSlice);
+//这里function原型中的call方法绑定unboundSlice对象, 调用返回的函数就等价于 绑定对象unboundSlice调用Function下面的call方法
+// 这与调用 [].slice.call(arguments) 是一样的.
+// call方法是Function.prototype中的一个方法
+var domNodes = slice(document.getElementsByTagName('*'));
+
+</code></pre>
+<p>5.一道面试题
+定义一个log方法,让它可以代理console.log方法</p>
+<pre><code class="language-javascript">function log(msg) {
+  console.log(msg);
+};
+log(1);//1
+log(1,2,3,);//1
+</code></pre>
+<p>当传入多个参数给上面的log方法时, 就要考虑使用apply或者call方法了, 注意这里传入的参数是不确定的,所以最好的选择是apply</p>
+<pre><code class="language-javascript">function log() {
+  console.log.apply(console, arguments);
+}
+log(1);//1
+log(1,2,3);//1,2,3
+</code></pre>
+<p>接下来的要求是给每一个log消息添加一个(app)的前缀, 比如</p>
+<pre><code class="language-javascript">log('hello world'); //(app)hello world
+</code></pre>
+<p>该怎么做才比较优雅呢?
+函数参数对象arguments是类数组, 我可以通过上面的类数组转换为数组的方法, 再使用数组的方法unshift在数组的头部添加’(app)’</p>
+<pre><code class="language-javascript">function log() {
+  // var args = [].slice.apply(arguments); //arguments是类数组,所以这里也可以使用apply
+  var args = [].slice.call(arguments);
+  args.unshift('(app)');
+  console.log.apply(console, args);
+}
+</code></pre>
+
+<h2 id="bind">bind</h2>
+<p>bind()方法与apply和call类似, 也是可以改变函数体内的this的指向.
+MDN的解释:
+<strong>bind()方法会创建一个新函数,称为绑定函数, 当调用这个绑定函数时,
+绑定函数会以创建它时传入的bind()方法第一个参数作为this,
+传入bind()方法第二个以及以后的参数+绑定函数运行时传入的参数,按照顺序作为原函数的参数来调用原函数</strong>
+示例:</p>
+<ol>
+  <li>在常见的单体模式下, 我们通常会使用self等保存this, 这样我们可以在改变了上下文之后继续引用到它
+    <pre><code class="language-javascript">var foo = {
+  bar: 1,
+  eventBind: function() {
+ var self = this;
+ $('.calss').on('click', function(event) {
+   //Act on the event
+   console.log(self.bar);//1
+ });
+  }
+}
+</code></pre>
+    <p>由于 Javascript特有的机制，上下文环境在 eventBind:function(){ } 过渡到$(‘.class’).on(‘click’, function(event) {})发生了改变，上述使用变量保存this这些方式都是有用的，也没有什么问题。当然使用 bind() 可以更加优雅的解决这个问题：</p>
+  </li>
+</ol>
+
+<pre><code class="language-javascript">var foo = {
+  bar: 1,
+  eventBind: function() {
+    $('.class').on('click', function(event) {
+      console.log(this.bar).bind(this);//匿名函数的绑定
+    })
+  }
+}
+</code></pre>
+<p>上述代码中, bind()创建了一个函数,当这个click事件绑定在被调用的时候, 它的this关键词会被设置成传入的值, 因此这样我传入了想要的上下文this(其实就是foo)到bind方法中. 当回调函数被执行的时候, this便指向foo对象</p>
+
+<ol>
+  <li>分离函数（Partial Functions）
+  bind()的另一个最简单的用法是使一个函数拥有预设的初始参数。这些参数（如果有的话）作为bind()的第二个参数跟在this（或其他对象）后面，之后它们会被插入到目标函数的参数列表的开始位置，传递给绑定函数的参数会跟在它们的后面。
+```javascript
+function list() {
+  return Array.prototype.slice.call(arguments);
+}</li>
+</ol>
+
+<p>var list1 = list(1, 2, 3); // [1, 2, 3]
+// Create a function with a preset leading argument
+var leadingThirtysevenList = list.bind(undefined, 37);
+var list2 = leadingThirtysevenList(); // [37]
+var list3 = leadingThirtysevenList(1, 2, 3); // [37, 1, 2, 3]</p>
+<pre><code>有个有趣的问题，如果连续 bind() 两次，亦或者是连续 bind() 三次那么输出的值是什么呢？
+```javascript
+var bar = function(){
+    console.log(this.x);
+}
+var foo = {
+    x:3
+}
+var sed = {
+    x:4
+}
+var func = bar.bind(foo).bind(sed);
+func(); //?
+
+var fiv = {
+    x:5
+}
+var func = bar.bind(foo).bind(sed).bind(fiv);
+func(); //?
+</code></pre>
+<p>答案是两次输出都是3.
+原因是在javascript中多次绑定bind是无效的.更深层的原因是, bind()方法的实现, 相当于使用函数内部包了一个call/apply, 此时的this已经确定了.第二次bind()相当于再包住第一次的bind(), 所以第二次的之后的bind()是无效的</p>
+
+<ol>
+  <li>实现currying
+  除了第一个实参外，传入bind()的实参也会绑定到 this,这个应用就是一种常见的编程技术，柯里化
+```javascript
+function curry(fn) {
+  var args = Array.prototype.slice.call(arguments, 1); //获取第一个参数之后的所有参数!!!
+  return function() {
+ var innerArgs = Array.prototype.slice.call(arguments);
+ var finalArgs = args.concat(innerArgs); // 内部函数中innerArgs保存了传入的参数
+ return fn.apply(null, finalArgs);
+  }
+}</li>
+</ol>
+
+<p>function add(num1, num2) {
+  return num1 + num2;
+}
+var curriedAdd = curry(add, 5);
+curriedAdd(3); //8</p>
+
+<pre><code>
+```javascript
+var sum = function(y, z) {return this.x + y + z }
+var obj = {x:100}
+var g = sum.bind(obj, 2)
+g(3);//=&gt;6 this.x 绑定到100， y绑定到2， z绑定到3
+</code></pre>
+<ol>
+  <li>手动实现bind方法
+    <pre><code class="language-javascript">if(!Function.prototype.bind) {
+  Function.prototype.bind = function(obj) {
+ var self = this;//self就是要绑定指定对象的函数
+ var boundArgs = arguments;
+ return function() {
+   var args = [];
+   var i;
+   // for(i = 1; i &lt; boundArgs.length; i++) args.push(boundArgs[i]);
+   // for(i = 0; i &lt; arguments.length; i++) args.push(boundArgs[i]);
+   //将self作为obj的方法来调用， 传入整合之后的实参
+   // return self.apply(obj, args);
+
+   var outArgs = Array.prototype.slice.call(arguments, 1);
+   F = function() {};
+   functionToBind = this;
+   fBound = functionToBind.apply(this, outArgs.concat(Array.prototype.slice.call(arguments)))
+   F.prototype = this.prototype;
+   functionToBind.prototype = new F();
+   return functionToBind;
+ }
+  }
+}
+</code></pre>
+    <h2 id="apply-call-bind-的比较">apply call bind 的比较</h2>
+    <p>```javascript
+var obj = {
+ x: 81,
+};</p>
+  </li>
+</ol>
+
+<p>var foo = {
+    getX: function() {
+        return this.x;
+    }
+}</p>
+
+<p>console.log(foo.getX.bind(obj)());  //81
+console.log(foo.getX.call(obj));    //81
+console.log(foo.getX.apply(obj));   //81
+```
+三个输出的都是81，但是注意看使用 bind() 方法的，他后面多了对括号。
+也就是说，区别是，当你希望改变上下文环境之后并非立即执行，而是回调执行的时候，使用 bind() 方法。
+而 apply/call 则会立即执行函数。</p>
+
+<hr />
+<ul>
+  <li>再次总结一下:
+    <ul>
+      <li>apply call bind 三者都是用来改变函数的this对象的指向的</li>
+      <li>apply call bind 三者的第一个参数都是this要指向的对象, 也就是想要指定的上下文</li>
+      <li>apply call bind 三者都可以利用后续参数传参</li>
+      <li>bind 返回的是一个函数, 便于稍后调用; apply call 则是立即调用</li>
+    </ul>
+  </li>
+</ul>
+
+  ]]></description>
+</item>
+
+
+  </channel>
+</rss>

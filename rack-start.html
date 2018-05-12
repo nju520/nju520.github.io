@@ -122,12 +122,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </a>
   <ul>
     <li class="nav-home " role="presentation"><a href="/">Home</a></li>
-    <!-- <li class="nav-about " role="presentation"><a href="/about">About</a></li>
-    <li class="nav-author " role="presentation"><a href="/author/casper">Author</a></li> -->
-    <li class="nav-ios " role="presentation"><a href="/tag/iOS">iOS</a></li>
-    <li class="nav-mvc " role="presentation"><a href="/tag/MVC">MVC</a></li>
-    <li class="nav-server " role="presentation"><a href="/tag/server">Server</a></li>
     <li class="nav-ruby " role="presentation"><a href="/tag/ruby">Ruby</a></li>
+    <li class="nav-javascript " role="presentation"><a href="/tag/javascript">JavaScript</a></li>
+    <li class="nav-server " role="presentation"><a href="/tag/server">Server</a></li>
+    <li class="nav-database " role="presentation"><a href="/tag/database">Database</a></li>
   </ul>
   <a class="subscribe-button icon-feed" href="/feed.xml">Subscribe</a>
 </div>
@@ -585,7 +583,7 @@ Rack::Handler::WEBrick.run app, :Port =&gt; 3000
 <pre><code class="language-ruby"># rack/lib/request.rb
 # request 类比较简单, 主要是对 env 进行处理
 # Rack::Request 本身是无状态的,  env 传入 Request对象的构造方法中, 它可以直接被修改
-# 以下代码为节选, 完整代码请参考: 
+# 以下代码为节选, 完整代码请参考:
 # 重点说明一下 super 方法的使用
 # 1. super       调用时, 将沿着继承链调用祖先类/模块的方法, 并携带传递给当前调用对象的全部方法参数
 # 2. super()     调用时, 则不会传递调用者任何参数
@@ -600,66 +598,66 @@ module Rack
       @params = nil
       super(env)
     end
-      
+
     def params
       @params ||= super
     end
-      
+
     def update_param(k, v)
       super
       @params = nil
     end
-      
+
     def delete_param(k)
       v = super
       @params = nil
       v  
     end
-      
+
     # 对 header 进行操作的 helper
     module Env
       # the enviroment of the request
       attr_reader :env
-      
-      # env is an instance of Hash 
+
+      # env is an instance of Hash
       def initialize(env)
         @env = env
         super()
       end
-      
+
       def has_header?(name)
         @env.key? name
       end
-        
+
       def fetch_header(name, &amp;block)
       end
-        
+
       def set_header(name, v)
       end
-        
+
       def add_header(key, v)
       end
-        
+
       def delete_header(name)
       end
-        
+
       def initialize_copy(other)
         @env = other.env.dup
       end
     end
-      
+
     # 一些辅助方法, 用来解析 env
     module Helpers
-        
+
 	  def body;  			get_header(RACK_INPUT); end
       def path_info;    	get_header(PATH_INFO); end
       def request_method;	get_header(REQUEST_METHOD); end
-        
+
       # 判断请求的方法类型
       def get?;				request_method == GET; end
       def trace?;			request_method == TRACE; end
     end
-      
+
     # 将上述两个模块 include 加入 Request类的继承链中
     # Rack::Request.ancestors
     #[Env, Helpers, ...]
@@ -686,12 +684,10 @@ end
   <li>采用 <code>response.write</code> 增量写入内容, 自动填充 <code>Content-Length</code>的值</li>
 </ul>
 
-<p>不管采用哪种方式, 最后都得采用<code> response.finish</code> 完成 <code>response</code>的构建. 除了一些必要的检查外, <code>finish</code> 将装配出符合Rack规范的一个三元数组,也就是之前手动返回的那个数组: [status, heades, body]</p>
+<p>不管采用哪种方式, 最后都得采用<code>response.finish</code> 完成 <code>response</code>的构建. 除了一些必要的检查外, <code>finish</code> 将装配出符合Rack规范的一个三元数组,也就是之前手动返回的那个数组: [status, heades, body]</p>
 
 <p>采用第一种形式构造 body:</p>
-
-<pre><code class="language-ruby">
-#! /usr/bin/env ruby
+<pre><code class="language-ruby">#! /usr/bin/env ruby
 require 'rack'
 require_relative 'decorator'
 
@@ -700,21 +696,23 @@ app = -&gt; (env) do
  response = Rack::Response.new
 
  body = "===========header==========&lt;br/&gt;"
- if request.path_info == '/hello'
+ if request.path_info == "/hello"
    body &lt;&lt; "you say hello"
    client = request['client']
    body &lt;&lt; " from #{client}" if client
  else
    body &lt;&lt; "you need provide some client information"
  end
+
  body &lt;&lt; "&lt;br/&gt;===========footer=========="
  response.body = [body]
  response.headers['Content-Length'] = body.bytesize.to_s
- response.headers['Content-type'] = 'text/html' 
+ response.headers['Content-type'] = 'text/html'
  response.finish
 end
 
 Rack::Handler::WEBrick.run app, :Port =&gt; 3000
+
 </code></pre>
 
 <p>采用第二种形式构造 body:</p>
@@ -778,16 +776,16 @@ module Rack
   # Rack::Response 为创建 Rack response提供了简介的接口.
   # 它允许设置响应头(header) cookies
   # 我们可以使用 write 增量不断地写入响应内容, 直到调用 finish 结束
-  
+
   class Response
   	attr_accessor :length, :status, :body
     attr_reader :header
     alias headers haeder
-    
+
     def	initialize(body = [], status = [], header = [])
       @status = status.to_i
       @header = Utils::HeaderHash.new.merge(header)
-      
+
       @writer = lambda {|x| @body &lt;&lt; x} # 后续调用 @writer.call(x) 向body中添加内容
       @block = nil
       @length = 0
@@ -799,13 +797,13 @@ module Rack
       else
       	raise TypeError, 'stringable or iterable required'
       end
-      
+
       yield self if block_given?
     end
-    
+
     def	finish(&amp;block)
       @block = block
-      
+
       if [204, 304].include?(status.to_i)
       	delete_header CONTENT_TYPE
       	delete_header CONETENT_LENGTH
@@ -815,23 +813,23 @@ module Rack
         [status, header, BodyProxy.new(self){}]
       end
     end
-    
+
     # 向body后插入数据
     def write(str)
       s = str.to_s
       @length += s.bytesize unless chunked
       @writer.call s
-      
+
       set_header(CONTENT_LENGTH, @length.to_s) unless chunked?
       str
     end
-    
+
     # 关闭
     def close
       body.close if body.respond_to?(:close)
     end
-    
-    
+
+
   end
 end
 </code></pre>
@@ -871,14 +869,14 @@ end
 # use Decorator
 # run app
 Rack::Handler::WEBrick.run Decorator.new(app), :Port =&gt; 3000
-	
+
 </code></pre>
 
 <p>最后一行我们采用的是</p>
 
 <pre><code class="language-ruby">Rack::Handler::WEBrick.run Decorator.new(app), Port: 3000
 
-# 相当于调用了 
+# 相当于调用了
 # (Decorator.new(app)).call(env)
 # decorator.call(env)
 # 上述方法内部先调用 @app的 call(env)
@@ -894,7 +892,7 @@ class Decorator
     @app = app
     @block = @block
   end
-  
+
   def call(env)
     status, headers, body = @app.call(env)
     new_body = "===========header==========&lt;br/&gt;"
@@ -902,7 +900,7 @@ class Decorator
     body.each {|str| new_body &lt;&lt; str}
     new_body &lt;&lt; "&lt;br/&gt;===========footer=========="
     headers['Content-Length'] = new_body.bytesize.to_s
-    
+
     # 最后返回加上头尾信息的新的三元数组
     [status, headers, [new_body]]
   end
@@ -960,7 +958,7 @@ Rack::Handler::Thin.run(Middleware1.new(Middleware2.new(rack_app, options2), opt
   # 加入中间件
   def use
   end
-  
+
   # 加入应用程序
   def run
   end
@@ -1010,7 +1008,7 @@ class Decorator
     @app = app
     @block = @block
   end
-  
+
   def call(env)
     status, headers, body = @app.call(env)
     new_body = ""
@@ -1019,7 +1017,7 @@ class Decorator
     new_body &lt;&lt; "&lt;br/&gt;===========footer=========="
     # 注释掉下面一行, 采用Rack自带的中间件自动添加头部信息: Content-Length
     # headers['Content-Length'] = new_body.bytesize.to_s
-    
+
     # 最后返回加上头尾信息的新的三元数组
     [status, headers, [new_body]]
   end
@@ -1141,7 +1139,7 @@ app = Builder.new {
 }.to_app
 
 Rack::Handler::WEBrick.run app, Port: 3000
-	
+
 </code></pre>
 
 <p>运行程序, 我们可以看到如下输出:</p>
@@ -1177,7 +1175,7 @@ use Decorator, header: "******** header **********&lt;/br&gt;"
 run lambda { |env| [200, {'Content-Type' =&gt; 'text/html'}, ['Hello World']] }
 </code></pre>
 
-<pre><code class="language-shell">$ rackup 
+<pre><code class="language-shell">$ rackup
 Puma starting in single mode...
 * Version 3.11.2 (ruby 2.4.2-p198), codename: Love Song
 * Min threads: 0, max threads: 16
@@ -1189,7 +1187,6 @@ Use Ctrl-C to stop
 <p>以上主要对<code>Rack</code>进行了简单的介绍, 并且自行实现了中间件的构造和装载代码.</p>
 
 <p>下一篇着重研究<code>Rack</code>源码, 以及Web Server的启动过程</p>
-
 
 
       <h3>关于图片和转载</h3>
@@ -1289,6 +1286,13 @@ Use Ctrl-C to stop
   
   <!-- [[! /next_post ]] -->
   <!-- [[! prev_post ]] -->
+  
+  <a class="read-next-story prev no-cover" href="vue-mvvm">
+    <section class="post">
+      <h2>手动实现 MVVM 架构中的双向绑定</h2>
+      <p>MVVM 实现双向绑定 相信大家对mvvm双向绑定应该都不陌生了，一言不合上代码，下面先看一个本文最终实现的效果吧，和vue一样的语法，如果还不了解双向绑定，猛戳Google &lt;div id="mvvm-app"&gt; &lt;input type="text" v-model="word"&gt; &lt;p&gt;&lt;/p&gt; &lt;button v-on:click="sayHi"&gt;change model&lt;/button&gt; &lt;/div&gt; &lt;script src="./js/observer.js"&gt;&lt;/script&gt;...</p>
+    </section>
+  </a>
   
   <!-- [[! /prev_post ]] -->
 </aside>

@@ -1,0 +1,892 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    
+    <title>hwbnju.com</title>
+    
+    <link>http://hwbnju.com</link>
+    <description>nju520's Blog</description>
+    <language>en-uk</language>
+    <managingEditor> nju520</managingEditor>
+    <atom:link href="rss" rel="self" type="application/rss+xml" />
+    
+<item>
+  <title>JavaScript 深入理解 this</title>
+  <link>//javascript-this</link>
+  <author>nju520</author>
+  <pubDate>2017-05-05T00:00:00+08:00</pubDate>
+  <guid>//javascript-this</guid>
+  <description><![CDATA[
+  <h3 id="什么是this">什么是this</h3>
+<ol>
+  <li>
+    <p>this: 顾名思义就是这个对象，this到底指向哪个对象呢?
+  this的指向取决于函数执行上下文.
+  当一个函数被调用时, 会创建一个执行上下文. 这个记录会包含函数在哪里被调用, 传入的参数, 函数内部的声明, 以及this的指向.</p>
+  </li>
+  <li>
+    <p>要明确一点就是this只存在函数调用中，无法在对象中直接使用this.</p>
+  </li>
+  <li>
+    <p>如果函数作为对象的方法调用，其this就执行这个对象；如果作为嵌套函数调用，其this值要么是全局对象(非严格模式)，要么是undefined(严格模式)。如果想访问外部函数的this值，需要将this值保存在一个变量中</p>
+  </li>
+  <li>
+    <p>this是一个关键字， 不是变量， 也不是属性名。 JavaScript不允许给this赋值！！</p>
+  </li>
+</ol>
+
+<h3 id="为什么需要this">为什么需要this?</h3>
+
+<pre><code class="language-javascript">function identify() {
+  return this.name.toUpperCase();
+}
+
+function speak() {
+  var greeting = "Hello, I'm " + identify.call(this);
+  console.log(greeting);
+}
+
+var me = {
+  name: "bobo"
+};
+
+var her = {
+  name: "yanzi"
+};
+
+identify.call(me); //BOBO
+identify.call(her);//YANZI
+
+speak.call(me); // Hello, I'm BOBO
+speak.call(her);// Hello, I'm YANZI
+</code></pre>
+<p>speak.call(me);为例: 通过调用call方法，可以将this绑定到传入的对象中，也就是执行函数speak时，this绑定的对象是me.speak函数里面identify.call(this)其中的this也是绑定的me对象。
+这段代码可以在不同的上下文对象(me和her)中重复使用函数identify()和speak(),不需要针对每个对象编写不同版本的函数。</p>
+
+<p>如果不使用this，就需要给identify()和speak()函数显式传入一个上下文对象</p>
+
+<pre><code class="language-javascript">function identify(context) {
+  return context.name.toUpperCase();
+}
+
+function speak(context) {
+  var greeting = "Hello, I'm " + identify(context);
+  console.log(greeting);
+}
+
+var me = {
+  name: "bobo"
+};
+
+var her = {
+  name: "yanzi"
+};
+
+identify(me); //BOBO
+identify(her);//YANZI
+
+speak(me); // Hello, I'm BOBO
+speak(her);// Hello, I'm YANZI
+</code></pre>
+<p>上面的代码是未采用this,必须得传入一个具体的上下文对象，然后才能操作对象的属性。</p>
+
+<p>通过上面的对比可以看出，this提供了一种优雅的方式来隐式“传递”一个对象引用， 可以将API设计地更加简介且已用(这个暂时还未阅读过一些开源项目的API，还不清楚)。</p>
+
+<h3 id="常见错误">常见错误</h3>
+
+<h4 id="指向自身">指向自身</h4>
+<p>虽然函数在JavaScript中也是一种对象，但是this并不是指向函数本身。</p>
+
+<h4 id="this指向函数的作用域">this指向函数的作用域</h4>
+<p>这个错误是最容易犯的了。我有时候也会想当然的this就会指向函数的作用域对象， 然后通过this.XX去获取一些属性。</p>
+<ol>
+  <li>this在任何情况下都不指向函数的词法作用域。在JavaScript内部，作用域(是不是就是我之前说的执行上下文对象)和对象比较相似，可见的标识符都是它的属性。但是作用域对象无法通过JavaScript代码访问，它存在与JavaScript引擎内部，供引擎访问。</li>
+</ol>
+
+<p>一个错误的例子:</p>
+<pre><code class="language-javascript">function foo() {
+  var a = 2;
+  this.bar();
+}
+
+function bar() {
+  console.log(this.a);
+}
+
+foo();//error: a is not defined
+
+</code></pre>
+
+<p>这个代码的错误不止一处。</p>
+<ul>
+  <li>首先，这堵代码试图通过this.bar()来引用bar函数，这样调用成功纯属意外。因为此时this执行的是全局对象，在全局环境定义的函数都是全局对象的属性。一般情况下，i调用bar()函数最直接的就是省略前面的this.</li>
+  <li>开发者试图采用this联通foo()和bar()de的词法作用域，从而让 bar()可以访问foo()作用域的变量a.这是不可能实现的，使用this无法在词法作用域查到信息。</li>
+</ul>
+
+<ol>
+  <li>this到底是什么？</li>
+</ol>
+
+<p>this是在函数运行时绑定的，并不是在编写时绑定，它的上下文取决于函数调用时的各种条件。</p>
+
+<p>this的绑定和函数声明的位置没有关系， 只取决于函数的调用方式。</p>
+
+<p>当一个函数被调用时，会创建一个活动记录(也就是执行上下文)。这个记录会包含函数在哪里调用(调用栈)，函数的调用方式，传入的参数等现象， this就是这个记录的一个属性， 它绑定一个对象，会在函数执行的过程中用到。this究竟绑定到那个对象，在下面的”如何使用this”会有详细说明.</p>
+
+<p><strong>记住一点:this是在函数调用时发生的绑定，它指向什么完全取决于函数在哪里被调用</strong></p>
+
+<h3 id="如何使用this">如何使用this</h3>
+
+<h4 id="函数的调用位置">函数的调用位置</h4>
+<p>理解this的绑定过程之前，首先要理解函数的调用位置，调用位置就是函数在代码中被调用的位置。</p>
+
+<p>最重要的就是分析调用栈(就是为了到达当前执行位置所调用的所有函数)。我们关心的
+<strong>调用位置(函数在哪里调用)</strong>
+就是在当前正在执行的函数的前一个调用中。</p>
+<pre><code class="language-javascript">
+function baz() {
+  //当前调用栈是baz
+  // 因此当前调用位置是上一个调用，全局作用域中
+  console.log("baz");
+  bar(); //&lt;---- bar的调用位置(就是在函数baz中)
+}
+
+function bar() {
+  //当前调用栈是baz- ---&gt;bar
+  //因此当前的调用位置在baz中
+  console.log("bar");
+  foo(); //&lt;---- foo的调用位置
+}
+
+function foo() {
+  //当前调用栈是baz ----&gt; bar ----&gt; foo
+  //因此当前的调用位置在bar中
+  debugger;
+  console.log("foo");
+}
+
+baz(); //&lt;---- baz的调用位置
+
+</code></pre>
+
+<h4 id="绑定的规则">绑定的规则</h4>
+
+<h5 id="1-默认绑定">1. 默认绑定</h5>
+<p>首先是最常见的函数调用方式: 独立函数调用。</p>
+<pre><code class="language-javascript">
+function foo() {
+  console.log(this.a);
+}
+
+var a = 2;
+
+foo();//2
+
+</code></pre>
+<p>PS:声明在全局作用域的变量a就是全局对象的一个同名属性。</p>
+
+<p>当我们调用foo()函数时，this.a被解析成全局变量a.为什么？因为在本例中，函数调用时调用位置是在全局作用域中，应用了this的默认绑定，因此this执行全局对象。</p>
+
+<p>如何判断这里应用了默认绑定呢？分析调用位置来看foo()是如何调用的。foo()是直接使用不带任何修饰的函数引用进行的调用，因此只能使用默认绑定， 无法应用其他规则。</p>
+
+<p>如果使用严格模式，则无法将全局对象应用于默认绑定，因此this会绑定到undefined</p>
+
+<h5 id="2-隐式绑定">2. 隐式绑定</h5>
+<p>调用位置是否有上下文对象，或者说是否被某个对象拥有或包含。</p>
+
+<pre><code class="language-javascript">
+function foo() {
+  debugger;
+  console.log(this.a);
+}
+
+var obj = {
+  a: 2,
+  foo: foo
+}
+
+obj.foo();
+//当采用obj.foo()调用函数时，一个新的执行上下文被创建出来，通过之前的分析我们知道，创建一个执行上下文分为两个过程，一个是建立阶段，一个是代码执行阶段。this的绑定就发生在建立阶段。由于foo()函数的调用是通过obj.foo()实现的，所以此时this是绑定到obj对象上的。
+
+//通过chrome代码调试工具我们也可以看到，只有进入了函数foo()内部，local Scope中的this才会变为obj对象，这也验证了我们之前的总结。
+//
+
+</code></pre>
+<p>需要注意的是foo()函数的声明方式，以及之后是如何被当作引用属性添加到obj对象中的。
+无论是直接在obj中定义还是先定义然后再为obj对象添加引用属性，这个foo函数严格意义上说都不属于obj对象。
+然而调用位置会使用obj上下文来引用函数，因为我们可以认为函数被调用时obj对象”拥有”或者”包含”它。</p>
+
+<p>当foo被调用时，它的前面确实加上了对obj的引用。当函数引用有上下文对象时，隐式绑定规则会把函数调用的this绑定到这个上下文对象。</p>
+
+<p><strong>隐式丢失</strong>
+常见的this绑定问题就是被隐式绑定的函数会丢失绑定对象，也就是说此函数会应用默认绑定，从而把this绑定到全局对象或者undefined上去。</p>
+<pre><code class="language-javascript">function foo() {
+  console.log(this.a);''
+}
+
+var obj = {
+  a: 2,
+  foo: foo
+}
+
+var bar = obj.foo;
+
+var a = "oops, global";
+
+bar(); // oops, global
+
+</code></pre>
+<p>虽然bar是obj.foo的一个引用，但是实际上 bar引用的是foo函数本身，因此此时的bar()其实是一个不带任何修饰的函数调用，因此应用了默认绑定。</p>
+
+<p><strong>嵌套函数this绑定</strong></p>
+<pre><code class="language-javascript">
+var name = "clever coder";
+var person = {
+    name : "foocoder",
+    hello : function(sth){
+        var sayhello = function(sth) {
+            console.log(this.name + " says " + sth);
+        };
+    }
+}
+person.hello("hello world");
+//clever coder says hello world
+
+</code></pre>
+
+<p>在内部函数中，this没有按预想的绑定到外层函数对象上，而是绑定到了全局对象。这里普遍被认为是JavaScript语言的设计错误，因为没有人想让内部函数中的this指向全局对象。一般的处理方式是将this作为变量保存下来，一般约定为that或者self：</p>
+
+<pre><code class="language-javascript">
+var name = "clever coder";
+var person = {
+    name : "foocoder",
+    hello : function(sth){
+        var that = this; // 将外部函数绑定的this保存下来，然后在内部函数sayhello中使用
+        var sayhello = function(sth) {
+            console.log(that.name + " says " + sth);
+        };
+        sayhello(sth);
+    }
+}
+person.hello("hello world");
+//foocoder says hello world
+</code></pre>
+
+<p><strong>回调函数丢失this绑定也是非常常见的</strong></p>
+
+<pre><code class="language-javascript">
+function foo() {
+  console.log(this.a);
+}
+
+function doFoo(fn) {
+  //fn其实引用的是foo
+
+  fn();//&lt;---- 调用位置！
+}
+
+var obj = {
+  a: 2,
+  foo: foo
+};
+
+var a = "oops, global";
+
+doFoo(obj.foo); // oops, global
+
+
+</code></pre>
+<p>将obj.foo作为参数传递给doFoo，实际上就相当于var  bar = obj.foo, doFoo(bar).参数传递其实就是一种隐式赋值， 实际传递的就是一个没有任何修饰的函数，所以最后的绑定方式为默认绑定.</p>
+
+<p>可以通过bind绑定来修正上述问题。</p>
+<pre><code class="language-javascript">//prototype.js源码中bind的实现：可以参考一下
+Function.prototype.bind = function(){
+  var fn = this；//因为bind函数调用者为一个函数fn,函数实际上都是通过new Function得到的一个函数对象，这里的this其实就是指向函数fn本身。
+  var args = Array.prototype.slice.call(arguments);
+  var object = args.shift();
+
+  return function(){
+    return fn.apply(object,
+      args.concat(Array.prototype.slice.call(arguments)));
+  };
+};
+
+var person = {
+    name : "foocoder",
+    hello : function(sth){
+        var sayhello = function(sth) {
+            console.log(this.name + " says " + sth);
+        };
+    }
+}
+
+$("#some-ele").click(person.hello.bind(person));
+//相应元素被点击时，输出foocoder says hello world
+
+</code></pre>
+
+<h5 id="3-显式绑定call-apply-bind">3. 显式绑定(call apply bind)</h5>
+
+<p>在分析隐式绑定时，我们必须在一个对象的内部包含一个指向函数的属性，通过这个属性间接引用函数，从而把this间接绑定到这个对象上。
+如果我们不想在对象内部包含h函数引用，而想在某个对象上强制调用函数，此时就需要用到apply()函数或者call()函数了。</p>
+
+<p>它们的第一个参数是一个对象，在调用函数时，将其绑定到this上。</p>
+<pre><code class="language-javascript">
+function foo() {
+  console.log(this.a);
+}
+
+var obj = {
+  a: 2
+};
+
+foo.call(obj); // 2
+
+</code></pre>
+<p>通过foo.call(obj)我们可以在调用foo时强制把它的this绑定到obj上。</p>
+
+<p>可以使用bind实现硬绑定</p>
+<pre><code class="language-javascript">function bind(fn, obj) {
+  return function() {
+    return fn.apply(obj, arguments);
+  }
+}
+
+// bind具体使用以后补充
+</code></pre>
+
+<h5 id="4-new绑定">4. new绑定</h5>
+<p>在JavaScript中，构造函数只是一些使用new操作符时被调用的函数。它们不属于某个类，也不会实例化一个类。使用new函数来调用函数，会自动执行下面的操作:</p>
+
+<ol>
+  <li>创建一个全新的对象</li>
+  <li>这个新对象会被执行[[Prototype]]连接</li>
+  <li>这个新对象会绑定到函数调用的this</li>
+  <li>如果函数没有返回其他对象，那么new表达式中的函数调用就会自动返回这个新对象。</li>
+</ol>
+
+<pre><code class="language-javascript">
+function Person(name, age) {
+  this.name = name;
+  this.age = age;
+}
+
+var bobo = new Person("Hanwenbo", 26);
+console.log(bobo.name);
+
+</code></pre>
+
+<h4 id="优先级">优先级</h4>
+
+<p>new绑定 &gt; 显式绑定 &gt; 隐式绑定 &gt; 默认绑定</p>
+
+<h3 id="总结">总结</h3>
+<ol>
+  <li>
+    <p>当函数作为单独函数调用时，this指向全局对象（严格模式时，为undefined）</p>
+  </li>
+  <li>
+    <p>当函数作为对象的方法调用时，this指向该对象。</p>
+  </li>
+  <li>
+    <p>构造函数中的this指向新创建的对象</p>
+  </li>
+  <li>
+    <p>嵌套函数中的this不会继承上层函数的this，如果需要，可以用一个变量保存上层函数的this。</p>
+  </li>
+  <li>
+    <p>再总结的简单点，如果在函数中使用了this，只有在该函数直接被某对象调用时，该this才指向该对象。</p>
+  </li>
+  <li>
+    <p>多看开源项目代码,就会熟悉 this 的使用,现在只是一些简单的使用方法,没有形成很深刻的印象.</p>
+  </li>
+</ol>
+
+  ]]></description>
+</item>
+
+<item>
+  <title>JavaScript 深入理解 prototype</title>
+  <link>//javascript-prototype</link>
+  <author>nju520</author>
+  <pubDate>2016-11-20T00:00:00+08:00</pubDate>
+  <guid>//javascript-prototype</guid>
+  <description><![CDATA[
+  <h2 id="原型对象">原型对象</h2>
+<p>[[Prototype]]
+ 在面向对象语言中,类可以被复制(也就是实例化)多次,就像用模具制作东西一样.之所以会这样是因为实例化一个类就意味着”把类的行为复制到对象中”,对于每一个实例来说都会重复这个过程.</p>
+
+<p>但是在 javascript 中,并没有类似的复制机制. 我只能创建多个对象,然后让他们的[[Prototype]]对象关联到同一个对象. 但是在默认情况下并不会进行复制,因此这些对象之间并不会完全失去联系, 他们是互相关联的.</p>
+
+<pre><code class="language-javascript">
+ function Person() {
+   this.name = "hehe";
+ }
+
+ var xiaoming = new Person();
+</code></pre>
+
+<p>javascript 中采用 new Person()这种形式创建一个新对象,新对象的内部链接[[Prototype]]关联的是 Person.prototype对象.</p>
+
+<p><strong>我们并没有初始化一个类,实际上我们并没有从”类”中复制任何行为到一个对象中,只是让两个对象互相关联</strong></p>
+
+<p>==&gt; 我们可以采用 Object.create()方法直接实现一个对象关联到另外一个对象上,这样我们就可以充分发挥[[Prototype]]的威力(委托机制)并且避免不必要的麻烦(比如使用 new 的构造函数调用会生成.prototype 和.constructor引用)</p>
+
+<pre><code class="language-javascript">
+//create 方法的简易实现形式
+if(!Object.create) {
+  Object.create = function(obj) {
+    function F();
+    F.prototype = obj;
+    return new F();
+  };
+}
+</code></pre>
+
+<p>这段 polyfill 代码使用了一个一次性函数 F,我们通过改写它的.prototype 属性使其指向想要关联的对象, 然后再使用 new F()来构造一个新对象关联.</p>
+
+<p>==&gt; ES6可以采用 Object.setPrototypeOf(…)来直接修改对象的原型</p>
+<pre><code class="language-javascript">
+//ES6之前需要抛弃默认的 Bar.prototype
+Bar.prototype = Object.create(Foo.prototype);
+
+//ES6开始可以直接修改现有的 Bar.prototype
+Object.setPrototypeOf(Bar.prototype, Foo.prototype)
+
+</code></pre>
+
+<h3 id="内省检查类的身份">内省(检查”类”的身份)</h3>
+
+<p>__proto__属性大致实现过程如下</p>
+
+<pre><code class="language-javascript">
+ Object.defineProperty(Object.prototype, "__proto__", {
+   get: function() {
+     return Object.getPrototypeOf(this);
+   },
+
+   set: function(obj) {
+     Object.setPrototypeOf(this, obj);
+     return obj;
+   }
+ });
+
+</code></pre>
+
+<h2 id="对象的创建方式之原型模式">对象的创建方式之原型模式</h2>
+
+<pre><code class="language-javascript">function Person(name, age, job) {
+  this.name = name;
+  this.age = age;
+  this.job = job;
+}
+
+Person.prototype.description = function() {
+  console.log(this.name + this.age + this.job);
+}
+
+使用原型对象的好处就是让所有对象实例都共享它所包含的属性和方法
+
+### 理解原型对象
+
+**无论什么时候,只要创建了一个函数,就会根据一组特定的规则为该函数创建一个 prototype 属性,这个属性指向函数的原型对象.**
+**在默认情况下,函数的原型对象都有一个 constructor 属性,这个 constructor 属性指向函数**
+
+​```javascript
+
+//测试一个属性是否属于原型属性
+function hasPrototypeProperty(object, name) {
+  return !object.hasOwnProperty(name) &amp;&amp;(name in object);
+}
+</code></pre>
+
+<h3 id="更简单的原型语法以及需要注意的一点">更简单的原型语法以及需要注意的一点</h3>
+
+<pre><code class="language-javascript">
+function Person() {
+
+}
+
+Person.prototype = {
+  name: "bobo",
+  age: 22,
+  job: "programmer",
+  description: function() {
+    console.log(this.name + this.age + this.job);
+  }
+};
+
+var friend = new Person();
+alert(friend instanceof Object);//true
+alert(friend instanceof Person);//true
+
+alert(friend.constructor == Person);//false
+alert(friend.constructor == Object);//true
+
+</code></pre>
+<p>上面的代码中我们将 Person.prototype 设置为等于一个以字面量形式创建的对象,最终结果与上面的一样,但是有一个例外:
+<strong>constructor属性不再指向 Person 了,而是指向 Object</strong>
+原因: 当每创建一个函数时,系统就会同时创建它的 prototype 对象,这个对象也会自动获取 construcotr 属性,指向这个函数.也就是说,每一个原型对象都有一个 constructor 属性.</p>
+<pre><code class="language-javascript">var obj = new Person();
+obj.__proto__.constructor == Person;
+Person.prototype.constructor == Person;
+</code></pre>
+<p>现在我们Person.prototype = {…}的形式,相当于重写了默认的原型对象,这个原型对象是Object对象实例的原型对象,因此这个原型对象的 constructor 属性指向的是Object函数,不再指向原来的构造函数 Person.
+尽管 instanceof 能够返回正确的结果,但是 constructor 已经无法确认对象的类型了</p>
+<pre><code class="language-javascript">
+var obj = new Object();//等价于 var obj = {}
+obj.__proto__.constructor == Object
+
+</code></pre>
+
+<p>可以显式地设定原型的 constructor 属性,这样就确保通过 constructor 属性访问到正确的构造函数.</p>
+<pre><code class="language-javascript">
+
+function Person() {
+
+}
+
+Person.prototype = {
+  constructor: Person,
+  name: "bobo",
+  age: 22,
+  job: "programmer",
+  description: function() {
+    console.log(this.name + this.age + this.job);
+  }
+};
+
+
+</code></pre>
+<p>显式定义的 constructor 属性会导致它的[[Enumerable]]特性被设置为 true.默认情况下,原生的 constructor 属性是不可枚举的,因此如果想让 Enumerable 为默认的 false, 可以使用 Object.defineProperty</p>
+
+<pre><code class="language-javascript">
+
+
+function Person() {
+
+}
+
+Person.prototype = {
+  name: "bobo",
+  age: 22,
+  job: "programmer",
+  description: function() {
+    console.log(this.name + this.age + this.job);
+  }
+};
+
+Object.defineProperty(Person.prototype, "constructor", {
+  enumerable: false,
+  value: Person
+})
+</code></pre>
+
+<h3 id="原型的动态性">原型的动态性</h3>
+<p>由于在原型上查找值的过程是一次搜索,因此我们对原型对象所做的任何修改都能够立即从实例中体现-即使是先创建了实例然后修改原型也是如此</p>
+<pre><code class="language-javascript">
+var friend = new Person();
+
+Person.prototype.sayHi = function() {
+  alert("Hi");
+}
+
+friend.sayHi();//Hi
+
+</code></pre>
+<p>尽管可以随时为原型添加属性和方法,并且修改能够立即在所有的实例中反映出来,但是如果是<strong>重写整个原型对象</strong>,那么情况就不一样.
+调用构造函数时为实例添加一个指向最初原型的[[prototype]]指针,如果把原型对象修改为另外一个对象就切断了构造函数和最初原型之间的关系.
+<strong>实例中的__ proto__指针仅仅指向原型,而不是指向构造函数</strong></p>
+
+<pre><code class="language-javascript">
+
+function Person() {
+
+}
+
+var friend = new Person();
+
+
+Person.prototype = {
+  name: "bobo",
+  age: 22,
+  job: "programmer",
+  description: function() {
+    console.log(this.name + this.age + this.job);
+  }
+};
+
+var myself = new Person();
+
+myself.description();//正常显示结果  bobo22programmer
+
+friend.description();//error
+//friend 指向的最初的原型,最初的原型并没有添加任何属性和方法
+//之后我们手动修改了 Person.prototype
+//但是实例对象并不指向这个最新的原型对象
+</code></pre>
+
+  ]]></description>
+</item>
+
+<item>
+  <title>JavaScript 深入理解 对象 (一)</title>
+  <link>//javascript-object</link>
+  <author>nju520</author>
+  <pubDate>2016-11-04T00:00:00+08:00</pubDate>
+  <guid>//javascript-object</guid>
+  <description><![CDATA[
+  <h2 id="javascript对象">Javascript对象</h2>
+
+<pre><code class="language-javascript">var person = {
+  name: 'hanwenbo',
+  age: 29,
+  job: "code"
+}
+
+</code></pre>
+<p>上面的代码就是创建了一个 person 对象, 并为其添加了三个属性: name age job.</p>
+
+<h3 id="属性类型">属性类型</h3>
+<p>ECMA 定义了一些只在内部采用的特性(attribute),这些特性描述了属性(property)的各种特征.
+这些特性是为了实现Javascript 引擎用的内部属性. Javascript无法直接访问这些属性.我们采用[[ Enumerable]]的形式来表示对象的内部特性.</p>
+
+<p>ECMA 中有两种属性: 数据属性和访问器属性</p>
+
+<h4 id="数据属性">数据属性</h4>
+<p>数据属性包含一个数据值的位置.在这个位置可以读取和写入值.通俗地讲,数据属性就是我们常见的对象的属性(另外一个是对象的方法)
+数据属性有4个描述其行为的特性</p>
+
+<ul>
+  <li>[[configurable]]: 表示能否通过delete 删除属性从而重新定义属性,能够修改属性的特性,或者能否把属性修改为访问器属性.</li>
+  <li>[[Enumerable]]: 能否通过 for-in 循环返回属性</li>
+  <li>[[Writable]]: 表示能够修改属性的值.</li>
+  <li>[[Value]]: 表示这个属性的数据值.</li>
+</ul>
+
+<pre><code class="language-javascript">var person = {}
+Object.defineProperty(person, "name", {
+  configurable: false,
+  writable: false,
+  value: "hanwenbo"
+})
+alert(person.name); //hawnenbo
+person.name = "bobo";
+alert(person.name); //hanwenbo
+
+delete person.name;// 因为 configurable 设置为 false,因为无法删除对象的name 属性
+
+//一旦把对象的属性设置为configurable: false,此时就不能再把它变回可配置了.
+// 以下代码抛出错误
+// VM633:1 Uncaught TypeError: Cannot redefine property: name
+Object.defineProperty(person, "name", {
+  configurable: true,
+  value: "Hanwenbo"
+})
+
+</code></pre>
+<p>可以通过Object.defineProperty修改对象的属性默认值.</p>
+<ul>
+  <li>在调用Object.defineProperty方法创建一个新的属性时,如果不明确指定, configurable enumerable writable 默认都是 false.</li>
+  <li>如果在调用 Object.defineProperty 只是修改已经存在的属性,那么就无限制.</li>
+</ul>
+
+<h4 id="访问器属性">访问器属性</h4>
+
+<p>访问器属性不包含数据值,他们是一对 getter setter 函数.</p>
+<ul>
+  <li>在读取访问器属性时,调用 getter 函数,这个函数负责返回有效的值</li>
+  <li>在写入的访问器属性时,调用 setter 函数,这个函数决定如何处理数据.</li>
+</ul>
+
+<p>访问器属性也有四个特性( attribute):</p>
+<ul>
+  <li>[[Configurable]]: 能否通过删除属性从而重新定义属性.这个特性默认是 true</li>
+  <li>[[Enumerable]]: 能否通过 for-in 循环返回属性.这个特性默认也是 true</li>
+  <li>[[Get]]: 在读取属性时调用的函数,默认是 undefined</li>
+  <li>[[Set]]: 在写入属性时调用的函数,默认是 undefined</li>
+</ul>
+
+<p>老版浏览器如果需要创建访问器属性,一般使用两种非标准的方法</p>
+<ul>
+  <li><strong>defineGetter</strong></li>
+  <li><strong>defineSetter</strong></li>
+</ul>
+
+<p>访问器属性不能直接定义,必须通过 Object.defineProperty()来定义.</p>
+
+<pre><code class="language-javascript">
+var book = {
+  //_year:表示只能通过对象方法访问的属性,但是我在浏览器console下可以直接访问 book._year
+  _year: 2004,
+  edition: 1
+}
+
+//设置访问器属性 year, 设置其 Get Set 特性
+Object.defineProperty(book, "year", {
+  get: function() {
+    return this._year;
+  }
+  set: function(newValue) {
+    if(newValue &gt; 2004) {
+      this._year = newValue;
+      this.edition += newValue - 2004;
+    }
+  }
+})
+
+book.year = 2005; //设置属性 year, 实际上调用的是 year 属性的 set 特性,修改属性_year 的 value
+alert(book.year);//访问 book.year 实际上是调用的year属性的 get 特性
+alert(book.edition); //访问器常见方式,即设置一个属性的值会导致其他属性发生变化.
+</code></pre>
+
+<h3 id="定义多个属性">定义多个属性</h3>
+
+<pre><code>var book = {};
+
+Object.defineProteries(book, {
+  _year: {
+    writable: true,
+    value: 2004
+  },
+
+  edition: {
+    writable: true,
+    value: 1
+  },
+
+  year: {
+    get: function() {
+      return this._year;
+    },
+
+    set: function(newValue) {
+      if(newValue &gt; 2004) {
+        this._year = newValue;
+        this.edition += newValue - 2004;
+      }
+    }
+  }
+});
+
+</code></pre>
+
+<h3 id="读取属性的特性">读取属性的特性</h3>
+
+<p>使用 Object.getOwnProteryDescriptor()方法,可以取得给定属性的描述符.返回值是一个对象.如果是访问器属性,那么这个对象的属性有 configurable enumerable get set;如果是数据属性,这个对象的属性有 configurable enumerable writable value</p>
+
+<pre><code class="language-javascript">var book = {}
+Object.defineProperties(book, {
+  _year: {
+    value: 2004
+  },
+
+  edition: {
+    value: 1
+  },
+
+  year: {
+    get: function() {
+      return this._year;
+    },
+
+    set: function(newValue) {
+      if(newValue &gt; 2004) {
+        this._year = newValue;
+        this.edition += newValue - 2004;
+      }
+    }
+  }
+});
+
+var description = Object.getOwnPropertyDescriptor(book, "_year");
+alert(descriptor.value);  // 2004
+alert(descriptor.configrable);  //false(首次用 Object.definePropery 创建属性时, configurable 默认是 false)
+// writable: false, enumerable: false
+alert(descriptor.get);  //undefinded
+
+var descriptor = Object.getOwnPropertyDescriptor(book, "year");
+alert(descriptor.value);  // undefined
+// configurable enumerable 默认应该都是 false 吧
+alert(descriptor.configrable);  // false
+alert(descriptor.enumerable);  // false
+alert(descriptor.get);  //"function"
+
+</code></pre>
+
+<h2 id="创建对象">创建对象</h2>
+
+<h3 id="工厂模式">工厂模式</h3>
+
+<pre><code class="language-javascript">
+function createPerson(name, age, job) {
+  var obj = new Object();
+  //var obj = {};
+  obj.name = name;
+  obj.age = age;
+  obj.job = job;
+  obj.description = function() {
+    console.log(this.name + this.age + this.job);
+  }
+  return obj;
+}
+
+var bobo = createPerson("hanwenbo", 27, "programmer");
+bobo.description(); //hanwenbo27programmer
+
+</code></pre>
+<p>工厂模式无法获悉对象的类型</p>
+
+<h3 id="构造函数模式">构造函数模式</h3>
+<pre><code class="language-javascript">
+function Person(name, age, job) {
+  this.name = name;
+  this.age = age;
+  this.job = job;
+  //下面一行代码默认执行.也就是让新对象的原型的 constructor 属性指向 构造函数 Person
+  //this.__proto__.constructor = Person;
+
+  this.description = function() {
+    console.log(this.name + this.age + this.job);
+  }
+}
+
+var yanzi = new Person("yanzi", 22, "teacher");
+yanzi.description();//yanzi22teacher
+
+</code></pre>
+
+<p>构造函数创建对象经过四个步骤:</p>
+<ul>
+  <li>创建一个新对象 obj, 将obj的原型对象指向构造函数的prototype属性</li>
+  <li>将构造函数的作用域赋值给新对象 obj(因此 this 就指向这个新对象),换句话说,就是让新对象调用构造函数, eg: obj.Person(“yanzi”, 22, “teacher”),所以构造函数的 this 自然执行的是隐式绑定. (这样说虽然不甚严谨, 但是方便理解)</li>
+  <li>执行构造函数中的代码,也就是为这个新对象添加属性和方法</li>
+  <li>
+    <p>如果构造函数没有显式地返回一个对象,默认就返回新创建的对象</p>
+  </li>
+  <li>每个新创建的对象都有一个属性 constructor,该属性指向 constructor. yanzi instanceof Person == true</li>
+</ul>
+
+<p><strong>创建自定义的构造函数意味着可以将它的实例标识为一种特定的类型</strong></p>
+
+<h4 id="构造函数的缺点">构造函数的缺点</h4>
+<p>每次构造实例时,都会重新建立实例上的方法,实例的方法本质上也是一种对象, 因此每定义一个函数,实际上就是实例化一个函数对象</p>
+<pre><code>function Person(name, age, job) {
+  this.name = name;
+  this.age = age;
+  this.job = job;
+
+  this.description = new Function() {
+    console.log(this.name + this.age + this.job);
+  }
+
+}
+</code></pre>
+
+  ]]></description>
+</item>
+
+
+  </channel>
+</rss>

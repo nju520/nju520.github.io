@@ -81,22 +81,22 @@ User.joins(:orders).distinct.count # =&gt; 389
 <pre><code class="language-ruby">class Category &lt; ApplicationRecord
   has_many :articles
 end
- 
+
 class Article &lt; ApplicationRecord
   belongs_to :category
   has_many :comments
   has_many :tags
 end
- 
+
 class Comment &lt; ApplicationRecord
   belongs_to :article
   has_one :guest
 end
- 
+
 class Guest &lt; ApplicationRecord
   belongs_to :comment
 end
- 
+
 class Tag &lt; ApplicationRecord
   belongs_to :article
 end
@@ -118,7 +118,7 @@ end
 <pre><code class="language-ruby">Article.joins(comments: :guest)
 # =&gt; Article.joins({comments: :guest})
 
-# =&gt; SELECT articles.* from articles 
+# =&gt; SELECT articles.* from articles
 INNER JOIN comments ON comments.article_id = articles.id
 INNER JOIN guest    ON guest.comment_id = comments.id
 </code></pre>
@@ -129,7 +129,7 @@ INNER JOIN guest    ON guest.comment_id = comments.id
 
 <pre><code class="language-ruby">Category.joins(articles: [{comments: :guest}, :tags])
 
-# =&gt; SELECT categories.* from categories 
+# =&gt; SELECT categories.* from categories
 INNER JOIN articles ON articles.category_id = categories.id
 INNER JOIN comments ON comments.article_id  = articles.id
 INNER JOIN guests   ON guests.comment_id    = comments.id
@@ -155,13 +155,30 @@ INNER JOIN tags     ON tags.article_id		= artciles.id
 time_range = (Time.now.midnight - 1.day)..Time.now.midnight
 Client.joins(:orders).where('orders.created_at' =&gt; time_range)
 
-# =&gt; SELECT clients.* from clients 
+# =&gt; SELECT clients.* from clients
 INNER JOIN orders ON orders.client_id = cliens.id
 WHERE orders.created_at BETWEEN '2018-04-30 16:00:00' AND '2018-05-01 16:00:00'
 
 # 2. 散列条件
 time_range = (Time.now.midnight - 1.day)..Time.now.midnight
 Client.joins(:orders).where(orders: { created_at: time_range })
+</code></pre>
+
+<h3 id="使用-merge">使用 merge</h3>
+
+<blockquote>
+  <p>Merges in the conditions from <code>other</code>, if <code>other</code> is an <a href="http://api.rubyonrails.org/classes/ActiveRecord/Relation.html">ActiveRecord::Relation</a>. Returns an array representing the intersection of the resulting records with <code>other</code>, if <code>other</code> is an array.</p>
+</blockquote>
+
+<p>通过官方的文档我们可以看出 <code>merge</code>是可以连接其他的<code>ActiveRecord::Relation</code>的,这样可以简化我们的查询方法.</p>
+
+<pre><code class="language-ruby">Post.where(published: true).joins(:comments).merge( Comment.where(spam: false) )
+# Performs a single join query with both where conditions.
+
+recent_posts = Post.order('created_at DESC').first(5)
+Post.where(published: true).merge(recent_posts)
+# Returns the intersection of all published posts with the 5 most recently created posts.
+# (This is just an example. You'd probably want to do this with a single query!)
 </code></pre>
 
 <h3 id="left_outer_joins">LEFT_OUTER_JOINS</h3>
@@ -172,11 +189,13 @@ Client.joins(:orders).where(orders: { created_at: time_range })
 
 <p>左外联结一般用来选择一组记录, 不管他们是否具有关联记录.</p>
 
-<pre><code class="language-ruby">User.left_outer_joins(:orders).distinct.select('users.name AS name, orders.number AS number)
+<pre><code class="language-ruby">User.left_outer_joins(:orders).distinct.select('users.name AS name, orders.number AS number')
 
 # =&gt; SELECT DISTINCT users.name AS name, orders.number AS number
 LEFT OUTER JOIN orders ON orders.user_id = users.id
 </code></pre>
+
+<p>PS: 不论是<code>joins</code>还是<code>left_joins</code>,如果在后面添加<code>where</code>条件过滤, 返回的结果都是经过过滤之后的数据集合.</p>
 
 <h3 id="联结表返回的对象">联结表返回的对象</h3>
 
@@ -230,7 +249,7 @@ end
 
 <pre><code class="language-ruby">Article.includes(:comments).where(comments: {visible: true})
 
-# 
+#
 SELECT "articles"."id" AS t0_r0, ... "comments"."updated_at" AS t1_r5 FROM "articles" LEFT OUTER JOIN "comments" ON "comments"."article_id" = "articles"."id" WHERE (comments.visible = 1)
 </code></pre>
 
@@ -314,7 +333,6 @@ SELECT "articles"."id" AS t0_r0, ... "comments"."updated_at" AS t1_r5 FROM "arti
 <p>参考文章:</p>
 
 <p>https://goiabada.blog/to-join-or-not-to-join-an-act-of-includes-f6728fcefea3</p>
-
 
   ]]></description>
 </item>
