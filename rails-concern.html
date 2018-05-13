@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- [[! Document Settings ]] -->
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- [[! Page Meta ]] -->
+    <title>
+      
+        Rails Concern 的使用以及源码解读
+      
+    </title>
+    
+    <meta name="description" content="熟悉Rails的同学肯定知道, Rails类使用include SomeConcern 包含模块后可以同时获得实例方法和类方法,这是如何实现的呢? 答案需要到Active Support 类库的 Concern 模块中寻找. ActiveSupport::Concern模块修改了Ruby的对象模型, 它封装了“在我的类中添加类方法”这个功能, 并且可以在类中引入其他模块而不造成链式包含的问题." />
+    
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="/assets/images/favicon.ico" >
+
+    <!-- [[! Styles'n'Scripts ]] -->
+    <link rel="stylesheet" type="text/css" href="/assets/css/screen.css" />
+    <link rel="stylesheet" type="text/css"
+      href="//fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400" />
+
+    <link rel="stylesheet" type="text/css" href="/assets/css/prism.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/toc.css" />
+
+    <!-- [[! Ghost outputs important style and meta data with this tag ]] -->
+    <link rel="canonical" href="/" />
+<meta name="referrer" content="origin" />
+<link rel="next" href="/page2/" />
+
+<meta property="og:site_name" content="雄关漫道真如铁" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Rails Concern 的使用以及源码解读" />
+
+<meta property="og:description" content="熟悉Rails的同学肯定知道, Rails类使用include SomeConcern 包含模块后可以同时获得实例方法和类方法,这是如何实现的呢? 答案需要到Active Support 类库的 Concern 模块中寻找. ActiveSupport::Concern模块修改了Ruby的对象模型, 它封装了“在我的类中添加类方法”这个功能, 并且可以在类中引入其他模块而不造成链式包含的问题." />
+
+<meta property="og:url" content="http://hwbnju.com/rails-concern" />
+<meta property="og:image" content="" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Rails Concern 的使用以及源码解读" />
+
+<meta name="twitter:description" content="熟悉Rails的同学肯定知道, Rails类使用include SomeConcern 包含模块后可以同时获得实例方法和类方法,这是如何实现的呢? 答案需要到Active Support 类库的 Concern 模块中寻找. ActiveSupport::Concern模块修改了Ruby的对象模型, 它封装了“在我的类中添加类方法”这个功能, 并且可以在类中引入其他模块而不造成链式包含的问题." />
+
+<meta name="twitter:url" content="http://hwbnju.com/rails-concern" />
+<meta name="twitter:image:src" content="" />
+
+<script type="application/ld+json">
+  {
+  "@context": "http://schema.org",
+  "@type": "Website",
+  "publisher": "nju520",
+  "url": "http://hwbnju.com/rails-concern",
+  "image": "",
+  "description": "熟悉Rails的同学肯定知道, Rails类使用include SomeConcern 包含模块后可以同时获得实例方法和类方法,这是如何实现的呢? 答案需要到Active Support 类库的 Concern 模块中寻找. ActiveSupport::Concern模块修改了Ruby的对象模型, 它封装了“在我的类中添加类方法”这个功能, 并且可以在类中引入其他模块而不造成链式包含的问题."
+  }
+</script>
+
+<meta name="generator" content="Jekyll 3.0.0" />
+<link rel="alternate" type="application/rss+xml" title="雄关漫道真如铁" href="/feed.xml" />
+
+    <!-- Add Google Analytics  -->
+    <!-- Google Analytics Tracking code -->
+<script>
+ (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+ })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ ga('create', 'UA-114647632-1', 'auto');
+ ga('send', 'pageview', location.pathname);
+
+</script>
+
+<!-- Baidu Analytics  Manager -->
+<script>
+ var _hmt = _hmt || [];
+ (function() {
+   var hm = document.createElement("script");
+   hm.src = "https://hm.baidu.com/hm.js?e9208862845c46a0f79e7828f495e407";
+   var s = document.getElementsByTagName("script")[0];
+   s.parentNode.insertBefore(hm, s);
+ })();
+</script>
+
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-PWFC85B');</script>
+  <!-- End Google Tag Manager -->
+
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-114647632-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-114647632-1');
+</script>
+
+  </head>
+  <body class=" post-template nav-closed">
+    <!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PWFC85B"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+
+    <div class="nav">
+  <h3 class="nav-title">Home</h3>
+  <a href="#" class="nav-close">
+    <span class="hidden">Close</span>
+  </a>
+  <ul>
+    <li class="nav-home " role="presentation"><a href="/">Home</a></li>
+    <li class="nav-ruby " role="presentation"><a href="/tag/ruby">Ruby</a></li>
+    <li class="nav-javascript " role="presentation"><a href="/tag/javascript">JavaScript</a></li>
+    <li class="nav-server " role="presentation"><a href="/tag/server">Server</a></li>
+    <li class="nav-database " role="presentation"><a href="/tag/database">Database</a></li>
+  </ul>
+  <a class="subscribe-button icon-feed" href="/feed.xml">Subscribe</a>
+</div>
+<span class="nav-cover"></span>
+
+
+    <div class="site-wrapper">
+
+      <!-- [[! Everything else gets inserted here ]] -->
+      <!-- < default -->
+
+<!-- The comment above "< default" means - insert everything in this file into -->
+<!-- the [body] of the default.hbs template, which contains our header/footer. -->
+
+<!-- Everything inside the #post tags pulls data from the post -->
+<!-- #post -->
+
+<header class="main-header post-head no-cover">
+  <nav class="main-nav overlay clearfix">
+    <a class="back-button icon-arrow-left" href="/">Home</a>
+    <a class="menu-button icon-menu" href="#"><span class="word">Menu</span></a>
+  </nav>
+</header>
+
+<main class="content" role="main">
+
+  <article class="post">
+
+    <header class="post-template post-header">
+      <h1 class="post-title">Rails Concern 的使用以及源码解读</h1>
+      <section class="post-meta">
+        <time class="post-date" datetime="2016-04-15">15 Apr 2016</time>
+        <!-- <a href='/'>nju520</a> -->
+        <!-- [[tags prefix=" on "]] -->
+        
+        
+        <a href='/tag/Ruby'>Ruby</a>
+        
+        <a href='/tag/Rails'>Rails</a>
+        
+        <a href='/tag/Concern'>Concern</a>
+        
+        
+      </section>
+    </header>
+
+    <section class="post-content">
+
+      <ul class="section-nav">
+<li class="toc-entry toc-h2"><a href="#使用-activesupportconcern">使用 ActiveSupport::Concern</a></li>
+<li class="toc-entry toc-h2"><a href="#古老的做法">古老的做法</a></li>
+<li class="toc-entry toc-h2"><a href="#深入-activesupportconcern-源码-解读">深入 ActiveSupport::Concern 源码 解读</a>
+<ul>
+<li class="toc-entry toc-h4"><a href="#第一种情况">第一种情况</a></li>
+<li class="toc-entry toc-h4"><a href="#第二种情况">第二种情况</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#总结">总结</a></li>
+</ul><h2 id="使用-activesupportconcern">
+<a id="使用-activesupportconcern" class="anchor" href="#%E4%BD%BF%E7%94%A8-activesupportconcern" aria-hidden="true"><span class="octicon octicon-link"></span></a>使用 ActiveSupport::Concern</h2>
+
+<p>熟悉 Ruby on Rails 的同学肯定使用过<code>Concern</code>来让Rails类包含模块的同时获得实例方法和类方法. 举个例子:</p>
+
+<pre><code class="language-ruby">require 'active_support'
+module ConcernA
+  extend ActiveSupport::Concern
+
+  included do
+    enum status: { unconnect: 0, connected: 1, success: 2, failed: 3 }
+    scope :active, -&gt; { where(active: true) }
+    scope :with_name, -&gt; (name) { where(name: name) }
+  end
+
+  def hello_world
+    'hello world'
+  end
+
+  module ClassMethods
+    def score_rules
+      %w(red_rec red_combo nice_repay)
+    end
+  end
+
+end
+
+class User &lt; ApplicationRecord
+  include ConcernA
+end
+
+User.score_rules
+#=&gt;  ["red_rec", "red_combo", "nice_repay"]
+
+User.new.hello_world
+#=&gt; "hello world "
+
+</code></pre>
+
+<p>在Rail2 时代, Active Model类库还未出现, 如果像现在引入一个模块时需要一点小技巧</p>
+
+<h2 id="古老的做法">
+<a id="古老的做法" class="anchor" href="#%E5%8F%A4%E8%80%81%E7%9A%84%E5%81%9A%E6%B3%95" aria-hidden="true"><span class="octicon octicon-link"></span></a>古老的做法</h2>
+
+<pre><code class="language-ruby">module ConcernA
+  def self.included(base)
+    base.extend ClassMethods
+    base.class_eval do
+      enum status: { unconnect: 0, connected: 1, success: 2, failed: 3 }
+      scope :active, -&gt; { where(active: true) }
+      scope :with_name, -&gt; (name) { where(name: name) }
+    end
+
+    include InstanceMethods
+  end
+
+  module InstanceMethods
+    def hello_world
+      'hello world'
+    end
+  end
+
+  module ClassMethods
+    def score_rules
+      %w(red_rec red_combo nice_repay)
+    end
+  end
+end
+
+</code></pre>
+<p>从代码可知, 通过 <code>extend</code>以及<code>class_eval</code>为<code>base</code>类定义了<code>ClassMethods</code>中的类方法, 通过<code>include</code>为<code>base</code>类定义了<code>InstanceMethods</code>中的实例方法.</p>
+
+<p>但是这样实现会有一个比较严重的问题, 也就是<code>链式包含</code>.
+考虑一下代码:</p>
+
+<pre><code class="language-ruby">module Foo
+  def self.included(base)
+    base.class_eval do
+      def self.method_injected_by_foo
+        ...
+      end
+    end
+  end
+end
+
+module Bar
+  include Foo
+  def self.included(base)
+    base.method_injected_by_foo
+  end
+end
+
+class Host
+  include Foo # We need to include this dependency for Bar
+  include Bar # Bar is the module that Host really needs
+end
+</code></pre>
+
+<p>上面例子中 <code>Host</code> 为了 <code>include Bar</code>，必须得先 <code>include Bar</code> 依赖的<code> Foo</code>，这是因为 Bar 在 <code>include Foo</code> 时，只是为 <code>Bar extend method_injected_by_foo</code> 方法，所以 Host 必须显式的 <code>include Foo</code>，才能够 <code>extend method_injected_by_foo</code> 方法。</p>
+
+<p>如果使用<code>ActiveSupport::Concern</code>来完成, 代码就简洁很多:</p>
+
+<pre><code class="language-ruby">module Foo
+  extend ActiveSupport::Concern
+  included do
+    class_eval do
+      def self.method_injected_by_foo
+        ...
+      end
+    end
+  end
+end
+
+module Bar
+  extend ActiveSupport::Concern
+  include Foo
+
+  included do
+    self.method_injected_by_foo
+  end
+end
+
+class Host
+  include Bar # works, Bar takes care now of its dependencies
+end
+</code></pre>
+
+<p>Bar 和 Foo 都 <code>extend ActiveSupport::Concern</code> 后，<code>Host include Bar </code>已经不需要事先 <code>mix Foo</code>.</p>
+
+<h2 id="深入-activesupportconcern-源码-解读">
+<a id="深入-activesupportconcern-源码-解读" class="anchor" href="#%E6%B7%B1%E5%85%A5-activesupportconcern-%E6%BA%90%E7%A0%81-%E8%A7%A3%E8%AF%BB" aria-hidden="true"><span class="octicon octicon-link"></span></a>深入 ActiveSupport::Concern 源码 解读</h2>
+
+<p>直接查看<code>ActiveSupport::Concern</code>的相关源码:</p>
+<pre><code class="language-ruby"># frozen_string_literal: true
+module ActiveSupport
+  module Concern
+    class MultipleIncludedBlocks &lt; StandardError #:nodoc:
+      def initialize
+        super "Cannot define multiple 'included' blocks for a Concern"
+      end
+    end
+
+    def self.extended(base) #:nodoc:
+      base.instance_variable_set(:@_dependencies, [])
+    end
+
+    def append_features(base)
+      if base.instance_variable_defined?(:@_dependencies)
+        base.instance_variable_get(:@_dependencies) &lt;&lt; self
+        false
+      else
+        return false if base &lt; self
+        @_dependencies.each { |dep| base.include(dep) }
+        super
+        base.extend const_get(:ClassMethods) if const_defined?(:ClassMethods)
+        base.class_eval(&amp;@_included_block) if instance_variable_defined?(:@_included_block)
+      end
+    end
+
+    def included(base = nil, &amp;block)
+      if base.nil?
+        raise MultipleIncludedBlocks if instance_variable_defined?(:@_included_block)
+
+        @_included_block = block
+      else
+        super
+      end
+    end
+
+    def class_methods(&amp;class_methods_module_definition)
+      mod = const_defined?(:ClassMethods, false) ?
+        const_get(:ClassMethods) :
+        const_set(:ClassMethods, Module.new)
+
+      mod.module_eval(&amp;class_methods_module_definition)
+    end
+  end
+end
+
+　
+</code></pre>
+<p>主要是两个方法extend和append_features
+当模块扩展Concern时候，会调用钩子方法extended。在这个方法中为扩展它的类定义了一个<code>@_dependencies</code>.默认值是[].
+方法append_features是一个内核方法。和module#included类似。</p>
+<ul>
+  <li>相同点：当包含一个模块的时候被调用。</li>
+  <li>不同点：included默认是空的，只有覆写之后才会有内容。而append_features则包含有实际的动作。用于检查被包含模块是否已经在包含类的祖先链上，如果不在则将该模块加入其祖先链。</li>
+</ul>
+
+<p>当一个模块扩展ActiveSupport::Concern,我们称其为一个concern
+接着我们来分析append_features的源码：
+主要分为两种情况：</p>
+<h4 id="第一种情况">
+<a id="第一种情况" class="anchor" href="#%E7%AC%AC%E4%B8%80%E7%A7%8D%E6%83%85%E5%86%B5" aria-hidden="true"><span class="octicon octicon-link"></span></a>第一种情况</h4>
+<pre><code class="language-ruby">module MyConcernB
+  extend ActiveSupport::Concern
+
+  def an_instance_methodb
+    "an_instance_method "
+  end
+
+  module ClassMethods
+    def a_class_methodb
+      "a_class_method"
+    end
+  end
+  def self.instance_check
+    instance_variable_get(:@_dependencies)
+  end
+  include MyConcernA
+end
+</code></pre>
+
+<p>代码会先判断base是否是一个concern.
+当前是一个concern(MyConcernB)在包含一个concern(MyConcernA).此时包含的时候并没有真正的执行包含的动作，只是把链接放到一个依赖图中。也就是将MyConcernA放入数组<code>@_dependencies</code>.</p>
+
+<pre><code class="language-ruby">MyConcernB.instance_check
+ =&gt; [MyConcernA]
+# MyConcernB.a_class_method
+# NoMethodError: undefined method `a_class_method' for MyConcernB:Module
+</code></pre>
+
+<h4 id="第二种情况">
+<a id="第二种情况" class="anchor" href="#%E7%AC%AC%E4%BA%8C%E7%A7%8D%E6%83%85%E5%86%B5" aria-hidden="true"><span class="octicon octicon-link"></span></a>第二种情况</h4>
+<pre><code class="language-ruby">class MyClass
+  include MyConcernB
+end
+</code></pre>
+
+<p>此时就是else后边的情况了。
+首先会判断MyClass 是否继承了MyConcernB,也就是看MyConcernB是否在MyClass的继承链中。
+如果没有就进行最关键的步骤：concern(MyConcernB)中的依赖（也就是<code>@_dependencies</code>,上文已经打印出了值）会被递归包含到类Myclass中。这种最小化的依赖管理方式解决了之前链式包含的问题。
+此处的 <code>@_dependencies.each { |dep| base.send(:include, dep) }</code>
+就相当于在MyClass中.</p>
+
+<pre><code class="language-ruby">include MyConcernA
+</code></pre>
+
+<p>把所有的依赖的concern(也就是<code>@_dependencies</code>中的值)都加入类的祖先链之后，
+需要把包含类自己（此处相当于MyConcernB）也加入类的继承链中。这个通过调用super来实现。
+最后是要通过ClassMethods模块来扩展类，就像最初做的事情一样。</p>
+
+<h2 id="总结">
+<a id="总结" class="anchor" href="#%E6%80%BB%E7%BB%93" aria-hidden="true"><span class="octicon octicon-link"></span></a>总结</h2>
+
+<p>在rails 中不仅提倡在model中使用concern，而且还提倡在controller里面也使用。最典型的一个gem 就是这个 inherited_resources. 当然这是一个gem，但是意思是差不多的，就是 DON’T Repeat Yourself – 它将controller里面的最典型的7个aciton封装起来.极大的精简了controller里面的代码。</p>
+
+
+      <h3>关于图片和转载</h3>
+
+      <a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="知识共享许可协议" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br />本作品采用<a rel="license" href="http://creativecommons.org/licenses/by/4.0/">知识共享署名 4.0 国际许可协议</a>进行许可。
+
+      转载时请注明原文链接，图片在使用时请保留图片中的全部内容，可适当缩放并在引用处附上图片所在的文章链接，图片使用 Sketch 进行绘制。
+
+      <h3>关于评论和留言</h3>
+
+      如果对本文 <a href="/rails-concern">Rails Concern 的使用以及源码解读</a> 的内容有疑问，请在下面的评论系统中留言，谢谢。
+
+      <blockquote>
+        <p>原文链接：<a href="/rails-concern">Rails Concern 的使用以及源码解读 · 雄关漫道真如铁</a></p>
+
+        <p>Follow: <a href="https://github.com/nju520">nju520 · GitHub</a></p>
+      </blockquote>
+
+    </section>
+
+    <footer class="post-footer">
+
+      <!-- Everything inside the #author tags pulls data from the author -->
+      <!-- #author-->
+
+      
+      <figure class="author-image">
+        <a class="img" href="https://github.com/nju520" style="background-image: url(/assets/images/hacker.png)"><span class="hidden">'s Picture</span></a>
+      </figure>
+      
+
+      <section class="author">
+        <h4><a href="https://github.com/nju520">nju520</a></h4>
+
+        
+        <p> Ruby / Python / JS</p>
+        
+        <div class="author-meta">
+          <span class="author-location icon-location"> Hangzhou, China</span>
+          <span class="author-link icon-link"><a href="http://hwbnju.com"> hwbnju.com</a></span>
+        </div>
+      </section>
+
+      <!-- /author  -->
+
+      <section class="share">
+        <h4>Share this post</h4>
+        <a class="icon-twitter" href="http://twitter.com/share?text=Rails Concern 的使用以及源码解读&amp;url=http://hwbnju.comrails-concern"
+          onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+          <span class="hidden">Twitter</span>
+        </a>
+        <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://hwbnju.comrails-concern"
+          onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+          <span class="hidden">Facebook</span>
+        </a>
+        <a class="icon-google-plus" href="https://plus.google.com/share?url=http://hwbnju.comrails-concern"
+          onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+          <span class="hidden">Google+</span>
+        </a>
+      </section>
+
+      <div id="gitalk-container"></div>
+      <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+      <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+      <script>
+       const gitalk = new Gitalk({
+         clientID: 'e552ed507a5a4581d8a1',
+         clientSecret: '0abbd4193a0f9b2700936214ff6fda088c665a73',
+         repo: 'bobo-comments',
+         owner: 'nju520',
+         admin: ['nju520'],
+         // labels: ['Gitalk', 'gitment'].concat(["Ruby","Rails","Concern"]),
+         // id: location.origin + location.pathname,
+         id: "http://hwbnju.com/rails-concern",
+         distractionFreeMode: false
+       });
+
+       gitalk.render('gitalk-container')
+      </script>
+
+    </footer>
+
+  </article>
+
+</main>
+
+<aside class="read-next">
+
+  <!-- [[! next_post ]] -->
+  
+  <a class="read-next-story no-cover" href="javascript-call-apply-bind">
+    <section class="post">
+      <h2>妙用JavaScript中的apply/call/bind</h2>
+      <p>## apply/call **call和apply都是为了改变某个函数运行时的上下文(context)而存在的.换句话说, 就是为了改变函数体内部的this指向.** > JavaScript的一大特点就是, 函数存在 定义时上下文/运行时上下文/上下文可以动态改变 这样的概念 -- ```javascript function Fruits() {} //...</p>
+    </section>
+  </a>
+  
+  <!-- [[! /next_post ]] -->
+  <!-- [[! prev_post ]] -->
+  
+  <a class="read-next-story prev no-cover" href="javascript-closure">
+    <section class="post">
+      <h2>JavaScript 闭包</h2>
+      <p>闭包产生的条件 调用的函数是内部声明 调用的函数是在声明位置函数之外调用的 调用的函数引用外部变量 直白一些 调用的函数是父级作用域内部声明的 调用的函数是在父级作用域外进行调用 var outer = function() { var x; var...</p>
+    </section>
+  </a>
+  
+  <!-- [[! /prev_post ]] -->
+</aside>
+
+<!-- /post -->
+
+
+      <footer class="site-footer clearfix">
+        <section class="copyright"><a href="/">雄关漫道真如铁</a> &copy; 2018</section>
+        <section class="poweredby">Proudly published with <a href="https://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/biomadeira/jasper">Jasper</a></section>
+      </footer>
+    </div>
+    <!-- [[! Ghost outputs important scripts and data with this tag ]] -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <!-- [[! The main JavaScript file for Casper ]] -->
+    <script type="text/javascript" src="/assets/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="/assets/js/index.js"></script>
+    <script type="text/javascript" src="/assets/js/prism.js"></script>
+    <script type="text/javascript" src="/assets/js/toc.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+  </body>
+</html>

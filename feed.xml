@@ -363,6 +363,22 @@
 		
 			
 				<item>
+					<title>Rails Concern 的使用以及源码解读</title>
+					
+						<description>&lt;h2 id=&quot;使用-activesupportconcern&quot;&gt;使用 ActiveSupport::Concern&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Fri, 15 Apr 2016 00:00:00 +0800</pubDate>
+					<link>
+						http://hwbnju.com/rails-concern
+					</link>
+					<guid isPermaLink="true">http://hwbnju.com/rails-concern</guid>
+				</item>
+			
+		
+			
+				<item>
 					<title>JavaScript 闭包</title>
 					
 						<description>&lt;h2 id=&quot;闭包产生的条件&quot;&gt;闭包产生的条件&lt;/h2&gt;

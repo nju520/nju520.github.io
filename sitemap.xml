@@ -5,6 +5,10 @@
 <lastmod>2016-03-07T00:00:00+08:00</lastmod>
 </url>
 <url>
+<loc>http://hwbnju.com/rails-concern</loc>
+<lastmod>2016-04-15T00:00:00+08:00</lastmod>
+</url>
+<url>
 <loc>http://hwbnju.com/javascript-call-apply-bind</loc>
 <lastmod>2016-07-09T00:00:00+08:00</lastmod>
 </url>
@@ -101,6 +105,15 @@
 <loc>http://hwbnju.com/tag/closure/</loc>
 </url>
 <url>
+<loc>http://hwbnju.com/tag/Ruby/</loc>
+</url>
+<url>
+<loc>http://hwbnju.com/tag/Rails/</loc>
+</url>
+<url>
+<loc>http://hwbnju.com/tag/Concern/</loc>
+</url>
+<url>
 <loc>http://hwbnju.com/tag/apply/</loc>
 </url>
 <url>
@@ -111,9 +124,6 @@
 </url>
 <url>
 <loc>http://hwbnju.com/tag/event/</loc>
-</url>
-<url>
-<loc>http://hwbnju.com/tag/Ruby/</loc>
 </url>
 <url>
 <loc>http://hwbnju.com/tag/block/</loc>
