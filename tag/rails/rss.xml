@@ -15,7 +15,7 @@
   <title>Ruby Rack 协议及其应用(三)</title>
   <link>//rack-rails</link>
   <author>nju520</author>
-  <pubDate>2018-03-05T00:00:00+08:00</pubDate>
+  <pubDate>2017-11-05T00:00:00+08:00</pubDate>
   <guid>//rack-rails</guid>
   <description><![CDATA[
   <h2 id="ruby-on-rails-启动流程">Ruby on Rails 启动流程</h2>
@@ -838,7 +838,7 @@ end
   <title>Ruby Rack 协议及其应用(二)</title>
   <link>//rack-working</link>
   <author>nju520</author>
-  <pubDate>2018-03-04T00:00:00+08:00</pubDate>
+  <pubDate>2017-10-24T00:00:00+08:00</pubDate>
   <guid>//rack-working</guid>
   <description><![CDATA[
   <h2 id="rack实现分析">Rack实现分析</h2>
@@ -1898,7 +1898,7 @@ X-XSS-Protection: 1; mode=block
   <title>Ruby Rack 协议及其应用(一)</title>
   <link>//rack-start</link>
   <author>nju520</author>
-  <pubDate>2018-03-01T00:00:00+08:00</pubDate>
+  <pubDate>2017-08-17T00:00:00+08:00</pubDate>
   <guid>//rack-start</guid>
   <description><![CDATA[
   <h2 id="rack协议">Rack协议</h2>

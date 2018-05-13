@@ -157,7 +157,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <header class="post-template post-header">
       <h1 class="post-title">TCP Socket 编程 -- 网络架构模式</h1>
       <section class="post-meta">
-        <time class="post-date" datetime="2018-03-15">15 Mar 2018</time>
+        <time class="post-date" datetime="2017-12-15">15 Dec 2017</time>
         <!-- <a href='/'>nju520</a> -->
         <!-- [[tags prefix=" on "]] -->
         
@@ -1635,20 +1635,20 @@ end
 
   <!-- [[! next_post ]] -->
   
-  <a class="read-next-story no-cover" href="sidekiq">
+  <a class="read-next-story no-cover" href="vue-mvvm">
     <section class="post">
-      <h2>Sidekiq 异步任务调度与执行</h2>
-      <p>sidekiq 是 Ruby 中一款非常优秀的后台任务处理软件, 其本身提供的API十分简洁, 源代码也易于阅读, 没有太多花哨的代码. Sidekiq 将 Redis 的各种数据结构用得都起到好处, 我们可以通过 Sidekiq 加深对 Redis...</p>
+      <h2>手动实现 MVVM 架构中的双向绑定</h2>
+      <p>## MVVM 实现双向绑定 相信大家对mvvm双向绑定应该都不陌生了，一言不合上代码，下面先看一个本文最终实现的效果吧，和vue一样的语法，如果还不了解双向绑定，猛戳Google ```javascript {{word}} change model ``` ## 几种实现双向绑定的做法 目前几种主流的mvc(vm)框架都实现了单向数据绑定，而我所理解的双向数据绑定无非就是在单向绑定的基础上给可输入元素（input、textare等）添加了change(input)事件，来动态修改model和 view，并没有多高深。所以无需太过介怀是实现的单向或双向绑定。 实现数据绑定的做法有大致如下几种： *...</p>
     </section>
   </a>
   
   <!-- [[! /next_post ]] -->
   <!-- [[! prev_post ]] -->
   
-  <a class="read-next-story prev no-cover" href="tcp-scokets-no-block">
+  <a class="read-next-story prev no-cover" href="javascript-promise">
     <section class="post">
-      <h2>TCP Socket 编程 -- 非阻塞式 IO</h2>
-      <p>非阻塞式读操作 还记得我们之前学过的Socket#read吗? 它会一直保持阻塞, 直到接收到EOF或者获得指定的最小字节数为止. 如果客户端没有发送EOF, 就可能会导致阻塞. 这种情况虽然可以通过readpartial暂时解决, readpartial会立刻返回所有的可用数据. 但是如果没有数据可用, 那么readpartial也会陷入阻塞状态. 我们可以使用read_nonblock来实现非阻塞式读操作. 和readpartial 非常类似, read_nonblock需要一个整数的参数, 指定需要读取的最大字节数....</p>
+      <h2>Promise 点滴</h2>
+      <p>Promise的含义 Promise是JavaScript语言早有实现，ES6将其写进了语言标准，统一了用法，原生提供了Promies对象。 所谓Promise，就是一个对象，用来传递异步操作的消息。它代表了某个未来才会知道结果的事件（通常是一个异步操作），并且这个事件提供统一的API，可供进一步处理。 Promies对象有一下两个特点。 对象的状态不受外界影响。Promise对象代表一个异步操作，有三种状态：Pending【/’pendɪŋ/】（进行中）、Resolved【/rɪ’zɒlvd/】（已完成，又称Fulfilled【/fʊl’fɪld/】）和Rejected【rɪ’dʒekt】（已失败）。只有异步操作的结果，可以决定当前是哪一种状态，任何其他操作都无法改变这个状态。这是Promise这个名字的由来，他的英语意思就是“承诺”，表示其他手段无法改变。 一旦状态改变，就不会再变，任何时候都可以得到这个结果。Promise对象的状态改变，只有两种可能：从Pending变为Resolved和从Pending变为Rejected。只有这两种情况发生，状态就凝固了，不会再变了，会一直保持这个结果。就算改变已经发生了额，你在对Promise对象添加回调函数，也会立即得到这个结果。这与事件（Event）完全不同，事件的特点是，如果你错过了它，在去监听，是得不到结果的。 有了Promise对象，就可以将异步操作以同步操作的流程表达出来，避免了层层嵌套的回调函数。此外，Promise对象提供统一的接口，使得控制异步操作更加容易。 Promise也有一些缺点。首先，无法取消Promise，一旦新建它就会立即执行，无法中途取消。其次，如果设置回调函数，Promise内部抛出的错误，不会反应到外部。第三当处于Pending状态时，无法得知目前进展到哪一个阶段（刚刚开始还是即将完成）。 如果某些事件不断地反复发生，一般来说，使用stream模式是比部署Promise更好的选择。 基本用法 ES6规定，Promise对象是一个构造函数，用来生成Promise实例。 下面代码创造了一个Promise实例。 var promise =...</p>
     </section>
   </a>
   

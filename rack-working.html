@@ -157,7 +157,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <header class="post-template post-header">
       <h1 class="post-title">Ruby Rack 协议及其应用(二)</h1>
       <section class="post-meta">
-        <time class="post-date" datetime="2018-03-04">04 Mar 2018</time>
+        <time class="post-date" datetime="2017-10-24">24 Oct 2017</time>
         <!-- <a href='/'>nju520</a> -->
         <!-- [[tags prefix=" on "]] -->
         
@@ -1353,20 +1353,20 @@ X-XSS-Protection: 1; mode=block
 
   <!-- [[! next_post ]] -->
   
-  <a class="read-next-story no-cover" href="rack-rails">
+  <a class="read-next-story no-cover" href="tcp-scokets">
     <section class="post">
-      <h2>Ruby Rack 协议及其应用(三)</h2>
-      <p>## Ruby on Rails 启动流程 我们从 `rails server` 这个指令开始来解读`Ruby on Rails`的启动流程. ### 源码阅读前的准备 #### Pry...</p>
+      <h2>TCP Socket 编程 -- 基础</h2>
+      <p>网络编程归根结底是关于共享和通信的, 很大程度上要归功于一组特定地套接字编程API的出现. `Berkely Socket API`真正经受住了时间的考验, 它之所以能够屹立不倒的原因就是**我可以在无需了解底层协议的情况下使用套接字**. `Bekeley Socket API`是一种编程`API`, 它运作在实际的协议实现之上. 它所关注的是连接两个端点`endpoint`共享数据, 而非处理分组和序列号等底层操作. 本文主要演示`Ruby`所提供的套接字`API`的包装类 `Wrapper Class`,...</p>
     </section>
   </a>
   
   <!-- [[! /next_post ]] -->
   <!-- [[! prev_post ]] -->
   
-  <a class="read-next-story prev no-cover" href="rack-start">
+  <a class="read-next-story prev no-cover" href="rack-webrick">
     <section class="post">
-      <h2>Ruby Rack 协议及其应用(一)</h2>
-      <p>Rack协议 什么是Rack Rack是Ruby Web服务器和Rack应用程序之间的一个接口 上图给出了一个简单的图示. 当用户的请求抵达Web服务器时, Web服务器就会调用(call)Rack, Rack对请求进行包装, 然后调用Rack应用程序(一般是一个封装好的框架). Rack程序可以方便地利用Rack提供的各种API, 分析请求(request), 进行处理, 返回响应(response). 为什么是Rack Rack提供了一种标准的接口,...</p>
+      <h2>WEBrick 源码分析</h2>
+      <p>WEBrick是Rack自带的一个 Web Server, 历史悠久, 代码量一共才 4000多行. 本文就从源码入手, 解读 WEBrick实现原理, 并从多线程和IO的角度来分析 WEBrick 的优缺点. 源码分析 我们知道 WEBrick是Rack自带的...</p>
     </section>
   </a>
   
