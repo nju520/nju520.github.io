@@ -86,6 +86,7 @@ function isArray(obj) {
 4 类数组使用数组方法(比较常见的就是函数参数对象arguments)
 Javascript中存在一种名为伪数组的对象结构。比较特别的是 arguments 对象，还有像调用 getElementsByTagName , document.childNodes 之类的，它们返回NodeList对象都属于伪数组, 不能应用 Array下的push, pop等方法。
 但是我们能通过 Array.prototype.slice.call 转换为真正的数组的带有length属性的对象，这样domNodes就可以应用Array下的所有方法了。
+
 ```javascript
 var domNodes = Array.prototype.slice.call(document.getElementsByTagName('*'));
 var domNodes = [].slice.call(document.getElementsByTagName('*'));
@@ -108,7 +109,8 @@ function log(msg) {
 log(1);//1
 log(1,2,3,);//1
 ```
-当传入多个参数给上面的log方法时, 就要考虑使用apply或者call方法了, 注意这里传入的参数是不确定的,所以最好的选择是apply
+当传入多个参数给上面的log方法时, 就要考虑使用apply或者call方法了, 注意这里传入的参数是不确定的,所以最好的选择是apply.
+
 ```javascript
 function log() {
   console.log.apply(console, arguments);
@@ -121,7 +123,8 @@ log(1,2,3);//1,2,3
 log('hello world'); //(app)hello world
 ```
 该怎么做才比较优雅呢?
-函数参数对象arguments是类数组, 我可以通过上面的类数组转换为数组的方法, 再使用数组的方法unshift在数组的头部添加'(app)'
+函数参数对象arguments是类数组, 我可以通过上面的类数组转换为数组的方法, 再使用数组的方法unshift在数组的头部添加'(app)'.
+
 ```javascript
 function log() {
   // var args = [].slice.apply(arguments); //arguments是类数组,所以这里也可以使用apply
@@ -138,7 +141,8 @@ MDN的解释:
 绑定函数会以创建它时传入的bind()方法第一个参数作为this,
 传入bind()方法第二个以及以后的参数+绑定函数运行时传入的参数,按照顺序作为原函数的参数来调用原函数**
 示例:
-1. 在常见的单体模式下, 我们通常会使用self等保存this, 这样我们可以在改变了上下文之后继续引用到它
+1. 在常见的单体模式下, 我们通常会使用self等保存this, 这样我们可以在改变了上下文之后继续引用到它.
+
 ```javascript
 var foo = {
   bar: 1,
@@ -167,6 +171,7 @@ var foo = {
 
 2. 分离函数（Partial Functions）
   bind()的另一个最简单的用法是使一个函数拥有预设的初始参数。这些参数（如果有的话）作为bind()的第二个参数跟在this（或其他对象）后面，之后它们会被插入到目标函数的参数列表的开始位置，传递给绑定函数的参数会跟在它们的后面。
+
 ```javascript
 function list() {
   return Array.prototype.slice.call(arguments);
@@ -178,7 +183,9 @@ var leadingThirtysevenList = list.bind(undefined, 37);
 var list2 = leadingThirtysevenList(); // [37]
 var list3 = leadingThirtysevenList(1, 2, 3); // [37, 1, 2, 3]
 ```
+
 有个有趣的问题，如果连续 bind() 两次，亦或者是连续 bind() 三次那么输出的值是什么呢？
+
 ```javascript
 var bar = function(){
     console.log(this.x);
@@ -253,6 +260,7 @@ if(!Function.prototype.bind) {
 }
 ```
 ## apply call bind 的比较
+
 ```javascript
 var obj = {
     x: 81,
