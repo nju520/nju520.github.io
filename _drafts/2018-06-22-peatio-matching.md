@@ -544,6 +544,7 @@ class Order
     end
       
     private
+    # 账户锁定金额
     def do_submit(order)
       order.fix_number_precision
       order.locked = order.origin_locked = order.compute_locked
@@ -716,7 +717,6 @@ end
 
    首先通过`OrderBookManager`创建委托单列表，然后调用对应的引擎处理器进行撮合。
 
-   
 
 ### 委托单处理器 OrderBookManager
 
@@ -737,7 +737,7 @@ module Worker
 end
 ~~~
 
-这里是通过`OrderBookManager创建了一个`plain object`， 也就是存在于内存中的`order`.
+这里是通过`OrderBookManager`创建了一个`plain object`， 也就是存在于内存中的`order`.
 
 通过判断`ord_type`来决定创建`limit_order`还是`market_order`.
 
@@ -752,7 +752,7 @@ module Matching
   class Engine
     # 初始化引擎
     # 一个市场交易对对应一个引擎
-    # 一个引擎有一个委托单(数据结构采用的是红黑树)
+    # 一个引擎有一个OrderBook(数据结构采用的是红黑树)
     def initialize(market, options = {})
       @market    = market
       @orderbook = OrderBookManager.new(market.code)
@@ -865,15 +865,15 @@ end
 
 ~~~ruby
 # order is waiting for matching order
-# counter: 相反的
+# counter: 对手单
 # ask: book is ask_orders, counter_book is bid_orders
 # bid: book is bid_orders, counter_book is ask_orders
 book, counter_book = orderbook.get_books order.type
 ~~~
 
-当我们的`order`为`order_ask`时， counter_book就为 `[卖1， 买2， 买3， 买4， 买5]`
+当我们的`order`为`order_bid`时， counter_book就为 `[卖1， 买2， 买3， 买4， 买5]`
 
-当我们的`order`为`order_bid`时， counter_book就为`[买1， 买2， 买3， 买4， 买5]`
+当我们的`order`为`order_ask`时， counter_book就为`[买1， 买2， 买3， 买4， 买5]`
 
 上述代码是从` orderbook`中获取`委托卖单列表`和`委托买单列表`.
 
@@ -925,10 +925,10 @@ def match(order, counter_book)
   return unless trade
 
   # 挂单队里的委托单列表中的 order volume - trade_volume
-  # 委托单中的数量要相应的减少
+  # 对手委托单中的数量要相应的减少
   counter_book.fill_top(*trade) 
   # 挂单的数量也要相应的减少(减少的数量就是撮合成功的数量值)
-  order.fill(*trade) # volume - trade_volume
+  order.fill(*trade) # @volume = @volume - trade_volume
   publish order, counter_order, trade # 只发布成交消息，不实际操作委托单数据
   match order, counter_book
 end
@@ -944,8 +944,8 @@ match 方法是个递归，它会一直尝试和最新的 counter_order 去配�
 ~~~ruby
 #如果一个挂单已完成（买到或者卖到预期的数量）就直接返回
 return if order.filled? 
-# order 为 order_bid 时， counter_book.top 就是 卖 1
-# order 为 order_ask 时， counter_book.top 就是 买 1
+# order 为 order_bid 时， counter_book.top 就是 卖 1(ask_1)
+# order 为 order_ask 时， counter_book.top 就是 买 1(bid_1)
 # counter_order 是买卖队列里的第一个 最优 order
 # 这里 counter_book 采用的数据结构为红黑树， 插入和查询的效率均为 O(logn)
 counter_order = counter_book.top
@@ -960,6 +960,7 @@ return unless counter_order
 # 返回值 匹配的价格， 数量， 金额 [trade_price, trade_volume, trade_funds]
 # 有返回值也就意味着买卖撮合成对了
 # trade_funds = trade_price * trade_volume
+#[trade_price, trade_volume, trade_funds]
 trade = order.trade_with(counter_order, counter_book)
 return unless trade
 
@@ -971,9 +972,10 @@ def trade_with(counter_order, counter_book)
     # 如果满足交叉价格， order 与 counter_order 撮合成功
     if crossed?(counter_order.price)
       trade_price  = counter_order.price # 成交的价格
-      # volume:
-      trade_volume = [volume, counter_order.volume].min # 撮合的数量
-      trade_funds  = trade_price * trade_volume # 撮合成交的金额
+      # volume: 撮合的数量(当前挂单和对手单数量取最小值)
+      trade_volume = [volume, counter_order.volume].min 
+      # trade_funds: # 撮合成交的金额
+      trade_funds  = trade_price * trade_volume 
       [trade_price, trade_volume, trade_funds]
     end
   else
@@ -994,9 +996,9 @@ end
 
 ~~~ruby
 # 更新委托单完成成交量
-# 减去 trade中的 volume
+# 减去 trade(撮合成功的挂单)中的 volume
 counter_book.fill_top(*trade) 
-# 挂单的数量也要相应的减少(减少的数量就是撮合成功的数量值)
+# 当前挂单的数量也要相应的减少(减少的数量就是撮合成功的数量值)
 order.fill(*trade) # volume - trade_volume
 
 ~~~
@@ -1010,7 +1012,7 @@ def fill_top(trade_price, trade_volume, trade_funds)
   # OrderBook 中为空， 此时无法撮合交易
   raise 'No top order in empty book.' unless order
 
-  # order 对应的 volume 需要减少
+  # order_book最优挂单order 对应的 volume 需要减少
   # 但是这里并不创建 trade
   # 这里只是预撮合
   order.fill trade_price, trade_volume, trade_funds
@@ -1064,6 +1066,7 @@ def remove_limit_order(order)
 end
 
 def remove_market_order(order)
+  # 市价单匹配了一圈之后
   if order = @market_orders[order.id]
     @market_orders.delete order.id
     broadcast(action: 'remove', order: order.attributes)
