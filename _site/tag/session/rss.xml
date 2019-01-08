@@ -1,0 +1,962 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    
+    <title>hwbnju.com</title>
+    
+    <link>http://hwbnju.com</link>
+    <description>nju520's Blog</description>
+    <language>en-uk</language>
+    <managingEditor> nju520</managingEditor>
+    <atom:link href="rss" rel="self" type="application/rss+xml" />
+    
+<item>
+  <title>Rails Sessions 原理</title>
+  <link>//how-rails-session-work</link>
+  <author>nju520</author>
+  <pubDate>2018-11-21T00:00:00+08:00</pubDate>
+  <guid>//how-rails-session-work</guid>
+  <description><![CDATA[
+  <h2 id="数据表准备">数据表准备</h2>
+
+<h3 id="数据库">数据库</h3>
+
+<pre><code class="language-sql">&gt; CREATE database explain_examples
+</code></pre>
+
+<h3 id="数据表">数据表</h3>
+
+<pre><code class="language-sql">
+</code></pre>
+
+<pre><code class="language-sql">/* 用户信息 */
+
+DROP TABLE IF EXISTS `members`;
+
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+ SET character_set_client = utf8mb4 ;
+CREATE TABLE `members` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT,
+  `no` VARCHAR(20) NOT NULL ,
+  `name` VARCHAR(20) NOT NULL DEFAULT '',
+  `age` INT(11) 		      DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `index_members_on_no` (`no`),
+  KEY `index_members_on_name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+TRUNCATE `members`;
+
+INSERT INTO members
+  (no, name, age)
+VALUES
+  ("NJU_EE_20140001", "aa", 20),
+  ("NJU_EE_20140002", "bb", 22),
+  ("NJU_EE_20140003", "cc", 21),
+  ("NJU_EE_20140004", "dd", 25),
+  ("NJU_EE_20140005", "ee", 21),
+  ("NJU_EE_20140006", "ff", 22),
+  ("NJU_EE_20140007", "gg", 20),
+  ("NJU_EE_20140008", "hh", 23),
+  ("NJU_EE_20140009", "ii", 23),
+  ("NJU_EE_201400010", "jj", 20),
+  ("NJU_EE_201400011", "kk", 22),
+  ("NJU_EE_201400012", "ll", 22),
+  ("NJU_EE_201400013", "mm", 25),
+  ("NJU_CE_20140001", "aa", 20),
+  ("NJU_CE_20140002", "bb", 22),
+  ("NJU_CE_20140003", "cc", 21),
+  ("NJU_CE_20140004", "dd", 25),
+  ("NJU_CE_20140005", "ee", 21),
+  ("NJU_CE_20140006", "ff", 22),
+  ("NJU_CE_20140007", "gg", 20),
+  ("NJU_CE_20140008", "hh", 23),
+  ("NJU_CE_20140009", "ii", 23),
+  ("NJU_CE_201400010", "jj", 20),
+  ("NJU_CE_201400011", "kk", 22),
+  ("NJU_CE_201400012", "ll", 22),
+  ("NJU_CE_201400013", "mm", 25);
+
+
+</code></pre>
+
+<pre><code class="language-sql">/* 订单信息 */
+
+
+DROP TABLE IF EXISTS `order_infos`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+ SET character_set_client = utf8mb4 ;
+CREATE TABLE `order_infos` (
+  `id`           BIGINT(20)  NOT NULL AUTO_INCREMENT,
+  `member_id`      BIGINT(20)           DEFAULT NULL,
+  `product_name` VARCHAR(50) NOT NULL DEFAULT '',
+  `productor`    VARCHAR(30)          DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `index_user_product_detail` (`member_id`, `product_name`, `productor`)
+)
+  ENGINE = InnoDB
+  DEFAULT CHARSET = utf8
+
+TRUNCATE `order_infos`;
+
+INSERT INTO order_infos
+  (member_id, product_name, productor)
+VALUES
+  (1, 'p1', 'WHH'),
+  (1, 'p2', 'WL'),
+  (1, 'p1', 'DX'),
+  (2, 'p1', 'WHH'),
+  (2, 'p5', 'WL'),
+  (3, 'p3', 'MA'),
+  (4, 'p1', 'WHH'),
+  (6, 'p1', 'WHH'),
+  (9, 'p8', 'TE'),
+  (10, 'p1', 'WHH'),
+  (13, 'p2', 'WL'),
+  (11, 'p1', 'DX'),
+  (20, 'p1', 'WHH'),
+  (18, 'p5', 'WL'),
+  (16, 'p3', 'MA'),
+  (12, 'p1', 'WHH'),
+  (12, 'p1', 'WHH'),
+  (10, 'p8', 'TE');
+
+
+</code></pre>
+
+<h2 id="explain-输出格式">EXPLAIN 输出格式</h2>
+
+<p><code>EXLPAIN</code>命令的输出内容大致如下:</p>
+
+<pre><code class="language-sql">&gt; mysql root@127.0.0.1:explain_examples&gt; EXPLAIN SELECT * FROM members WHERE id = 10\G
+
+***************************[ 1. row ]***************************
+id            | 1
+select_type   | SIMPLE
+table         | members
+partitions    | &lt;null&gt;
+type          | const
+possible_keys | PRIMARY
+key           | PRIMARY
+key_len       | 8
+ref           | const
+rows          | 1
+filtered      | 100.0
+Extra         | &lt;null&gt;
+</code></pre>
+
+<p>各列的含义如下:</p>
+
+<ul>
+  <li>id: <code>SELECT</code> 查询的标识符. 每个 <code>SELECT</code> 都会自动分配一个唯一的标识符.</li>
+  <li>select_type: <code>SELECT</code> 查询的类型.</li>
+  <li>table: 查询的是哪个表</li>
+  <li>partitions: 匹配的分区</li>
+  <li>type:<code> join</code> 类型</li>
+  <li>possible_keys: 此次查询中可能选用的索引</li>
+  <li>key: 此次查询中确切使用到的索引.</li>
+  <li>ref: 哪个字段或常数与<code> key</code> 一起被使用</li>
+  <li>rows: 显示此查询一共扫描了多少行. 这个是一个估计值.</li>
+  <li>filtered: 表示此查询条件所过滤的数据的百分比</li>
+  <li>extra: 额外的信息</li>
+</ul>
+
+<h3 id="select_type">select_type</h3>
+
+<p><code>select_type</code>表示查询的类型,常见取值如下:</p>
+
+<ul>
+  <li>SIMPLE, 表示此查询不包含 UNION 查询或子查询</li>
+  <li>PRIMARY, 表示此查询是最外层的查询</li>
+  <li>UNION, 表示此查询是 UNION 的第二或随后的查询</li>
+  <li>DEPENDENT UNION, UNION 中的第二个或后面的查询语句, 取决于外面的查询</li>
+  <li>UNION RESULT, UNION 的结果</li>
+  <li>SUBQUERY, 子查询中的第一个 SELECT</li>
+  <li>DEPENDENT SUBQUERY: 子查询中的第一个 SELECT, 取决于外面的查询. 即子查询依赖于外层查询的结果.</li>
+</ul>
+
+<p>最常见的查询类别应该是 <code>SIMPLE</code> 了, 比如当我们的查询没有子查询, 也没有 UNION 查询时, 那么通常就是 <code>SIMPLE</code> 类型, 例如:</p>
+
+<pre><code class="language-sql">&gt; EXPLAIN SELECT * FROM order_infos WHERE id = 10\G
+***************************[ 1. row ]***************************
+id            | 1
+select_type   | SIMPLE
+table         | order_infos
+partitions    | &lt;null&gt;
+type          | const
+possible_keys | PRIMARY
+key           | PRIMARY
+key_len       | 8
+ref           | const
+rows          | 1
+filtered      | 100.0
+Extra         | &lt;null&gt;
+</code></pre>
+
+<p>如果我们使用了<code>UNION</code>查询，那么<code>EXPLAIN</code>输出的结果如下:</p>
+
+<pre><code class="language-sql">&gt; EXPLAIN (SELECT * FROM members WHERE id IN(1,2,3))
+&gt; UNION
+&gt; (SELECT * from members WHERE id IN (3,4,5))\G;
+
+***************************[ 1. row ]***************************
+id            | 1
+select_type   | PRIMARY
+table         | members
+partitions    | &lt;null&gt;
+type          | range
+possible_keys | PRIMARY
+key           | PRIMARY
+key_len       | 8
+ref           | &lt;null&gt;
+rows          | 3
+filtered      | 100.0
+Extra         | Using where
+***************************[ 2. row ]***************************
+id            | 2
+select_type   | UNION
+table         | members
+partitions    | &lt;null&gt;
+type          | range
+possible_keys | PRIMARY
+key           | PRIMARY
+key_len       | 8
+ref           | &lt;null&gt;
+rows          | 3
+filtered      | 100.0
+Extra         | Using where
+***************************[ 3. row ]***************************
+id            | &lt;null&gt;
+select_type   | UNION RESULT
+table         | &lt;union1,2&gt;
+partitions    | &lt;null&gt;
+type          | ALL
+possible_keys | &lt;null&gt;
+key           | &lt;null&gt;
+key_len       | &lt;null&gt;
+ref           | &lt;null&gt;
+rows          | &lt;null&gt;
+filtered      | &lt;null&gt;
+Extra         | Using temporary
+</code></pre>
+
+<h3 id="table">table</h3>
+
+<p>查询涉及的表或者衍生表</p>
+
+<h3 id="type">type</h3>
+
+<p><code>type</code>字段非常重要，它提供了判断查询是否高效的重要依据。</p>
+
+<p>通过<code>type</code>字段，我们可以判断此次查询是<code>全表扫描</code>还是<code>索引扫描</code>等。</p>
+
+<h4 id="system">system</h4>
+
+<p>表中只有一条数据。这个类型是特殊的<code>const</code>类型.</p>
+
+<h4 id="const">const</h4>
+
+<p>针对主键或者唯一索引的等值查询扫描，最多只返回一条数据。</p>
+
+<p><code>const</code>数据非常快，因为它仅仅读取一次即可。</p>
+
+<ul>
+  <li>下面的查询使用了主键索引(id),因此<code>type</code>就是<code>const</code>类型.</li>
+</ul>
+
+<pre><code class="language-sql">EXPLAIN SELECT * FROM members WHERE id = 10\G
+
+***************************[ 1. row ]***************************
+id            | 1
+select_type   | SIMPLE
+table         | members
+partitions    | &lt;null&gt;
+type          | const
+possible_keys | PRIMARY
+key           | PRIMARY
+key_len       | 8
+ref           | const
+rows          | 1
+filtered      | 100.0
+Extra         | &lt;null&gt;
+</code></pre>
+
+<ul>
+  <li>对于唯一索引来说，<code>type</code>也是<code>const</code>类型。因为等值查询的结果最多只有一条匹配记录。</li>
+</ul>
+
+<pre><code class="language-sql">&gt; EXPLAIN SELECT * FROM members WHERE no = 'NJU_EE_20140009'\G;
+***************************[ 1. row ]***************************
+id            | 1
+select_type   | SIMPLE
+table         | members
+partitions    | &lt;null&gt;
+type          | const
+possible_keys | index_members_on_no
+key           | index_members_on_no
+key_len       | 62
+ref           | const
+rows          | 1
+filtered      | 100.0
+Extra         | &lt;null&gt;
+</code></pre>
+
+<h3 id="eq_ref">eq_ref</h3>
+
+<p>唯一性索引扫描，对于每个索引键，表中只有一条记录与之匹配。常见于主键或者唯一索引扫描.</p>
+
+<p>结果集一般不是一条记录，所有通常应用于<code>join</code>关联关系中.</p>
+
+<p>对于前表的每一个结果，都只能匹配到后表的一行结果，并且查询的比较操作通常为<code>=</code>,查询效率比较高.</p>
+
+<p>对于<code>Rails</code>关联关系中，通过对应于<code>has_one belongs_to</code>关系表</p>
+
+<pre><code class="language-sql">&gt; EXPLAIN SELECT * FROM members, order_infos WHERE members.id = order_infos.member_id\G;
+***************************[ 1. row ]***************************
+id            | 1
+select_type   | SIMPLE
+table         | order_infos
+partitions    | &lt;null&gt;
+type          | index
+possible_keys | index_user_product_detail
+key           | index_user_product_detail
+key_len       | 254
+ref           | &lt;null&gt;
+rows          | 18
+filtered      | 100.0
+Extra         | Using where; Using index
+***************************[ 2. row ]***************************
+id            | 1
+select_type   | SIMPLE
+table         | members
+partitions    | &lt;null&gt;
+type          | eq_ref(members表中`type`为 eq_ref)
+possible_keys | PRIMARY
+key           | PRIMARY
+key_len       | 8
+ref           | explain_examples.order_infos.member_id
+rows          | 1
+filtered      | 100.0
+Extra         | &lt;null&gt;
+</code></pre>
+
+<p>上述查询中</p>
+
+<ul>
+  <li>
+    <p><code>order_infos</code>表<code>type</code>: <code>index</code>.查询<code>order_infos</code>表时使用了联合索引的最左匹配,类型为<code>index</code>.</p>
+  </li>
+  <li>
+    <p><code>members</code>表<code>type</code>: <code>eq_ref</code>.查询<code>members</code>表时由于用到的是主键，所以这里的<code>type</code>为<code>eq_ref</code>.</p>
+  </li>
+</ul>
+
+<h3 id="ref">ref</h3>
+
+<ul>
+  <li>非唯一索引</li>
+  <li>非主键索引</li>
+  <li>使用了<code>最左匹配</code>规则索引的查询</li>
+</ul>
+
+<p>返回匹配某个单独值所有行.</p>
+
+<p>本质上也是一种索引访问，它返回所有匹配某个单独值的所有行,可能会找到多个符合条件的行。</p>
+
+<pre><code class="language-sql">&gt; EXPLAIN SELECT * FROM members, order_infos WHERE members.id = order_infos.member_id AND order_infos.member_id = 10  \G;
+***************************[ 1. row ]***************************
+id            | 1
+select_type   | SIMPLE
+table         | members
+partitions    | &lt;null&gt;
+type          | const
+possible_keys | PRIMARY
+key           | PRIMARY
+key_len       | 8
+ref           | const
+rows          | 1
+filtered      | 100.0
+Extra         | &lt;null&gt;
+***************************[ 2. row ]***************************
+id            | 1
+select_type   | SIMPLE
+table         | order_infos
+partitions    | &lt;null&gt;
+type          | ref
+possible_keys | index_user_product_detail
+key           | index_user_product_detail
+key_len       | 9
+ref           | const
+rows          | 2
+filtered      | 100.0
+Extra         | Using index
+</code></pre>
+
+<p>对于上述的查询:</p>
+
+<ul>
+  <li><code>members</code>: const</li>
+  <li><code>order_infos</code>: ref</li>
+</ul>
+
+<pre><code class="language-sql">&gt; EXPLAIN SELECT * FROM members WHERE members.name = 'aa'\G;
+
+***************************[ 1. row ]***************************
+id            | 1
+select_type   | SIMPLE
+table         | members
+partitions    | &lt;null&gt;
+type          | ref
+possible_keys | index_members_on_name
+key           | index_members_on_name
+key_len       | 62
+ref           | const
+rows          | 1
+filtered      | 100.0
+Extra         | &lt;null&gt;
+</code></pre>
+
+<p>上述查询就是简单的使用非唯一索引<code>index_on_members_name</code>来查询,返回的结果集中不一定是一条记录。</p>
+
+<h4 id="range">range</h4>
+
+<p>使用索引范围查询，通过索引字段范围获取表中部分数据记录。</p>
+
+<p>这种范围扫描索引比全表扫描更好，因为它值需要开始于索引的某个点，而结束于另一点不用扫描全部索引。</p>
+
+<ul>
+  <li><code>=</code></li>
+  <li><code>&lt;&gt;</code></li>
+  <li><code>&gt;</code></li>
+  <li><code>&gt;=</code></li>
+  <li><code>&lt;</code></li>
+  <li><code>&lt;=</code></li>
+  <li><code>&lt;=&gt;</code></li>
+  <li>IS NULL</li>
+  <li>BETWEEN</li>
+  <li>IN()</li>
+</ul>
+
+<p>下面的例子就是一个范围查询:</p>
+
+<pre><code class="language-sql">&gt; EXPLAIN SELECT * FROM members WHERE id BETWEEN 2 AND 8\G;
+***************************[ 1. row ]***************************
+id            | 1
+select_type   | SIMPLE
+table         | members
+partitions    | &lt;null&gt;
+type          | range
+possible_keys | PRIMARY
+key           | PRIMARY
+key_len       | 8
+ref           | &lt;null&gt;
+rows          | 7
+filtered      | 100.0
+Extra         | Using where
+</code></pre>
+
+<p>当<code>type</code>为<code>range</code>时，<code>EXPLAIN</code>数据的 <code>ref</code>字段为<code>NULL</code>,并且<code>key_len</code>字段时此次查询中使用到的索引最长的那个。</p>
+
+<h4 id="index">index</h4>
+
+<p>表示全表扫描(full index scan),和<code>ALL</code>类似。</p>
+
+<p>只不过<code>ALL</code>类似是全表扫描，而<code>index</code>类型则仅仅扫描所有的所有，而不扫描数据。</p>
+
+<p><code>index</code> 类型通常出现在<code>所要查询的数据直接在索引树</code>中获得，而不需要扫描数据。不过如果数据量大的话，还需要进一步优化。</p>
+
+<p>这种情况下，<code>Extra</code>字段就会显示<code>index</code>.</p>
+
+<pre><code class="language-sql">EXPLAIN SELECT name FROM members\G;
+
+***************************[ 1. row ]***************************
+id            | 1
+select_type   | SIMPLE
+table         | members
+partitions    | &lt;null&gt;
+type          | index
+possible_keys | &lt;null&gt;
+key           | index_members_on_name
+key_len       | 62
+ref           | &lt;null&gt;
+rows          | 26
+filtered      | 100.0
+Extra         | Using index
+</code></pre>
+
+<p>上面的例子中，我们查询的<code>name</code>字段恰好是一个索引，因此我们直接从索引中获取数据就可以满足查询的需求,此时<code>Extra</code>的值是<code>Using Index</code>.</p>
+
+<h4 id="all">all</h4>
+
+<p>全表扫描，这个类型的查询是性能最差的查询之一。</p>
+
+<p>通常来说，我们的查询是不应该出现<code>ALL</code>类型的查询，因为这样的查询在数据量大的情况下，对数据的性能是巨大的灾难。如果一个查询是<code>ALL</code>类型查询，我们可以对相应的字段添加索引来避免。</p>
+
+<pre><code class="language-sql">&gt; EXPLAIN SELECT * FROM members WHERE age = 20\G;
+
+***************************[ 1. row ]***************************
+id            | 1
+select_type   | SIMPLE
+table         | members
+partitions    | &lt;null&gt;
+type          | ALL
+possible_keys | &lt;null&gt;
+key           | &lt;null&gt;
+key_len       | &lt;null&gt;
+ref           | &lt;null&gt;
+rows          | 26
+filtered      | 10.0
+Extra         | Using where
+</code></pre>
+
+<p>上面的查询我们可以看到，在全表扫描时，<code>possible_keys</code>和<code>key</code> 字段均为<code>NULL</code>,表示没有使用到索引，并且<code>row</code>十分巨大，整个查询效率十分低下.</p>
+
+<h3 id="type类型的性能比较">type类型的性能比较</h3>
+
+<h4 id="type-类型的性能比较">type 类型的性能比较</h4>
+
+<p>通常来说, 不同的 type 类型的性能关系如下:</p>
+
+<p><code>ALL &lt; index &lt; range ~ index_merge &lt; ref &lt; eq_ref &lt; const &lt; system</code></p>
+
+<p><code>ALL</code> 类型因为是全表扫描, 因此在相同的查询条件下, 它是速度最慢的.</p>
+
+<p><code>index</code> 类型的查询虽然不是全表扫描, 但是它扫描了所有的索引, 因此比 ALL 类型的稍快.</p>
+
+<p>后面的几种类型都是利用了索引来查询数据, 因此可以过滤部分或大部分数据, 因此查询效率就比较高了.</p>
+
+<h3 id="possible_keys">possible_keys</h3>
+
+<p>显示可能应用在这张表中的索引，一个或多个。</p>
+
+<p>查询涉及到的字段若存在索引，则该索引将被列出，但是不一定查询实际用到。</p>
+
+<h3 id="key">key</h3>
+
+<p>查询实际用到的<code>索引</code></p>
+
+<h3 id="key_len">key_len</h3>
+
+<p>表示索引中使用的字节数，可通过该列计算查询中使用的索引的长度。</p>
+
+<p>在不损失精度的情况下，长度越短越好。</p>
+
+<p><code>key_len</code>显示的值为索引字段的最大可能长度，并非实际使用长度，即<code>key_len</code>根据表定义计算得出，不是通过表内检索出。</p>
+
+<pre><code class="language-sql">
+DROP TABLE IF EXISTS `users`;
+
+CREATE TABLE users (
+  id INT(10) NOT NULL,
+  tel INT(10)    DEFAULT NULL,
+  first_name varchar(10) NOT NULL,
+  last_name  varchar(10) DEFAULT NULL,
+  father     char(10) NOT NULL,
+  mother     char(10) DEFAULT NULL,
+  PRIMARY KEY(id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8;
+
+/* 插入数据 */
+INSERT INTO users
+  (id, tel, first_name, last_name, father, mother)
+VALUES
+  (1, 212, 'A', 'Jack', 'F', 'M'),
+  (2, 213, 'B', 'Jack', 'F', 'M'),
+  (3, 214, 'C', 'Jack', 'F', 'M'),
+  (4, 215, 'D', 'Jack', 'F', 'M'),
+  (5, 216, 'E', 'Jack', 'F', 'M'),
+  (6, 217, 'F', 'Jack', 'F', 'M'),
+  (7, 218, 'G', 'Jack', 'F', 'M'),
+  (8, 219, 'H', 'Jack', 'F', 'M'),
+  (9, 220, 'I', 'Jack', 'F', 'M'),
+  (10, 221, 'J', 'Jack', 'F', 'M'),
+  (11, 222, 'K', 'Jack', 'F', 'M'),
+  (13, 223, 'L', 'Jack', 'F', 'M');
+
+
+/* 添加索引 */
+ALTER TABLE users add index index_id(id);
+ALTER TABLE users add index index_tel(tel);
+ALTER TABLE users add index index_fn(first_name);
+ALTER TABLE users add index index_ln(last_name);
+ALTER TABLE users add index index_fa(father);
+ALTER TABLE users add index index_ma(mother);
+
+
+</code></pre>
+
+<p>我们可以测试每个<code>key_len</code>的长度:</p>
+
+<pre><code class="language-sql">/* int NOT NULL */
+&gt; EXPLAIN SELECT * FROM users where id = 3\G
+***************************[ 1. row ]***************************
+id            | 1
+select_type   | SIMPLE
+table         | users
+partitions    | &lt;null&gt;
+type          | const
+possible_keys | PRIMARY,index_id
+key           | PRIMARY
+key_len       | 4
+ref           | const
+rows          | 1
+filtered      | 100.0
+Extra         | &lt;null&gt;
+
+key_len = len(int) -&gt; 4
+</code></pre>
+
+<pre><code class="language-sql">/* int DEFAULT NULL */
+&gt; EXPLAIN SELECT * FROM users where tel = 212\G
+***************************[ 1. row ]***************************
+id            | 1
+select_type   | SIMPLE
+table         | users
+partitions    | &lt;null&gt;
+type          | ref
+possible_keys | index_tel
+key           | index_tel
+key_len       | 5
+ref           | const
+rows          | 1
+filtered      | 100.0
+Extra         | &lt;null&gt;
+
+key_len = len(int) + len(NULL) -&gt; 5
+* NULL 占用一个字节
+</code></pre>
+
+<pre><code class="language-sql">/* varchar NOT NULL  */
+&gt; EXPLAIN SELECT * FROM users where first_name = 'A'\G;
+
+***************************[ 1. row ]***************************
+id            | 1
+select_type   | SIMPLE
+table         | users
+partitions    | &lt;null&gt;
+type          | ref
+possible_keys | index_fn
+key           | index_fn
+key_len       | 32
+ref           | const
+rows          | 1
+filtered      | 100.0
+Extra         | &lt;null&gt;
+
+key_len = 10 * 3 + 2 -&gt; 32
+
+* utf8占用三个字节
+* varchar 需要额外占用两个字节
+</code></pre>
+
+<pre><code class="language-sql">/* varchar DEFAULT NULL */
+&gt; EXPLAIN SELECT * FROM users where last_name = 'A'\G;
+***************************[ 1. row ]***************************
+id            | 1
+select_type   | SIMPLE
+table         | users
+partitions    | &lt;null&gt;
+type          | ref
+possible_keys | index_ln
+key           | index_ln
+key_len       | 33
+ref           | const
+rows          | 1
+filtered      | 100.0
+Extra         | &lt;null&gt;
+
+key_len = 10 * 3 + 2 + 1(NULL) -&gt; 33
+</code></pre>
+
+<pre><code class="language-sql">/* char NOT NULL */
+&gt; EXPLAIN SELECT * FROM users where father = 'A'\G
+
+***************************[ 1. row ]***************************
+id            | 1
+select_type   | SIMPLE
+table         | users
+partitions    | &lt;null&gt;
+type          | ref
+possible_keys | index_fa
+key           | index_fa
+key_len       | 30
+ref           | const
+rows          | 1
+filtered      | 100.0
+Extra         | &lt;null&gt;
+
+key_len = 10 * 3 -&gt; 30
+</code></pre>
+
+<pre><code class="language-sql">/* char DEFAULT NULL */
+&gt; EXPLAIN SELECT * FROM users where mother = 'A'\G
+
+***************************[ 1. row ]***************************
+id            | 1
+select_type   | SIMPLE
+table         | users
+partitions    | &lt;null&gt;
+type          | ref
+possible_keys | index_ma
+key           | index_ma
+key_len       | 31
+ref           | const
+rows          | 1
+filtered      | 100.0
+Extra         | &lt;null&gt;
+
+key_len = 10 * 3 + 1 -&gt; 31
+</code></pre>
+
+<p>key_len 的计算规则如下:</p>
+
+<ul>
+  <li>
+    <p>字符串</p>
+
+    <ul>
+      <li>char(n): n 字节长度</li>
+      <li>varchar(n): 如果是 utf8 编码, 则是 3 <em>n + 2字节; 如果是 utf8mb4 编码, 则是 4</em> n + 2 字节.</li>
+    </ul>
+  </li>
+  <li>
+    <p>数值类型:</p>
+
+    <ul>
+      <li>TINYINT: 1字节</li>
+      <li>SMALLINT: 2字节</li>
+      <li>MEDIUMINT: 3字节</li>
+      <li>INT: 4字节</li>
+      <li>BIGINT: 8字节</li>
+    </ul>
+  </li>
+  <li>
+    <p>时间类型</p>
+
+    <ul>
+      <li>DATE: 3字节</li>
+      <li>TIMESTAMP: 4字节</li>
+      <li>DATETIME: 8字节</li>
+    </ul>
+  </li>
+  <li>
+    <p>字段属性: NULL 属性 占用一个字节. 如果一个字段是 NOT NULL 的, 则没有此属性.</p>
+  </li>
+</ul>
+
+<p><strong>索引字段最好不要为NULL，因为NULL让统计更加复杂，并且需要额外一个字节的存储空间</strong></p>
+
+<h3 id="ref-1">ref</h3>
+
+<p>显示索引的哪一个字段被使用。如果可能的话，是一个常数。</p>
+
+<h3 id="rows">rows</h3>
+
+<p>根据表统计信息及搜索选用情况，大致估算出找到所需记录读取的行数。</p>
+
+<h3 id="extra列返回的描述的意义">extra(列返回的描述的意义)</h3>
+
+<ul>
+  <li>
+    <p><em>Using filesort</em>：看到这个的时候，查询就需要优化了。说明Mysql会对数据使用一个外部的索引排序，而不是按照表内的索引顺序进行读取。Mysql中无法利用索引完成的排序操作称之为文件排序。Mysql需要进行额外的步骤来发现如何对返回的行排序。它根据连接类型以及存储排序键值和匹配条件的全部行的行指针来排序全部行。</p>
+  </li>
+  <li>
+    <p><em>Using index</em>: 列数据是从仅仅使用了索引中的信息而没有读取实际的行动的表返回的，这发生在对表的全部的请求列都是同一个索引的部分的时候。表示相应的select操作中使用了覆盖索引（Coverindex ing），避免访问了表的数据行，效果理想！如果同时出现using where，表示索引被用来执行索引键值的查找；如果没有同时出现using where，表示索引用来读取数据而非执行查找动作。</p>
+  </li>
+</ul>
+
+<pre><code class="language-sql">/* 只选择索引列 */
+&gt; EXPLAIN SELECT name FROM members\G;
+***************************[ 1. row ]***************************
+id            | 1
+select_type   | SIMPLE
+table         | members
+partitions    | &lt;null&gt;
+type          | index
+possible_keys | &lt;null&gt;
+key           | index_members_on_name
+key_len       | 62
+ref           | &lt;null&gt;
+rows          | 26
+filtered      | 100.0
+Extra         | Using index
+
+&gt; EXPLAIN SELECT name FROM members where name = 'A'\G;
+***************************[ 1. row ]***************************
+id            | 1
+select_type   | SIMPLE
+table         | members
+partitions    | &lt;null&gt;
+type          | ref
+possible_keys | index_members_on_name
+key           | index_members_on_name
+key_len       | 62
+ref           | const
+rows          | 1
+filtered      | 100.0
+Extra         | Using index
+
+通过索引查询时我们只取索引对应的列，就可以保证使用`覆盖索引`
+</code></pre>
+
+<p>覆盖索引的含义： 就是select的数据列只用从索引中就能够取得，不必读取数据行，Mysql可以利用索引返回select列表中的字段，而不必根据索引再次读取数据文件，换句话说查询列要被所建的索引覆盖。注意的是，如果要使用覆盖索引，一定要注意select列表中只读取出需要的列，而不是select *，因为如果将所有字段一起做索引会导致索引文件过大，降低查询性能。</p>
+
+<pre><code class="language-sql">&gt; EXPLAIN SELECT id FROM members where id IN(1,2,3)\G;
+
+这里执行了搜索，同时使用索引读取数据
+
+***************************[ 1. row ]***************************
+id            | 1
+select_type   | SIMPLE
+table         | members
+partitions    | &lt;null&gt;
+type          | range
+possible_keys | PRIMARY
+key           | PRIMARY
+key_len       | 8
+ref           | &lt;null&gt;
+rows          | 3
+filtered      | 100.0
+Extra         | Using where; Using index
+</code></pre>
+
+<ul>
+  <li>
+    <p><em>Using temporary</em>：看到这个的时候，查询需要优化了。这里，Mysql需要创建一个临时表来存储结果，这通常发生在对不同的列集进行ORDER BY上和GROUP BY上，拖慢与sql查询。</p>
+  </li>
+  <li>
+    <p>Using index condition 会先条件过滤索引，过滤完索引后找到所有符合索引条件的数据行，随后用 WHERE 子句中的其他条件去过滤这些数据行；</p>
+  </li>
+</ul>
+
+<h4 id="覆盖索引covering-indexes"><strong>覆盖索引(Covering Indexes)</strong></h4>
+
+<p><strong>mysql高效索引之覆盖索引</strong></p>
+
+<p>　　覆盖索引是一种非常强大的工具，能大大提高查询性能。设计优秀的索引应该考虑到整个查询，而不单单的where条件部分。索引确实是一种查找数据的高效方式，但是MYSQL也可以使用索引来直接获取列的数据，这样就不再需要读取数据行。索引的叶子节点中已经包含要查询的数据，那么就没有必要再回表查询了，<strong>如果索引包含满足查询的所有数据，就称为覆盖索引。</strong></p>
+
+<p>　　解释一： 就是select的数据列只用从索引中就能够取得，不必从数据表中读取，换句话说查询列要被所使用的索引覆盖。
+　　解释二： 索引是高效找到行的一个方法，当能通过检索索引就可以读取想要的数据，那就不需要再到数据表中读取行了。如果一个索引包含了（或覆盖了）满足查询语句中字段与条件的数据就叫做覆盖索引。
+　　解释三： 是非聚集组合索引的一种形式，它包括在查询里的Select、Join和Where子句用到的所有列（即建立索引的字段正好是覆盖查询语句[select子句]与查询条件[Where子句]中所涉及的字段，也即，索引包含了查询正在查找的所有数据）。</p>
+
+<p>只需要读取索引而不用读取数据有以下一些优点：
+<strong>(1)索引项通常比记录要小，所以MySQL访问更少的数据；(2)索引都按值的大小顺序存储，相对于随机访问记录，需要更少的I/O；(3)大多数据引擎能更好的缓存索引。比如MyISAM只缓存索引。(4)覆盖索引对于InnoDB表尤其有用，因为InnoDB使用聚集索引组织数据，如果二级索引中包含查询所需的数据，就不再需要在聚集索引中查找了。覆盖索引不能是任何索引，只有B-TREE索引存储相应的值。而且不同的存储引擎实现覆盖索引的方式都不同，并不是所有存储引擎都支持覆盖索引(Memory和Falcon就不支持)。</strong>
+对于索引覆盖查询(index-covered query)，使用EXPLAIN时，可以在Extra一列中看到“Using index”。例如，在sakila的inventory表中，有一个组合索引(store_id,film_id)，对于只需要访问这两列的查询，MySQL就可以使用索引.</p>
+
+  ]]></description>
+</item>
+
+<item>
+  <title>Rails Sessions 原理</title>
+  <link>//how-rails-session-work</link>
+  <author>nju520</author>
+  <pubDate>2017-11-08T00:00:00+08:00</pubDate>
+  <guid>//how-rails-session-work</guid>
+  <description><![CDATA[
+  <p>如果 Rails 不能告诉你谁在访问你的网站？如果你不知道同一个人在访问2个不同的页面？ 如果所有的数据在你返回 response 之前都消失的话？</p>
+
+<p>对于一个静态网站来说也许没有问题。但是大多数应用程序需要存储一个用户的数据的。可能是一个 用户 id 或者 选择的语言偏好，或者他们通过 iPad 访问你的网站，想看看桌面的版本。</p>
+
+<p>session 是一个非常好的地方来放置这些数据。一般是存储一些不止一个请求需要用的数据。</p>
+
+<p>Session 使用起来很简单。</p>
+
+<pre><code class="language-ruby">session[:current_user_id] = @user.id
+</code></pre>
+
+<p>但是它们会有点神奇。 session 是什么？ Rails 是怎么处理这些数据，对于不同的人显示不同的数据。 还有你怎么决定在哪里存储你的 session 数据呢？</p>
+
+<p>什么是 Session？
+session 就是存储多个请求需要共享的数据。你可以设置一些数据在 controller 里面。</p>
+<pre><code class="language-ruby">app/controllers/sessions_controller.rb
+def create
+  # ...
+  session[:current_user_id] = @user.id
+  # ...
+end
+</code></pre>
+<p>然后在另外一个 controller 里面读取。</p>
+
+<pre><code class="language-ruby">app/controllers/users_controller.rb
+
+def index
+  current_user = User.find_by_id(session[:current_user_id])
+  # ...
+end
+</code></pre>
+<p>这个看起来可能不是很有趣。但是这个协调了浏览器和 Rails 应用之间的联系。这个是通过 cookies 实现的。</p>
+
+<p>当你对一个页面发送请求的话，rails 服务器的response将会返回一个 cookie。</p>
+
+<pre><code class="language-shell">$ curl -I http://www.google.com | grep Set-Cookie
+
+Set-Cookie: NID=67=J2xeyegolV0SSneukSOANOCoeuDQs7G1FDAK2j-nVyaoejz-4K6aouUQtyp5B_rK3Z7G-EwTIzDm7XQ3_ZUVNnFmlGfIHMAnZQNd4kM89VLzCsM0fZnr_N8-idASAfBEdS; expires=Wed, 16-Sep-2015 05:44:42 GMT; path=/; domain=.google.com; HttpOnly
+</code></pre>
+
+<p>你的浏览器将会保存这些 cookie。直到你的 cookie 过期，每次你发送一个请求，浏览器将会把这个 cookie 发送 到服务器。</p>
+
+<pre><code>&gt; GET / HTTP/1.1
+&gt; User-Agent: curl/7.37.1
+&gt; Host: www.google.com
+&gt; Accept: */*
+&gt; Cookie: NID=67=J2xeyegolV0SSneukSOANOCoeuDQs7G1FDAK2j-nVyaoejz-4K6aouUQtyp5B_rK3Z7G-EwTIzDm7XQ3_ZUVNnFmlGfIHMAnZQNd4kM89VLzCsM0fZnr_N8-idASAfBEdS; expires=Wed, 16-Sep-2015 05:44:42 GMT; path=/; domain=.google.com; HttpOnly
+</code></pre>
+<p>很多 cookie 看起来是乱码一样的文字组合，其实应该这样。这个数据并不是给浏览器的使用用户看的， 是给你的 Rails 应用读的，也只有它可以读出来里面的信息。</p>
+
+<p>对于 session 我们需要做什么呢？
+这时候，我们有了 cookie，你把数据放在里面，下一个请求的时候就可以读取了。那和 session 有什么不同呢? 默认情况下，在 Rails 里面是没有什么不同的。只不过 Rails 做了更多处理来保证 cookie 数据的安全。 除了这个以外，它工作的和你期待的一样。你的 Rails 应用把一些数据放 cookie，然后你从 cookie 里面读 取这些数据。但是 cookie 也不是 session 最好的存储方案。</p>
+
+<p>在 cookie 里面你最多只能存储 4K 的数据 一般情况下是足够了，但有时也会不够。
+每次发送请求都会发送 cookie。 如果 cookie 比较大意味着request和response的请求也会比较大，将会影响网站的访问速度。
+如果你不小心泄露了你的 secret_key_base， 那就意味着你的用户可以伪造 cookie 入侵的你网站。
+存储一些不安全的数据到 cookie。
+如果你对这些问题都很小心的话，不是什么大问题。如果当年由于某些原因不想把 session 数据存储到 cookie里面的 话， rails 也提供了其他方式供你选择。</p>
+
+<p>其他存储方式
+虽然session数据不存储在 cookie 里面，但他们工作的流程基本类似。下面是实际的一个例子来解释下：</p>
+
+<p>把 session 数据存储在数据库里面 1. 当年使用 session[:current_user_id] = 1 这个赋值。 2. Rails 将会创建一个 sessions 表产生一个随机的 session Id。（09497d46978bf6f32265fefb5cc52264） 3. 他将会存储 {current_user_id: 1} （Base 64编码）到 session 的 data 属性里面。 4. 而且将会返回 session id，然后将这个 id (09497d46978bf6f32265fefb5cc52264) 存到 cookie 里面发送到浏览器。</p>
+
+<p>下次浏览器发送请求的时候</p>
+
+<p>将会把 cookie 发送到服务器端：</p>
+<pre><code>Cookie: _my_app_session=09497d46978bf6f32265fefb5cc52264;
+path=/; HttpOnly
+</code></pre>
+<p>当你使用 session[:current_user_id] 取值的时候
+Rails 会使用这个 id 去 sessions 表里面查询出对应的 session 值。
+最后从找到的记录的 data 属性里面返回 current_user_id
+不管你的 session 存储在 数据库还是 memcache,还是 Redis 里面。大多数都是 按照这样的流程在工作。这个时候 cookie 只是存储的 session ID, rails 会 自己根据这个 ID 去找 session 里面存储的数据。</p>
+
+<p>cookie，cache 还是数据库存储呢？
+首先存储到 cookie 是最简单的，他不需要你设置什么额外的操作。如果不想存在 cookie,可以 选择存储到 数据库 或 cache 里面。</p>
+
+<p>存储 session 到 cache
+你可能已经使用 memcache 存储你的一些页面缓存。cache 是第二方便存储 session 的地方。 你不需要担心 session 过度增长的问题，因为旧的 session 会自动被删除掉如果 cache 变得很大。 而且他访问速度很快，就相当于访问内存数据一样。 但也有缺点的：</p>
+
+<p>如果你想保存旧的 session 数据，可能你并不希望被删除掉。
+你的 session 将会占空间，如果你没有足够的内存，会遇到内存很多被 占用的情况，或者 session 很早就过期了。
+如果你想重置你的 cache，可能由于 rails 升级之类导致的，这样会导致所有人的 session 都失效了。
+存储到数据库
+如果你想保存旧的 session 直到过期之前，你可以考虑存储到数据库。例如 Redis 或者 ActiveRecord。 但是数据库存储也有缺点的：</p>
+
+<p>如果存储到数据库，session 不会自动清理的。需要你自己手动做的。
+你必须知道如果很多 session 数据的话，数据库有什么影响？ 例如： redis 的话，你必须保证有足够大的内存，不要一会就占满内存了。</p>
+
+<p>你必须得小心，可能由于网络攻击或者网络蜘蛛导致产生大量无用的 session 数据，浪费了你的数据库空间。</p>
+
+<p>大多数问题可能发生的比较少，但你必须有和这个意识。</p>
+
+<p>该如何选择呢?
+如果你确定 cookie 里面保存的缺点不会是问题的话，那就首选 cookie吧，毕竟不需要什么特殊配置，而且也不需要 特别维护。</p>
+
+<p>cookie 之外，我一般首选 cache，然后是数据库。因为我认为 session 只是临时数据，所以放 cache 里面好一点。</p>
+
+  ]]></description>
+</item>
+
+
+  </channel>
+</rss>
