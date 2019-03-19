@@ -1,9 +1,11 @@
 ---
-Explain简称执行计划，可以模拟SQL语句，来分析查询语句或者表结构是否有性能瓶颈。
-
-日常工作中，我们有时会通过日志记录下耗时较长的SQL语句，但是光找出这些SQL语句并不意味着完事了，常常需要借助EXPLAIN来查看SQL语句的执行计划，查看SQL语句是否用上了索引，是否进行了全表扫描，这都可以通过EXPLAIN命令得到。
+layout: post
+toc: true
+permalink: /mysql-explain
+title: MySQL Explain
+tags: MySQL Explain
+desc: Explain简称执行计划，可以模拟SQL语句，来分析查询语句或者表结构是否有性能瓶颈。日常工作中，我们有时会通过日志记录下耗时较长的SQL语句，但是光找出这些SQL语句并不意味着完事了，常常需要借助EXPLAIN来查看SQL语句的执行计划，查看SQL语句是否用上了索引，是否进行了全表扫描，这都可以通过EXPLAIN命令得到。
 ---
-
 
 
 ## 数据表准备
@@ -204,7 +206,7 @@ Extra         | <null>
 如果我们使用了`UNION`查询，那么`EXPLAIN`输出的结果如下:
 
 ```sql
-> EXPLAIN (SELECT * FROM members WHERE id IN(1,2,3)) 
+> EXPLAIN (SELECT * FROM members WHERE id IN(1,2,3))
 > UNION
 > (SELECT * from members WHERE id IN (3,4,5))\G;
 
@@ -570,7 +572,7 @@ Extra         | Using where
 
 
 
-### possible_keys 
+### possible_keys
 
 显示可能应用在这张表中的索引，一个或多个。
 
@@ -778,14 +780,28 @@ key_len = 10 * 3 + 1 -> 31
 
 
 
-我们可以总结一下:
+key_len 的计算规则如下:
 
-* 一般情况下，key_len = 字段字符数 * 字符集每个字符所占字节数
-* DEFAULT NULL: key_len + 1
-* VARCHAR: key_len + 2
-* INT: key_len = 4
-* BIGINT: key_len = 8
+- 字符串
 
+  - char(n): n 字节长度
+  - varchar(n): 如果是 utf8 编码, 则是 3 *n + 2字节; 如果是 utf8mb4 编码, 则是 4* n + 2 字节.
+
+- 数值类型:
+
+  - TINYINT: 1字节
+  - SMALLINT: 2字节
+  - MEDIUMINT: 3字节
+  - INT: 4字节
+  - BIGINT: 8字节
+
+- 时间类型
+
+  - DATE: 3字节
+  - TIMESTAMP: 4字节
+  - DATETIME: 8字节
+
+- 字段属性: NULL 属性 占用一个字节. 如果一个字段是 NOT NULL 的, 则没有此属性.
 
 
 **索引字段最好不要为NULL，因为NULL让统计更加复杂，并且需要额外一个字节的存储空间**
@@ -882,6 +898,8 @@ Extra         | Using where; Using index
 * *Using temporary*：看到这个的时候，查询需要优化了。这里，Mysql需要创建一个临时表来存储结果，这通常发生在对不同的列集进行ORDER BY上和GROUP BY上，拖慢与sql查询。
 
 
+
+* Using index condition 会先条件过滤索引，过滤完索引后找到所有符合索引条件的数据行，随后用 WHERE 子句中的其他条件去过滤这些数据行；
 
 ####  **覆盖索引(Covering Indexes)**
 

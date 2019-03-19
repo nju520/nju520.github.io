@@ -398,7 +398,7 @@ end
 
 #### config/application.rb
 
-执行`require APP_PATH`时, 会加载`config/application.rb`文件. 
+执行`require APP_PATH`时, 会加载`config/application.rb`文件.
 
 在`require APP_PATH`时, 实际上对应API文档中的流程 1--4.
 
@@ -430,7 +430,7 @@ module MyApp
     config.load_defaults 5.1
 	config.time_zone = 'Beijing'
   end
-  
+
 end
 ~~~
 
@@ -466,7 +466,7 @@ module MyApp
     config.load_defaults 5.1
 	config.time_zone = 'Beijing'
   end
-  
+
 end
 ~~~
 
@@ -485,7 +485,7 @@ module Rails
         add_lib_to_load_path!(find_root(base.called_from))
         ActiveSupport.run_load_hooks(:before_configuration, base)
       end
-        
+
     end
   end
 end
@@ -556,10 +556,10 @@ private
 ~~~ruby
 # rack/lib/rack/server.rb
 def start &blk
-  
+
   # 关键点(一)
   wrapped_app
-    
+
   # 关键点(二)
   server.run wrapped_app, options, &blk
 end

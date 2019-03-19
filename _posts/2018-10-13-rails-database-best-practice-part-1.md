@@ -113,7 +113,7 @@ ActiveRecord为操作数据库提供了容易使用的API。问题主要是在�
 
 在很多情况下，区别就在于用`.includes()` 还是`.joins()`。有时你还必须使用`.group()`, `.having()`和一些其他函数。在很稀少的情况下，你可能需要直接写SQL语言。
 
-**对于非不重要的查询**，从CLI开始。**一旦你实现了SQL，然后在弄清楚怎么把它转化为ActiveRecord。这样的话，你每次只需弄明白一件事，先是纯SQL，然后是ActiveRecord。DB是Postgres？使用[pgcli](http://pgcli.com/)而不是psql。
+对于非不重要的查询, 一旦你实现了SQL，然后在弄清楚怎么把它转化为ActiveRecord。这样的话，你每次只需弄明白一件事，先是纯SQL，然后是ActiveRecord。DB是Postgres？使用[pgcli](http://pgcli.com/)而不是psql。
 
 这方面有很多详细的介绍。下面是一些链接：
 
@@ -131,7 +131,7 @@ DB仅在查询有索引的列的时候会很快，否则就会做全表查询（
 
 为表添加索引很容易。在Rails的迁移里：
 
-```
+```ruby
 class SomeMigration < ActiveRecord::Migration
   def change
     # Specify that an index is desired when initially defining the table.
@@ -161,7 +161,7 @@ end
 
 我发现scope当他们很简单而且做的不多的时候最好用。我把它们当中可复用的构建块。假如我需要做一些复杂的事情，我会使用Query类来包装复杂的查询。示例如下：
 
-```
+```ruby
 # A query that returns all of the adults who have signed up as volunteers this year,
 # but have not yet become a pta member.
 class VolunteersNotMembersQuery
@@ -183,7 +183,8 @@ class VolunteersNotMembersQuery
 end
 ```
 
-粗看起来好像查询了多次数据库，然而并没有。**9-10**行只是定义Relation。在**15-16行**里的两个子查询用到它们。这是生成的SQL（一个单独的查询）：
+粗看起来好像查询了多次数据库，然而并没有。
+9-10行只是定义Relation。在15-16行里的两个子查询用到它们。这是生成的SQL（一个单独的查询）：
 
 ```
 SELECT people.*
