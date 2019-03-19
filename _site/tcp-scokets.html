@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- [[! Document Settings ]] -->
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- [[! Page Meta ]] -->
+    <title>
+      
+        TCP Socket 编程 -- 基础
+      
+    </title>
+    
+    <meta name="description" content="套接字 `socket` 连接起了数字世界. 正是网络编程--更确切的说, 是一组特定的套接字编程API -- 的出现, 才使得世界越来越小. 本文会介绍套接字编程的基础知识, 包括如何创建套接字, 如何连接套接字以及如何共享数据. 所有的示例代码均为 `Ruby`" />
+    
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="/assets/images/favicon.ico" >
+
+    <!-- [[! Styles'n'Scripts ]] -->
+    <link rel="stylesheet" type="text/css" href="/assets/css/screen.css" />
+    <link rel="stylesheet" type="text/css"
+      href="//fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400" />
+
+    <link rel="stylesheet" type="text/css" href="/assets/css/prism.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/toc.css" />
+
+    <!-- [[! Ghost outputs important style and meta data with this tag ]] -->
+    <link rel="canonical" href="/" />
+<meta name="referrer" content="origin" />
+<link rel="next" href="/page2/" />
+
+<meta property="og:site_name" content="雄关漫道真如铁" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="TCP Socket 编程 -- 基础" />
+
+<meta property="og:description" content="套接字 `socket` 连接起了数字世界. 正是网络编程--更确切的说, 是一组特定的套接字编程API -- 的出现, 才使得世界越来越小. 本文会介绍套接字编程的基础知识, 包括如何创建套接字, 如何连接套接字以及如何共享数据. 所有的示例代码均为 `Ruby`" />
+
+<meta property="og:url" content="http://localhost:4000/tcp-scokets" />
+<meta property="og:image" content="" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="TCP Socket 编程 -- 基础" />
+
+<meta name="twitter:description" content="套接字 `socket` 连接起了数字世界. 正是网络编程--更确切的说, 是一组特定的套接字编程API -- 的出现, 才使得世界越来越小. 本文会介绍套接字编程的基础知识, 包括如何创建套接字, 如何连接套接字以及如何共享数据. 所有的示例代码均为 `Ruby`" />
+
+<meta name="twitter:url" content="http://localhost:4000/tcp-scokets" />
+<meta name="twitter:image:src" content="" />
+
+<script type="application/ld+json">
+  {
+  "@context": "http://schema.org",
+  "@type": "Website",
+  "publisher": "nju520",
+  "url": "http://localhost:4000/tcp-scokets",
+  "image": "",
+  "description": "套接字 `socket` 连接起了数字世界. 正是网络编程--更确切的说, 是一组特定的套接字编程API -- 的出现, 才使得世界越来越小. 本文会介绍套接字编程的基础知识, 包括如何创建套接字, 如何连接套接字以及如何共享数据. 所有的示例代码均为 `Ruby`"
+  }
+</script>
+
+<meta name="generator" content="Jekyll 3.0.0" />
+<link rel="alternate" type="application/rss+xml" title="雄关漫道真如铁" href="/feed.xml" />
+
+    <!-- Add Google Analytics  -->
+    <!-- Google Analytics Tracking code -->
+<script>
+ (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+ })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ ga('create', 'UA-114647632-1', 'auto');
+ ga('send', 'pageview', location.pathname);
+
+</script>
+
+<!-- Baidu Analytics  Manager -->
+<script>
+ var _hmt = _hmt || [];
+ (function() {
+   var hm = document.createElement("script");
+   hm.src = "https://hm.baidu.com/hm.js?e9208862845c46a0f79e7828f495e407";
+   var s = document.getElementsByTagName("script")[0];
+   s.parentNode.insertBefore(hm, s);
+ })();
+</script>
+
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-PWFC85B');</script>
+  <!-- End Google Tag Manager -->
+
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-114647632-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-114647632-1');
+</script>
+
+  </head>
+  <body class=" post-template nav-closed">
+    <!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PWFC85B"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+
+    <div class="nav">
+  <h3 class="nav-title">Home</h3>
+  <a href="#" class="nav-close">
+    <span class="hidden">Close</span>
+  </a>
+  <ul>
+    <li class="nav-home " role="presentation"><a href="/">Home</a></li>
+    <li class="nav-ruby " role="presentation"><a href="/tag/ruby">Ruby</a></li>
+    <li class="nav-javascript " role="presentation"><a href="/tag/javascript">JavaScript</a></li>
+    <li class="nav-server " role="presentation"><a href="/tag/server">Server</a></li>
+    <li class="nav-database " role="presentation"><a href="/tag/database">Database</a></li>
+  </ul>
+  <a class="subscribe-button icon-feed" href="/feed.xml">Subscribe</a>
+</div>
+<span class="nav-cover"></span>
+
+
+    <div class="site-wrapper">
+
+      <!-- [[! Everything else gets inserted here ]] -->
+      <!-- < default -->
+
+<!-- The comment above "< default" means - insert everything in this file into -->
+<!-- the [body] of the default.hbs template, which contains our header/footer. -->
+
+<!-- Everything inside the #post tags pulls data from the post -->
+<!-- #post -->
+
+<header class="main-header post-head no-cover">
+  <nav class="main-nav overlay clearfix">
+    <a class="back-button icon-arrow-left" href="/">Home</a>
+    <a class="menu-button icon-menu" href="#"><span class="word">Menu</span></a>
+  </nav>
+</header>
+
+<main class="content" role="main">
+
+  <article class="post">
+
+    <header class="post-template post-header">
+      <h1 class="post-title">TCP Socket 编程 -- 基础</h1>
+      <section class="post-meta">
+        <time class="post-date" datetime="2017-11-01">01 Nov 2017</time>
+        <!-- <a href='/'>nju520</a> -->
+        <!-- [[tags prefix=" on "]] -->
+        
+        
+        <a href='/tag/TCP'>TCP</a>
+        
+        <a href='/tag/socket'>socket</a>
+        
+        <a href='/tag/Ruby'>Ruby</a>
+        
+        
+      </section>
+    </header>
+
+    <section class="post-content">
+
+      <ul class="section-nav">
+<li class="toc-entry toc-h2"><a href="#建立套接字">建立套接字</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#端点">端点</a></li>
+<li class="toc-entry toc-h3"><a href="#环回地址">环回地址</a></li>
+<li class="toc-entry toc-h3"><a href="#端口">端口</a></li>
+<li class="toc-entry toc-h3"><a href="#建立连接">建立连接</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#服务器生命周期">服务器生命周期</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#accept">accept</a>
+<ul>
+<li class="toc-entry toc-h4"><a href="#连接类">连接类</a></li>
+<li class="toc-entry toc-h4"><a href="#文件描述符">文件描述符</a></li>
+<li class="toc-entry toc-h4"><a href="#连接地址">连接地址</a></li>
+<li class="toc-entry toc-h4"><a href="#accept-循环">accept 循环</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h3"><a href="#关闭连接">关闭连接</a>
+<ul>
+<li class="toc-entry toc-h4"><a href="#退出时关闭">退出时关闭</a></li>
+<li class="toc-entry toc-h4"><a href="#关闭方式">关闭方式</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h3"><a href="#ruby-包装器">Ruby 包装器</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#客户端生命周期">客户端生命周期</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#绑定">绑定</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#套接字读写操作">套接字读写操作</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#套接字读操作">套接字读操作</a></li>
+<li class="toc-entry toc-h3"><a href="#阻塞">阻塞</a>
+<ul>
+<li class="toc-entry toc-h4"><a href="#设置读取长度">设置读取长度</a></li>
+<li class="toc-entry toc-h4"><a href="#阻塞的本质">阻塞的本质</a>
+<ul>
+<li class="toc-entry toc-h6"><a href="#我们可以采用两种方式补救">我们可以采用两种方式补救:</a></li>
+<li class="toc-entry toc-h5"><a href="#eof-事件">EOF 事件</a></li>
+<li class="toc-entry toc-h5"><a href="#部分读取">部分读取</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-entry toc-h3"><a href="#套接字写操作">套接字写操作</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#第一个客户端--服务器">第一个客户端 & 服务器</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#服务器">服务器</a></li>
+<li class="toc-entry toc-h3"><a href="#客户端">客户端</a></li>
+<li class="toc-entry toc-h3"><a href="#运行">运行</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#再会">再会</a></li>
+</ul><p>网络编程归根结底是关于共享和通信的, 很大程度上要归功于一组特定地套接字编程API的出现.  <code>Berkely Socket API</code>真正经受住了时间的考验, 它之所以能够屹立不倒的原因就是<strong>我可以在无需了解底层协议的情况下使用套接字</strong>. <code>Bekeley Socket API</code>是一种编程<code>API</code>, 它运作在实际的协议实现之上. 它所关注的是连接两个端点<code>endpoint</code>共享数据, 而非处理分组和序列号等底层操作.</p>
+
+<p>本文主要演示<code>Ruby</code>所提供的套接字<code>API</code>的包装类 <code>Wrapper Class</code>, 并采用工具 <code>netcat</code>创建一个随意的连接.</p>
+
+<blockquote>
+  <p>netcat 是 Unix 一款优秀的工具, 可以用于创建<code>TCP</code> <code>UDP</code>连接并进行监听.</p>
+</blockquote>
+
+<h2 id="建立套接字">
+<a id="建立套接字" class="anchor" href="#%E5%BB%BA%E7%AB%8B%E5%A5%97%E6%8E%A5%E5%AD%97" aria-hidden="true"><span class="octicon octicon-link"></span></a>建立套接字</h2>
+
+<p>采用<code>Ruby</code>可以非常方便的创建一个套接字:</p>
+
+<pre><code class="language-ruby">require 'socket'
+
+socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM)
+</code></pre>
+
+<p>上述代码在 <code>INET</code>域创建一个类型为<code>STREAM</code> 的套接字. <code>INET</code>是<code> internet</code>的缩写, 特指<code>IPV4</code>版本的套接字.</p>
+
+<p><code>STREAM</code>表示使用数据流进行通信, 该功能由<code>TCP</code>提供. 如果我们指定的是<code>DGRAM</code>	(datagram, 数据报), 则表示<code>UDP</code>套接字.</p>
+
+<p>在 <code>Ruby</code>语言中我们还可以使用<code>syntactic sugar</code>(语法糖)来创建套接字.</p>
+
+<pre><code class="language-ruby">require 'socket'
+socket = Socket.new(:INET6, :STREAM)
+</code></pre>
+
+<p><code>Ruby</code>编程中我们可以使用<code>Symbol</code>来代替常量来描述各种选项.</p>
+
+<p>上述代码创建了一个在<code>IPV6</code>域创建<code>TCP</code>套接字的实例.</p>
+
+<h3 id="端点">
+<a id="端点" class="anchor" href="#%E7%AB%AF%E7%82%B9" aria-hidden="true"><span class="octicon octicon-link"></span></a>端点</h3>
+
+<p>在两个套接字之间进行通信, 就需要知道如何找到对方. 这就很像我们打电话: 如果我想和某个人进行交流, 必须知道对方的电话号码.</p>
+
+<p>套接字使用<code>IP地址</code>将消息发往指定的主机. 主机由唯一的<code>IP地址</code>来标识, <code>IP地址</code>是由点号连接的4组不大于255的数字.</p>
+
+<p>配置了<code>IP地址</code>的主机可以像另一台同样配置了<code>IP地址</code>的主机发送数据.</p>
+
+<blockquote>
+  <p>我知道想要与之对话的主机的地址后, 就很容易使用套接字通信了. 但是如何才能获取那个地址呢? 需要把它背下来还是写在纸上? 谢天谢地, 都不需要.</p>
+
+  <p>我们使用<code>DNS</code>域名解析协议来获取主机名对应的<code>IP地址</code>. <code>DNS</code>是用来将主机名映射到 <code>IP地址</code>的系统.有了它我们就只需要记住主机的名字, 比如 <code>google.com</code>, 随后可以让<code>DNS</code>将主机名解析成地址. 即使地址发生了变化, 主机名总能够将我们指向正确的位置. nice!</p>
+</blockquote>
+
+<p><img src="" alt="DNS"></p>
+
+<h3 id="环回地址">
+<a id="环回地址" class="anchor" href="#%E7%8E%AF%E5%9B%9E%E5%9C%B0%E5%9D%80" aria-hidden="true"><span class="octicon octicon-link"></span></a>环回地址</h3>
+
+<p><code>IP地址</code>未必总指向远端主机. 当我们在开发阶段时, 通常需要连接自己本地主机上的套接字.</p>
+
+<p>多数系统都定义了<code>loopback interface</code> (环回接口). 和网卡接口不同的是, 这是一个和硬件无关、完全虚拟的接口. 发送到环回接口上的数据立即会在同一个接口上被接收. 同一台主机上的两项服务若使用环回地址而非分配的主机地址, 就可以绕开<code>TCP/IP</code>协议栈的下层.</p>
+
+<p>通过<code>ping</code>环回地址, 我们还可以测试本地主机上的<code>TCP/IP</code>配置</p>
+
+<p>配合环回地址, 我可以将网络搭建在本地主机中.</p>
+
+<p>环回接口对应的主机名是<code>localhost</code>, 对应的<code>IP地址</code>通常是 <code>127.0.0.1</code>. 这些定义都可以在系统的<code>hosts</code>文件找到.</p>
+
+<h3 id="端口">
+<a id="端口" class="anchor" href="#%E7%AB%AF%E5%8F%A3" aria-hidden="true"><span class="octicon octicon-link"></span></a>端口</h3>
+
+<p>对于端点而言, 除了<code>IP地址</code>之外,还有另外一个重要的定义–端口号. 继续我们打电话的例子: 如果我要和办公楼的某人进行通话, 就得拨通他们办公楼的电话号码, 然后再拨分机号. 端口号就是套接字端点的“分机号“.</p>
+
+<p>对于每个套接字而言, <code>IP地址</code>和<code>端口号</code>的组合必须是唯一的. 所以在同一个侦听端口上可以有两个套接字, 一个使用<code>IPV4</code>地址, 另一个使用<code>IPV6</code>地址, 但是两个套接字不能都使用同一个<code>IPV4</code>地址.</p>
+
+<p>若没有端口号, 一台主机一次只能够支持一个套接字. 将每个活动套接字与特定的端口进行绑定, 主机便可以同时支持上千个套接字.</p>
+
+<h3 id="建立连接">
+<a id="建立连接" class="anchor" href="#%E5%BB%BA%E7%AB%8B%E8%BF%9E%E6%8E%A5" aria-hidden="true"><span class="octicon octicon-link"></span></a>建立连接</h3>
+
+<p><code>TCP</code>在两个端点之间建立连接. 端点可能处于同一台主机, 也可能处于不同的主机中. 不管哪一种情况, 背后的原理都是一样的.</p>
+
+<p>当我创建套接字时 这个套接字必须担任以下角色之一:</p>
+
+<ul>
+  <li>发起者(initiator)</li>
+  <li>侦听者(listener)</li>
+</ul>
+
+<p>少了侦听套接字, 就无法发起连接; 没有连接的发起者, 也就没有必要进行侦听.</p>
+
+<p>在网络编程中, <strong>通常将从事侦听的套接字称为“服务器”, 将发起连接的套接字称为“客户端”</strong>.</p>
+
+<p>下一节我们着重阐述它们各自的生命周期.</p>
+
+<h2 id="服务器生命周期">
+<a id="服务器生命周期" class="anchor" href="#%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F" aria-hidden="true"><span class="octicon octicon-link"></span></a>服务器生命周期</h2>
+
+<p>服务器套件字用于侦听连接而非发起连接. 其典型的生命周期如下:</p>
+
+<ul>
+  <li>new: 创建</li>
+  <li>bind: 绑定</li>
+  <li>listen: 监听</li>
+  <li>accept: 接受请求</li>
+  <li>close: 关闭连接</li>
+</ul>
+
+<pre><code class="language-ruby">require 'socket'
+# 创建服务器套接字
+server = Socket.new(:INET, :STREAM)
+
+# 创建C结构体来保存用于侦听的地址
+# 使用 0.0.0.0, 我们可以侦听到每一个接口的 socket 请求
+addr = Socket.pack_sockaddr_in(4481, '0.0.0.0')
+
+# 绑定 侦听的地址
+server.bind(addr)
+
+# 侦听, 参数为侦听队列最大长度
+server.listen(128)
+
+# 接受连接
+connection, _ = server.accept
+
+</code></pre>
+
+<p>以上我们开启了一个服务器 套接字, 如果运行代码会发现上述代码没有立刻退出!</p>
+
+<p>没错, <code>accept</code>方法会一直阻塞到有连接到达.</p>
+
+<p>让我们采用<code>netcat</code>发起一个连接:</p>
+
+<pre><code class="language-shell">$ echo Working with TCP Socket | nc localhost 4481
+</code></pre>
+
+<p>运行结果就是<code>nc</code>成功发起一个客户端请求, 服务器成功接收请求后<code>Ruby</code>程序顺利退出. 最精彩的不在于此, 而在于连接已经建立, 一起顺利!</p>
+
+<h3 id="accept">
+<a id="accept" class="anchor" href="#accept" aria-hidden="true"><span class="octicon octicon-link"></span></a>accept</h3>
+
+<p><code>accept</code>调用是阻塞式的. 在它接收到一个新的连接之前, 它会一直阻塞当前线程.</p>
+
+<blockquote>
+  <p><code>accept</code>只不过就是将还未处理的连接从队列中弹出而已. 如果队列为空, 那么它就一直等, 直到有连接被加入到队列为止.</p>
+</blockquote>
+
+<p><code>accept</code>调用返回一个数组:</p>
+
+<ul>
+  <li>第一个元素为已经建立好的连接</li>
+  <li>
+<code>Addrinfo</code>对象: 该对象描述了客户端连接的远程地址</li>
+</ul>
+
+<pre><code class="language-ruby">conn, _ = server.accept
+
+puts "connection class: #{conn.class}"
+
+puts "server fileno: #{server.fileno}"
+
+puts "connection fileno: #{conn.fileno}"
+
+puts "local address: #{conn.local_address.inspect}"
+
+puts "remote address: ##{conn.remote_address.inspect}"
+
+</code></pre>
+
+<p>当服务器获得一个连接时, 它就会输出:</p>
+
+<pre><code class="language-powershell">connection class: Socket
+server fileno: 8
+connection fileno: 9
+local address: #&lt;Addrinfo: 127.0.0.1:4481 TCP&gt;
+remote address: ##&lt;Addrinfo: 127.0.0.1:58447 TCP&gt;
+</code></pre>
+
+<h4 id="连接类">
+<a id="连接类" class="anchor" href="#%E8%BF%9E%E6%8E%A5%E7%B1%BB" aria-hidden="true"><span class="octicon octicon-link"></span></a>连接类</h4>
+
+<p>尽管<code>accept</code>返回了一个“连接”, 但是上述输出告诉我们并没有特殊的连接类(connection class). 一个连接实际上就是<code>Socket</code> 的实例.</p>
+
+<h4 id="文件描述符">
+<a id="文件描述符" class="anchor" href="#%E6%96%87%E4%BB%B6%E6%8F%8F%E8%BF%B0%E7%AC%A6" aria-hidden="true"><span class="octicon octicon-link"></span></a>文件描述符</h4>
+
+<p><code>accept</code>调用返回一个<code>Socket</code>实例, 这个连接的文件描述符编号和服务器套接字不一样.</p>
+
+<blockquote>
+  <p>文件描述符编号是内核用于跟踪当前进程所打开文件的一种方法</p>
+
+  <p>套接字就是文件. 至少在 Unix 世界中, 所有的一切都被视为文件, 这包括文件系统中的文件以及管道、 套接字、打印机, 等等</p>
+</blockquote>
+
+<p><code>accept</code>调用返回了一个不同于服务器套接字的<code>Socket</code>实例. 这个<code>Socket</code>实例描述了特定的连接.</p>
+
+<p>每个连接都由一个全新的<code>Socket</code>对象描述, 那么服务器套接字就可以保持不变吗不停地接受新的连接.</p>
+
+<h4 id="连接地址">
+<a id="连接地址" class="anchor" href="#%E8%BF%9E%E6%8E%A5%E5%9C%B0%E5%9D%80" aria-hidden="true"><span class="octicon octicon-link"></span></a>连接地址</h4>
+
+<p><code>accept</code>调用返回的<code>Socket</code>对象知晓两个地址:</p>
+
+<ul>
+  <li>本地地址</li>
+  <li>远程地址</li>
+</ul>
+
+<p>其中远程地址也可以从<code>accept</code> 第二个参数中获取, 也可以从返回的<code>Socket</code>对象中获取.</p>
+
+<p><strong>每一个TCP连接都由 本地主机、本地端口、远程主机、远程端口 这组唯一的组合定义</strong></p>
+
+<h4 id="accept-循环">
+<a id="accept-循环" class="anchor" href="#accept-%E5%BE%AA%E7%8E%AF" aria-hidden="true"><span class="octicon octicon-link"></span></a>accept 循环</h4>
+
+<p>在前面的代码中, 服务器接受了一个请求之后退出.在编写真正的服务器代码时, 只要还有接入的连接, 我们肯定希望不停地侦听. 我们可以轻松地通过 <code>loop</code>来实现:</p>
+
+<pre><code class="language-ruby"># !/usr/bin/env ruby
+
+require 'socket'
+
+server = Socket.new(:INET, :STREAM)
+
+addr = Socket.pack_sockaddr_in(4481, '0.0.0.0')
+
+server.bind(addr)
+
+server.listen(128)
+
+loop do
+  conn, _ = server.accept
+  # 处理请求
+  puts "deal with conn"
+  conn.close
+end
+
+</code></pre>
+
+<p>这是使用<code>Ruby</code>编写服务器一种常见方式.</p>
+
+<p>由于这种方式在实际中应用广泛, <code>Ruby</code>在其基础上提供了一些语法糖, 稍后我们会采用更简洁地方式重写服务器端的逻辑.</p>
+
+<h3 id="关闭连接">
+<a id="关闭连接" class="anchor" href="#%E5%85%B3%E9%97%AD%E8%BF%9E%E6%8E%A5" aria-hidden="true"><span class="octicon octicon-link"></span></a>关闭连接</h3>
+
+<p>一旦服务器接受了某个连接并处理完毕, 那么最后一件事情就是关闭该连接. 这才算完成了一个连接 “
+创建 –  处理 – 关闭” 的生命周期.</p>
+
+<h4 id="退出时关闭">
+<a id="退出时关闭" class="anchor" href="#%E9%80%80%E5%87%BA%E6%97%B6%E5%85%B3%E9%97%AD" aria-hidden="true"><span class="octicon octicon-link"></span></a>退出时关闭</h4>
+
+<p>为什么需要<code>close</code>? 当程序退出时, 系统会帮我们关闭所有打开的文件描述符(包括套接字). 为什么还要我们自动手动关闭呢? 有两个很好的理由:</p>
+
+<ul>
+  <li>资源使用. 如果我使用了套接字却没有关闭它, 那么那些我不再使用的套接字的引用很可能依然保留着. 在<code>Ruby</code>中, 垃圾收集器时我的好伙伴, 它可以帮助我们清理用不着的连接. 不过保持自己所用的资源的完全控制权, 丢掉不再需要的东西总是一个不错的选择.</li>
+  <li>打开文件的数量限制. 所有进程都只能打开一定数量的文件. 保留无用的连接会使进程逐步逼近这个上限值.</li>
+</ul>
+
+<h4 id="关闭方式">
+<a id="关闭方式" class="anchor" href="#%E5%85%B3%E9%97%AD%E6%96%B9%E5%BC%8F" aria-hidden="true"><span class="octicon octicon-link"></span></a>关闭方式</h4>
+
+<p>由于套接字运行双向通信(读 &amp; 写). 实际上可以只关闭其中一个通道</p>
+
+<pre><code class="language-ruby">conn, _ = server.accept
+# 该连接随后不需要写入数据, 但是可能仍需要读取数据
+conn.close_write
+
+# 该连接此时不需要进行任何数据的读写
+conn.close_read
+</code></pre>
+
+<p>关闭写操作流<code>write stream</code> 会发送一个 <code>EOF</code>到套接字的另一端.</p>
+
+<p><code>close_write</code>以及<code>close_read</code>方法都在底层利用<code>shutdown</code>. <code>shutdown</code>和<code>close</code>有明显不同:</p>
+
+<ul>
+  <li>close: 会关闭调用它的套接字实例. 如果该套接字在系统中还有其他副本, 那么这些副本不会被关闭, 所占用的资源也不会被回收.</li>
+  <li>shutdown: 完全关闭在当前套接字及其副本上的通信, 但是它不会回收套接字所使用过的资源. 每个套接字实例仍需要 <code>close</code>来关闭</li>
+</ul>
+
+<blockquote>
+  <p>连接副本: 获得一个文件描述符最常见的方法就是利用 <code>Process.fork</code>方法. 该方法创建了一个全新的进程, 这个进程和当前进程一模一样. 除了拥有当前进程在内存中的所有内容之外, 新进程还通过 dup 获得了所有已打开的文件描述符的副本.</p>
+
+  <p>除此之外, 我们还可以使用 <code>Socket#dup</code>创建文件描述符的副本.</p>
+</blockquote>
+
+<pre><code class="language-ruby">conn, _ = server.accept
+
+# 创建所有连接副本上的通信
+copy = conn.dup
+
+# 关闭所有连接副本的通信
+conn.shutdown
+
+# 关闭原始连接, 副本会在垃圾收集器进行收集时关闭
+conn.close
+</code></pre>
+
+<h3 id="ruby-包装器">
+<a id="ruby-包装器" class="anchor" href="#ruby-%E5%8C%85%E8%A3%85%E5%99%A8" aria-hidden="true"><span class="octicon octicon-link"></span></a>Ruby 包装器</h3>
+
+<p>对于<code>Rubyist</code>来说, 我们都热爱<code>Ruby</code>提供的优雅与法. 它用来创建及使用服务器套接字的扩展会让人爱不释手.</p>
+
+<pre><code class="language-ruby"># !/usr/bin/env ruby
+
+require 'socket'
+
+# 创建侦听套接字
+# 返回两个 TCP 套接字, 一个可以通过 IPV4 连接, 另一个可以通过 IPV6 连接
+servers = Socket.tcp_server_sockets(4481)
+
+# 进入无限循环, 接受并处理连接
+Socket.accept_loop(servers) do |conn|
+  # 处理连接
+  conn.close
+end
+</code></pre>
+
+<h2 id="客户端生命周期">
+<a id="客户端生命周期" class="anchor" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F" aria-hidden="true"><span class="octicon octicon-link"></span></a>客户端生命周期</h2>
+
+<p>客户端的生命周期要比服务器端一些:</p>
+
+<ul>
+  <li>new:  创建</li>
+  <li>bind: 绑定</li>
+  <li>connect: 连接</li>
+  <li>close: 关闭</li>
+</ul>
+
+<h3 id="绑定">
+<a id="绑定" class="anchor" href="#%E7%BB%91%E5%AE%9A" aria-hidden="true"><span class="octicon octicon-link"></span></a>绑定</h3>
+
+<p>在服务器部分, 我们使用特定的地址和端口去调用 <code>bind</code>. <strong>很少有服务器不用<code>bind</code>, 也很少有客户端使用<code>bind</code></strong>.</p>
+
+<p>客户端一般从临时端口范围内获得一个随机端口号.</p>
+
+<blockquote>
+  <p>客户端之所以不需要调用 bind, 因为它们无需通过某个已知端口访问.</p>
+
+  <p>而服务器要绑定到特定端口的原因是, 客户端需要通过特定的端口访问到服务器.</p>
+
+  <p>以 FTP 为例. 她的熟知端口为 21. 因此FTP读物应该绑定到该端口, 这样客户端就知道从哪里获取FTP服务了. 客户端可以从任意端口发起连接, 客户端选择的端口号不会影响到服务器.</p>
+</blockquote>
+
+<pre><code class="language-ruby">require 'socket'
+
+client = Socket.new(:INET, :STREAM)
+# 发起到 google.com 端口 80 的连接
+remote_addr = Socket.pack_sockaddr_in(80, 'google.com')
+
+client.connect(remote_addr)
+
+</code></pre>
+
+<p>该代码片段是从本地的临时端口向在 <code>google.com</code>	的 80 端口进行侦听的套接字发起 <code>TCP</code>连接</p>
+
+<p>让我们来尝尝语法糖的味道:</p>
+
+<pre><code class="language-ruby">require 'socket'
+
+client = TCPSocket.new('google.com', 80)
+
+# 我们还可以使用 Socket.tcp 构建客户端, 并在代码块中写入处理逻辑
+
+Socket.tcp('google.com', 80) do |conn|
+  conn.write("GET / HTTP/1.1\r\n")
+  conn.close
+end
+</code></pre>
+
+<h2 id="套接字读写操作">
+<a id="套接字读写操作" class="anchor" href="#%E5%A5%97%E6%8E%A5%E5%AD%97%E8%AF%BB%E5%86%99%E6%93%8D%E4%BD%9C" aria-hidden="true"><span class="octicon octicon-link"></span></a>套接字读写操作</h2>
+
+<p>上面的部分都是关于建立连接, 连接两个端点的内容. 尽管这本身挺有意思, 但是如果连接上没有交换的连接, 实际上我们什么有意义的事情也没有做. 本节就来介绍一下连接之后的数据交换.  我们不仅可以建立服务器和客户端的连接, 还能够让它们进行数据交换.</p>
+
+<p>我们可以将<code>TCP</code>连接想象成一串连接了本地套接字和远程套接字的管子, 我们可以沿着管子发送、接收数据. 这种想象有助于增进我们对<code>TCp</code>的理解. <code>Berkeley</code>套接字<code>API</code>就是这样设计的, 我们同样以这种方式对身边的世界进行建模, 解决各类问题.</p>
+
+<h3 id="套接字读操作">
+<a id="套接字读操作" class="anchor" href="#%E5%A5%97%E6%8E%A5%E5%AD%97%E8%AF%BB%E6%93%8D%E4%BD%9C" aria-hidden="true"><span class="octicon octicon-link"></span></a>套接字读操作</h3>
+
+<p>从套接字读起数据最简单的方法就是 <code>read</code>:</p>
+
+<pre><code class="language-ruby"># server
+require 'socket'
+
+Socket.tcp_server_loop(4481) do |conn|
+  # 服务器套接字从连接中读取数据
+  puts conn.read
+
+  # 完成读取之后关闭连接, 让客户端知道不用再等待数据返回
+  conn.close
+end
+
+</code></pre>
+
+<p>我们在另一个终端下面运行下面的<code>netcat</code>命令,  就会在 <code>Ruby服务器</code>中看到我们发送的数据:</p>
+
+<pre><code class="language-shell">$ echo heheda | nc localhost 4481
+</code></pre>
+
+<blockquote>
+  <p>上面的 <code>read</code>和我们使用<code>File.read</code>类似, 这是因为<code>Ruby</code>的各种套接字以及<code>File</code>在<code>IO</code>都有一个共同的父类. <code>Ruby</code>中所有的<code>IO</code>对象(套接字、管道、文件…)都有一套通用的接口, 支持 <code>read</code>、  <code>write</code>、 <code>flush</code>等方法.</p>
+
+  <p>这并不是<code>Ruby</code>的创新.底层的<code>read</code>、<code>write</code>等系统调用都可以作用于文件、套接字、管道之上. 这种抽象源自操作系统核心本身. <strong>一切皆文件</strong></p>
+</blockquote>
+
+<h3 id="阻塞">
+<a id="阻塞" class="anchor" href="#%E9%98%BB%E5%A1%9E" aria-hidden="true"><span class="octicon octicon-link"></span></a>阻塞</h3>
+
+<p>我们运行下面命令不停地向服务器发送数据:</p>
+
+<pre><code class="language-shell">tail -f /var/log/system.log | nc localhost 4481
+</code></pre>
+
+<p>服务器将永远不会停止读取数据, 也永远不会退出.</p>
+
+<p>造成这种 是 <code>EOF(end-of-file)</code>. 我们先使用一种不太成熟的解决方法.</p>
+
+<p><code>tail -f</code> 根据就不会停止发送数据. 如果 <code>tail -f </code>没有数据可以发送, 它就会一直等到有数据为止. 这使得连接<code>netcat</code>的管道一直处于打开状态, 因此 <code>netcat</code>也会永远都不停止向服务器发送数据.</p>
+
+<p>服务器的<code>read</code>就会一直被阻塞着, 直到有客户端发送完整数据为止.</p>
+
+<h4 id="设置读取长度">
+<a id="设置读取长度" class="anchor" href="#%E8%AE%BE%E7%BD%AE%E8%AF%BB%E5%8F%96%E9%95%BF%E5%BA%A6" aria-hidden="true"><span class="octicon octicon-link"></span></a>设置读取长度</h4>
+
+<p>我们可以指定最小的读取长度. 这样就不用等客户端结束发送才停止读取数据, 而是告诉服务器特定的数据量, 然后返回:</p>
+
+<pre><code class="language-ruby"># server
+require 'socket'
+
+ONE_KB = 1024
+
+Socket.tcp_server_loop(4481) do |conn|
+  # 以 1KB 为单位进行读取
+  while data = conn.read(ONE_KB) do
+    puts data
+  end
+
+  conn.close
+end
+
+</code></pre>
+
+<p>运行客户端命令</p>
+
+<pre><code class="language-shell">$ tail -f /var/log/system.log | nc localhost 4481
+</code></pre>
+
+<p>上面的代码会使服务器在<code>netcat</code>命令运行的同时, 以<code>1KB</code>为单位打印数据.</p>
+
+<h4 id="阻塞的本质">
+<a id="阻塞的本质" class="anchor" href="#%E9%98%BB%E5%A1%9E%E7%9A%84%E6%9C%AC%E8%B4%A8" aria-hidden="true"><span class="octicon octicon-link"></span></a>阻塞的本质</h4>
+
+<p><code>read</code>调用会一直阻塞, 直到获取了完整长度的数据为止. 如果读取了一部分数据, 但是不足<code>1KB</code>,那么<code>read</code>会一直阻塞, 直至获得完整的<code>1KB</code>数据为止.</p>
+
+<p>采用这种方法实际上有可能导致死锁. 如果服务器试图从连接中读取<code>1KB</code>的数据, 而客户端只发送了<code>500B</code>就不再发送了, 那么服务器就会一直傻等着那没有发送的<code>500B</code>.</p>
+
+<h6 id="我们可以采用两种方式补救">
+<a id="我们可以采用两种方式补救" class="anchor" href="#%E6%88%91%E4%BB%AC%E5%8F%AF%E4%BB%A5%E9%87%87%E7%94%A8%E4%B8%A4%E7%A7%8D%E6%96%B9%E5%BC%8F%E8%A1%A5%E6%95%91" aria-hidden="true"><span class="octicon octicon-link"></span></a>我们可以采用两种方式补救:</h6>
+
+<ul>
+  <li>客户端发送完<code>500B</code>后再发送一个<code>EOF</code>
+</li>
+  <li>服务器采用部分读取的方式</li>
+</ul>
+
+<h5 id="eof-事件">
+<a id="eof-事件" class="anchor" href="#eof-%E4%BA%8B%E4%BB%B6" aria-hidden="true"><span class="octicon octicon-link"></span></a>EOF 事件</h5>
+
+<p>当在连接上调用<code>read</code>并接收到<code>EOF</code>事件时, 我们就可以断定不会再有数据, 可以停止读取了.</p>
+
+<blockquote>
+  <p>EOF: end of file(文件结尾). 记住一句话: 在<code>Unix</code>世界中, 一切皆是文件.</p>
+</blockquote>
+
+<p><code>EOF</code>并不代表某种字符序列, 他可以使用<code>shutdown</code>或者<code>close</code>来表明自己不需要再写入任何数据, 这就会导致一个<code>EOF</code>事件被发送给在另一端进行读操作的进程. 这样读数据的进程就知道不会再有数据到达了.</p>
+
+<p>我们从头审视并解决上一小节的问题: 如果服务器希望接收<code>1KB</code>的数据, 而客户端只发了<code>500B</code>.</p>
+
+<p>一种改进方法就是客户端发送<code>500B</code>, 然后再发送一个<code>EOF</code> 事件. 服务器接收到该事件后就停止读取, 即使是还未接收够<code>1KB</code>.</p>
+
+<blockquote>
+  <p>EOF 代表不再有数据到达了.</p>
+
+  <p>当我调用<code>File#read</code>时, 它会一直进行数据读取, 直到没有数据为止. 一旦读完整个文件, 它会接收到一个<code>EOF</code>事件并返回已读取到的数据</p>
+</blockquote>
+
+<h5 id="部分读取">
+<a id="部分读取" class="anchor" href="#%E9%83%A8%E5%88%86%E8%AF%BB%E5%8F%96" aria-hidden="true"><span class="octicon octicon-link"></span></a>部分读取</h5>
+
+<p>上面的方式多少有些偷懒: 当我调用<code>read</code>时, 在返回数据之前它会一直等待, 直到获得所需要的最小长度或者是<code>EOF</code>. 还有另外一种读取方式: <code>readpartial</code>.</p>
+
+<p><code>readpartial</code>并不会阻塞, 而是立刻返回可用的数据.调用<code>readpartial</code>需要传入一直整数, 来指定最大的长度</p>
+
+<h3 id="套接字写操作">
+<a id="套接字写操作" class="anchor" href="#%E5%A5%97%E6%8E%A5%E5%AD%97%E5%86%99%E6%93%8D%E4%BD%9C" aria-hidden="true"><span class="octicon octicon-link"></span></a>套接字写操作</h3>
+
+<p>套接字写操作和读操作类似</p>
+
+<pre><code class="language-ruby">require 'socket'
+
+Socket.tcp_server_loop(4481) do |conn|
+  puts conn.readpartial(100)
+  conn.write('Welcome')
+  conn.close
+end
+
+</code></pre>
+
+<h2 id="第一个客户端--服务器">
+<a id="第一个客户端--服务器" class="anchor" href="#%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%AE%A2%E6%88%B7%E7%AB%AF--%E6%9C%8D%E5%8A%A1%E5%99%A8" aria-hidden="true"><span class="octicon octicon-link"></span></a>第一个客户端 &amp; 服务器</h2>
+
+<p>前面几个小节讲述了<code>Socket</code> 建立以及读写操作等内容. 是时候运用我们所学知识来编写一个网络服务器和客户端了.</p>
+
+<h3 id="服务器">
+<a id="服务器" class="anchor" href="#%E6%9C%8D%E5%8A%A1%E5%99%A8" aria-hidden="true"><span class="octicon octicon-link"></span></a>服务器</h3>
+
+<p>就服务器而言, 我打算编写一种全新的<code>NoSQL</code>解决方案, 它将作为<code>Ruby</code>散列表之上的一个网络层, 我们称之为 <code>CloudHash</code>.</p>
+
+<pre><code class="language-ruby"># 服务器端
+
+# 接收客户端发来的请求
+# SET key value =&gt; 设置 hash[key] = value
+# GET key       =&gt; 返回 hash[key]
+require 'socket'
+
+module CloudHash
+  class Server
+
+    def initialize(port)
+      @server = TCPServer.new(port)
+      @storage = {}
+      puts "Listening on port: #{@server.local_address.ip_port}"
+    end
+
+    def run
+      Socket.accept_loop(@server) do |conn|
+        handle(conn)
+        conn.close
+      end
+    end
+
+    def handle(conn)
+      # 从连接中读取指令, 直到读到 `EOF` 为止
+      request = conn.read
+
+      conn.write process(request)
+    end
+
+    # SET key value
+    # GET key
+    def process(request)
+      command, key, value = request.split
+      case command.upcase
+      when 'SET'
+        @storage[key] = value
+      when 'GET'
+        @storage[key]
+      end
+    end
+
+  end
+end
+server = CloudHash::Server.new(4481)
+
+server.run
+
+</code></pre>
+
+<h3 id="客户端">
+<a id="客户端" class="anchor" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF" aria-hidden="true"><span class="octicon octicon-link"></span></a>客户端</h3>
+
+<pre><code class="language-ruby"># 客户端
+
+require 'socket'
+
+module CloudHash
+  class Client
+    class &lt;&lt; self
+      attr_accessor :host, :port
+
+      def get(key)
+        request "GET #{key}"
+      end
+
+      def set(key, value)
+        request "SET #{key} #{value}"
+      end
+
+      def request(string)
+        # 为每一个请求操作创建一个新的 `socket` 连接
+        @client = TCPSocket.new(host, port)
+        @client.write(string)
+
+        #客户端发送完请求后可以关闭写操作
+        @client.close_write
+
+        # 客户端读取服务器响应, 直到读取到 `EOF` 为止
+        @client.read
+      end
+
+    end
+  end
+end
+
+CloudHash::Client.host = 'localhost'
+CloudHash::Client.port = 4481
+
+puts CloudHash::Client.set 'language', 'Ruby'
+puts CloudHash::Client.set 'age', '25'
+puts CloudHash::Client.get 'language'
+puts CloudHash::Client.get 'age'
+
+</code></pre>
+
+<h3 id="运行">
+<a id="运行" class="anchor" href="#%E8%BF%90%E8%A1%8C" aria-hidden="true"><span class="octicon octicon-link"></span></a>运行</h3>
+
+<pre><code class="language-shell">$ ruby server.rb
+
+$ ruby client.rb
+</code></pre>
+
+<p>我们使用网络<code>API</code>将<code>Ruby</code>散列表进行了包装, 不过仅仅是涵盖了简单的读写器而已.</p>
+
+<p>总的来说, <code>CloudHash</code>还是比较简陋. 比如说我们的客户端必须为每一个发送的请求发起一个新的连接.</p>
+
+<p>如果我想连续发送一批请求, 那么每个请求都会占用一个连接. 它处理一条来自客户端套接字命令, 然后关闭.</p>
+
+<p>建立连接会产生不小的开销, 我们完成可以让<code>CloudHash</code>在同一个连接上处理多个请求.</p>
+
+<p>我们的<code>CloudHash</code>有很多地方可以改进:</p>
+
+<ul>
+  <li>客户端/服务器可以使用不需要发送<code>EOF</code> 来分隔消息的<code> DRY协议</code>进行通信. 这样可以在单个连接上发送多个请求, 而服务器依旧可以依次处理每个客户端连接.</li>
+  <li>可以加入某种形式的并发来解决大量请求</li>
+</ul>
+
+<h2 id="再会">
+<a id="再会" class="anchor" href="#%E5%86%8D%E4%BC%9A" aria-hidden="true"><span class="octicon octicon-link"></span></a>再会</h2>
+
+<p>本篇文章主要讲述了<code>Socket</code>的基础知识, 并实现了一个<code>Ruby Hash</code>  网络服务器. 我会在接下来的两篇文章继续阐述 <code>Socket</code>编程.</p>
+
+
+      <h3>关于图片和转载</h3>
+
+      <a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="知识共享许可协议" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br />本作品采用<a rel="license" href="http://creativecommons.org/licenses/by/4.0/">知识共享署名 4.0 国际许可协议</a>进行许可。
+
+      转载时请注明原文链接，图片在使用时请保留图片中的全部内容，可适当缩放并在引用处附上图片所在的文章链接，图片使用 Sketch 进行绘制。
+
+      <h3>关于评论和留言</h3>
+
+      如果对本文 <a href="/tcp-scokets">TCP Socket 编程 -- 基础</a> 的内容有疑问，请在下面的评论系统中留言，谢谢。
+
+      <blockquote>
+        <p>原文链接：<a href="/tcp-scokets">TCP Socket 编程 -- 基础 · 雄关漫道真如铁</a></p>
+
+        <p>Follow: <a href="https://github.com/nju520">nju520 · GitHub</a></p>
+      </blockquote>
+
+    </section>
+
+    <footer class="post-footer">
+
+      <!-- Everything inside the #author tags pulls data from the author -->
+      <!-- #author-->
+
+      
+      <figure class="author-image">
+        <a class="img" href="https://github.com/nju520" style="background-image: url(/assets/images/hacker.png)"><span class="hidden">'s Picture</span></a>
+      </figure>
+      
+
+      <section class="author">
+        <h4><a href="https://github.com/nju520">nju520</a></h4>
+
+        
+        <p> Ruby / Go / JS</p>
+        
+        <div class="author-meta">
+          <span class="author-location icon-location"> Hangzhou, China</span>
+          <span class="author-link icon-link"><a href="http://localhost:4000"> hwbnju.com</a></span>
+        </div>
+      </section>
+
+      <!-- /author  -->
+
+      <section class="share">
+        <h4>Share this post</h4>
+        <a class="icon-twitter" href="http://twitter.com/share?text=TCP Socket 编程 -- 基础&amp;url=http://localhost:4000tcp-scokets"
+          onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+          <span class="hidden">Twitter</span>
+        </a>
+        <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000tcp-scokets"
+          onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+          <span class="hidden">Facebook</span>
+        </a>
+        <a class="icon-google-plus" href="https://plus.google.com/share?url=http://localhost:4000tcp-scokets"
+          onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+          <span class="hidden">Google+</span>
+        </a>
+      </section>
+
+      <div id="gitalk-container"></div>
+      <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+      <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+      <script>
+       const gitalk = new Gitalk({
+         clientID: 'e552ed507a5a4581d8a1',
+         clientSecret: '0abbd4193a0f9b2700936214ff6fda088c665a73',
+         repo: 'bobo-comments',
+         owner: 'nju520',
+         admin: ['nju520'],
+         // labels: ['Gitalk', 'gitment'].concat(["TCP","socket","Ruby"]),
+         // id: location.origin + location.pathname,
+         id: "http://hwbnju.com/tcp-scokets",
+         distractionFreeMode: false
+       });
+
+       gitalk.render('gitalk-container')
+      </script>
+
+    </footer>
+
+  </article>
+
+</main>
+
+<aside class="read-next">
+
+  <!-- [[! next_post ]] -->
+  
+  <a class="read-next-story no-cover" href="tcp-scokets-no-block">
+    <section class="post">
+      <h2>TCP Socket 编程 -- 非阻塞式 IO</h2>
+      <p>## 非阻塞式读操作 还记得我们之前学过的`Socket#read`吗? 它会一直保持阻塞, 直到接收到`EOF`或者获得指定的最小字节数为止. 如果客户端没有发送`EOF`, 就可能会导致阻塞. 这种情况虽然可以通过`readpartial`暂时解决, `readpartial`会立刻返回所有的可用数据. 但是如果没有数据可用, 那么`readpartial`也会陷入阻塞状态. 我们可以使用`read_nonblock`来实现非阻塞式读操作. 和`readpartial` 非常类似, `read_nonblock`需要一个整数的参数,...</p>
+    </section>
+  </a>
+  
+  <!-- [[! /next_post ]] -->
+  <!-- [[! prev_post ]] -->
+  
+  <a class="read-next-story prev no-cover" href="rack-working">
+    <section class="post">
+      <h2>Ruby Rack 协议及其应用(二)</h2>
+      <p>Rack实现分析 创建应用程序 要分析Rack的源码, 我们首先创建一个简单的Rack应用程序 #config.ru # 将 body 标签的内容转换为全大写. class ToUpper def initialize(app) @app =...</p>
+    </section>
+  </a>
+  
+  <!-- [[! /prev_post ]] -->
+</aside>
+
+<!-- /post -->
+
+
+      <footer class="site-footer clearfix">
+        <section class="copyright"><a href="/">雄关漫道真如铁</a> &copy; 2019</section>
+        <section class="poweredby">Proudly published with <a href="https://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/biomadeira/jasper">Jasper</a></section>
+      </footer>
+    </div>
+    <!-- [[! Ghost outputs important scripts and data with this tag ]] -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <!-- [[! The main JavaScript file for Casper ]] -->
+    <script type="text/javascript" src="/assets/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="/assets/js/index.js"></script>
+    <script type="text/javascript" src="/assets/js/prism.js"></script>
+    <script type="text/javascript" src="/assets/js/toc.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+  </body>
+</html>

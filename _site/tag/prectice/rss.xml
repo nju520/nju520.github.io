@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    
+    <title>hwbnju.com</title>
+    
+    <link>http://localhost:4000</link>
+    <description>nju520's Blog</description>
+    <language>en-uk</language>
+    <managingEditor> nju520</managingEditor>
+    <atom:link href="rss" rel="self" type="application/rss+xml" />
+    
+<item>
+  <title>Rails 数据库最佳实践</title>
+  <link>//rails-database-best-prectice-part-1</link>
+  <author>nju520</author>
+  <pubDate>2018-10-13T00:00:00+08:00</pubDate>
+  <guid>//rails-database-best-prectice-part-1</guid>
+  <description><![CDATA[
+  <h2 id="规则1-让数据库完成它应该完成的工作">规则1： 让数据库完成它应该完成的工作</h2>
+
+<p>当我们正确使用数据库的时候，数据库会表现出非常丰富的特性以及令人难以置信的速度。他们在数据过滤和排序方面是非常厉害的，当然其他方面也不错。假如数据库可以做的，我们就让数据库来完成，这方面肯定速度会比Ruby，或其他语言快。</p>
+
+<p>你可能必须学习一点关于数据库方面的知识，但是老实说，为了发挥数据库的最佳好处你不必深入学习太多相关知识。</p>
+
+<p>通常我们用的都是Postgres。选择哪种数据库和认识它、使用它，让它发挥它的长处相比来说，后者更重要。假如你对Postgres好奇，在这篇博客后面有挺多相关资源的链接。我们喜爱他们。</p>
+
+<p>我们的首要原则就是：让数据库来做它擅长的事情，而不是Ruby。</p>
+
+<h2 id="规则2-编写高效的和可以级联调用的scope">规则2： 编写高效的和可以级联调用的Scope</h2>
+
+<p>Scope很好用。它们允许你根据具体的要求创建直观的helper来获取数据的子集，但是反模式的scope反而会显著的扼杀它带给我们的优势。我们先看看<code>.active</code> scope：</p>
+
+<pre><code>class Client &lt; ActiveRecord::Base
+  has_many :projects
+end
+
+class Project &lt; ActiveRecord::Base
+  belongs_to :client
+
+  # Please don't do this...
+  scope :active, -&gt; {
+    includes(:client)
+      .where(active: true)
+      .select { |project| project.client.active? }
+      .sort_by { |project| project.name.downcase }
+  }
+end
+</code></pre>
+
+<p>有几点需要我们注意的是：</p>
+
+<ol>
+  <li>这个scope返回的不是ActiveRecord Relation，所以它不可以链式调用，也不能用<code>.merge</code>方法。</li>
+  <li>这个scope用Ruby来实现数据选择（过滤）</li>
+  <li>用Ruby实现排序</li>
+  <li>周期性的用Ruby实现排序</li>
+</ol>
+
+<h4 id="1-返回activerecordrelation-例如不触发查询">#1 返回ActiveRecord::Relation （例如不触发查询）</h4>
+
+<p>为什么返回Relation更好？ 因为Relation可以链式调用。可链式调用的scope更容易被复用。当scope返回的是Relation时，你可以把多个scope组合进一条查询语句，例如<code>Athlete.active.men.older_than(40)</code>。Relation也可以和<code>.merge()</code>一起使用，安利一下<code>.merge()</code>非常好用。</p>
+
+<h4 id="2-用db选择数据而不是ruby">#2 用DB选择数据（而不是Ruby）</h4>
+
+<p>为什么用Ruby过滤数据是个坏主意？因为和DB相比，Ruby这方面确实很慢。对于小的数据集来说关系大，但是对大量数据集来说，差别就太大了。</p>
+
+<h2 id="首要原则-ruby做的越少越好">首要原则： Ruby做的越少越好</h2>
+
+<p>为什么Ruby在这方面很慢，有三方面原因：</p>
+
+<ul>
+  <li>花费在把数据从数据库里传到应用服务器上的时间</li>
+  <li>ActiveRecord必须解析查询结果，然后为每条记录创建AR模型对象</li>
+  <li>你的数据库有索引（对吧？！），它会让数据过滤非常快，Ruby不会。</li>
+</ul>
+
+<h4 id="3-让数据库排序而不是ruby">#3 让数据库排序（而不是Ruby）</h4>
+
+<p>那么排序呢？在数据库里排序会更快，除非你处理很大的数据集，否则很难注意到这点。最大的问题是<code>.sort_by</code>会触发执行查询，而且我们丢失了Relation数据结构。光这个原因就足够说服我们了。</p>
+
+<h4 id="4-不要把排序放进scope里面或放到一个专用的scope里">#4 不要把排序放进scope里面（或放到一个专用的scope里）</h4>
+
+<p>因为我们尽量创建一个可复用的scope，不可能每个scope的调用都有相同的排序要求。因此，我推荐把微不足道的排序一起单独拿出来。或者，把混合的或比较重要的排序移到它自己的scope，如下：</p>
+
+<pre><code>scope :ordered, =&gt; { order(:status).order('LOWER(name) DESC') }
+</code></pre>
+
+<p>更好的scope看起来如下：</p>
+
+<pre><code>class Client &lt; ActiveRecord::Base
+  has_many :projects
+
+  scope :active, -&gt; { where(active: true) }
+end
+
+class Project &lt; ActiveRecord::Model
+  belongs_to :client
+
+  scope :active, -&gt; {
+    where(active: true)
+      .joins(:client)
+      .merge(Client.active)
+  }
+
+  scope :ordered, -&gt; {
+    order('LOWER(name)')
+  }
+end
+</code></pre>
+
+<p>在重构过的scope版本里看看<code>.merge()</code> <a href="http://api.rubyonrails.org/classes/ActiveRecord/SpawnMethods.html#method-i-merge">api</a>的用法。<code>.merge()</code>让从别的已经join进查询的model中使用scope变得更加容易，减少了潜在的可能存在的重复。</p>
+
+<p>这个版本在效率上等价，但是消除了原来的scope的一些缺点。我觉得也更容易阅读。</p>
+
+<h3 id="规则3-减少数据库调用">规则3： 减少数据库调用</h3>
+
+<p>ActiveRecord为操作数据库提供了容易使用的API。问题主要是在开发期间我们的通常使用本地数据库，数据也很少。一旦你把代码push到生产环境，等待时间瞬间增加了10+倍。数据量显著上升。请求变得非常非常慢。</p>
+
+<h2 id="最佳实践假如经常被访问的页面需要多次访问db那么就需要多花点时间来减少查询数据库的次数">最佳实践：假如经常被访问的页面需要多次访问DB，那么就需要多花点时间来减少查询数据库的次数。</h2>
+
+<p>在很多情况下，区别就在于用<code>.includes()</code> 还是<code>.joins()</code>。有时你还必须使用<code>.group()</code>, <code>.having()</code>和一些其他函数。在很稀少的情况下，你可能需要直接写SQL语言。</p>
+
+<p>对于非不重要的查询, 一旦你实现了SQL，然后在弄清楚怎么把它转化为ActiveRecord。这样的话，你每次只需弄明白一件事，先是纯SQL，然后是ActiveRecord。DB是Postgres？使用<a href="http://pgcli.com/">pgcli</a>而不是psql。</p>
+
+<p>这方面有很多详细的介绍。下面是一些链接：</p>
+
+<ul>
+  <li><a href="http://tomdallimore.com/blog/includes-vs-joins-in-rails-when-and-where">Includes vs Joins in Rails</a></li>
+  <li><a href="http://blog.bigbinary.com/2013/07/01/preload-vs-eager-load-vs-joins-vs-includes.html">Preload vs Eager Load vs Joins vs Includes</a></li>
+  <li><a href="https://github.com/flyerhzm/bullet">Bullet – A gem that warns of N+1 select (and other) issues</a></li>
+</ul>
+
+<p>那么用缓存会怎么样呢？当然，缓存是另外一个加速这些加载速度慢的页面，但是最好先消除低效的查询。当没有缓存时可以提高表现，通常也会减少DB的压力，这对scale会很有帮助。</p>
+
+<h3 id="4使用索引">#4：使用索引</h3>
+
+<p>DB仅在查询有索引的列的时候会很快，否则就会做全表查询（坏消息）。</p>
+
+<h2 id="首要原则在每个id列和其他在where语句里出现的列上都添加索引">首要原则：在每个id列和其他在where语句里出现的列上都添加索引。</h2>
+
+<p>为表添加索引很容易。在Rails的迁移里：</p>
+
+<pre><code class="language-ruby">class SomeMigration &lt; ActiveRecord::Migration
+  def change
+    # Specify that an index is desired when initially defining the table.
+    create_table :memberships do |t|
+      t.timestamps             null: false
+      t.string :status,        null: false, default: 'active', index: true
+      t.references :account,   null: false, index: true, foreign_key: true
+      t.references :club,      null: false, index: true, foreign_key: true
+      # ...
+    end
+
+    # Add an index to an existing table.
+    add_index :payments, :billing_period
+
+    # An index on multiple columns.
+    # This is useful when we always use multiple items in the where clause.
+    add_index :accounts, [:provider, :uid]
+  end
+end
+</code></pre>
+
+<p>现实略微有点差别，而且总是。过度索引和在insert/update时会增加一些开销是可能的，但是作为首要原则，有胜于无。</p>
+
+<p>想要理解当你触发查询或更新时DB正做什么吗？你可以在ActiveRecord Relation末尾添加<code>.explain</code>，它会返回DB的查询计划。见<a href="http://guides.rubyonrails.org/active_record_querying.html#running-explain">running explain</a></p>
+
+<h3 id="规则5对复杂的查询使用query对象">#规则5：对复杂的查询使用Query对象</h3>
+
+<p>我发现scope当他们很简单而且做的不多的时候最好用。我把它们当中可复用的构建块。假如我需要做一些复杂的事情，我会使用Query类来包装复杂的查询。示例如下：</p>
+
+<pre><code class="language-ruby"># A query that returns all of the adults who have signed up as volunteers this year,
+# but have not yet become a pta member.
+class VolunteersNotMembersQuery
+  def initialize(year:)
+    @year = year
+  end
+
+  def relation
+    volunteer_ids  = GroupMembership.select(:person_id).school_year(@year)
+    pta_member_ids = PtaMembership.select(:person_id).school_year(@year)
+
+    Person
+      .active
+      .adults
+      .where(id: volunteer_ids)
+      .where.not(id: pta_member_ids)
+      .order(:last_name)
+  end
+end
+</code></pre>
+
+<p>粗看起来好像查询了多次数据库，然而并没有。
+9-10行只是定义Relation。在15-16行里的两个子查询用到它们。这是生成的SQL（一个单独的查询）：</p>
+
+<pre><code>SELECT people.*
+FROM people
+WHERE people.status = 0
+  AND people.kind != "student"
+  AND (people.id IN (SELECT group_memberships.person_id FROM group_memberships WHERE group_memberships.school_year_id = 1))
+  AND (people.id NOT IN (SELECT pta_memberships.person_id FROM pta_memberships WHERE pta_memberships.school_year_id = 1))
+ORDER BY people.last_name ASC
+</code></pre>
+
+<p>注意，这个查询返回的是一个ActiveRecord::Relation，它可以被复用。</p>
+
+<p>不过有时候要返回一个Relation实在太难，或者因为我只是在做原型设计，不值得那么努力。在这些情况下，我会写一个返回数据的查询类（例如触发查询，然后以模型、hash、或者其他的形式返回数据）。我使用命名惯例：加入返回的是已经查询的数据，用<code>.data</code>，否则用<code>.relation</code>。如上。</p>
+
+<p>查询模式的主要好处是代码组织；这个也是把一些潜在的复杂的代码从Model/Controller里提取到自己的文件的一个比较容易的方式。单独的查询也容易测试。它们也遵循单负责原则。</p>
+
+<h3 id="规则6-避免scope和查询对象外的ad-hoc查询及时查询">#规则6： 避免Scope和查询对象外的ad-hoc查询（及时查询）</h3>
+
+<p>我不记得我第一次从哪里听到的，但是首要原则是和我站在一条线：</p>
+
+<blockquote>
+  <p>限制Scope和查询对象对ActiveRecord的构建查询方法（如<code>.where</code>, <code>.group</code>, <code>joins</code>, <code>.not</code>, 等）的访问。</p>
+</blockquote>
+
+<p>即，把数据读写写进scope和查询对象，而不是在service、controller、task里构建ad-hoc查询。</p>
+
+<p>为什么？嵌入控制器（或视图、任务、等）里的ad-hoc查询更难测试，不能复用。对于推理代码遵从什么原则更容易，让它更容易理解和维护。</p>
+
+<h3 id="规则7使用正确的类型">#规则7：使用正确的类型</h3>
+
+<p>每个数据库提供的数据类型都比你以为的要多。这些不常用的Postgres类型我认为适合绝大多数应用：</p>
+
+<ul>
+  <li>想要保留状态（preserve case），但是希望所有的比较都大小写不敏感吗？<code>citext</code><a href="https://www.postgresql.org/docs/9.6/static/citext.html">doc</a>正是你需要的。在migration里和String用法差不多。</li>
+  <li>想要保存一个集合（例如地址，标签，关键词）但是用一个独立的表觉得太重了？使用<code>array</code>类型。 <a href="https://www.postgresql.org/docs/9.6/static/arrays.html">(PG docs)</a>/<a href="http://guides.rubyonrails.org/active_record_postgresql.html#array">(Rails doc)</a></li>
+  <li>模型化date, int, float Range？使用range类型<a href="https://www.postgresql.org/docs/9.6/static/rangetypes.html">(PG doc)</a>/<a href="http://guides.rubyonrails.org/active_record_postgresql.html#range-types">(Rails doc)</a></li>
+  <li>需要全局独立的ID（主键或其他）使用<code>UUID</code>类型<a href="https://www.postgresql.org/docs/9.6/static/datatype-uuid.html">(PG doc)</a>/<a href="http://guides.rubyonrails.org/active_record_postgresql.html#uuid">(Rails doc)</a></li>
+  <li>需要保存JSON数据，或者在考虑NoSQL DB？使用JSON类型之一<a href="https://www.postgresql.org/docs/9.6/static/datatype-json.html">(PG doc)</a>/<a href="http://guides.rubyonrails.org/active_record_postgresql.html#json">(Rails doc)</a></li>
+</ul>
+
+<p>这些只是特殊的数据类型中的一小部分。感兴趣可以看<a href="http://postgres-data-types.pvh.ca/">理解数据类型的能量–PG的秘密武器</a>了解更多。</p>
+
+<h3 id="规则8考虑你的数据库的全文检索">#规则8：考虑你的数据库的全文检索</h3>
+
+<p>PG高级查询链接 <a href="http://blog.carbonfive.com/2014/10/28/adventures-in-searching-with-postgres-part-1">(1)</a> <a href="http://blog.carbonfive.com/2014/10/28/adventures-in-searching-with-postgres-part-2">(2)</a></p>
+
+<p>和<a href="https://www.postgresql.org/docs/9.6/static/textsearch.html">(PG文档)</a></p>
+
+<h3 id="规则9-存储过程作为最后的选择翻译略">#规则9： 存储过程作为最后的选择（翻译略）</h3>
+
+<p>Wait what?! I’m saying use your database, but not to use stored procedures?!</p>
+
+<p>Yup. There’s a time and place for them, but I think it’s better to avoid them while a product is rapidly evolving. They’re harder to work with and change, awkward to test, and almost definitely unnecessary early on. Keep it simple by leaving business logic out of your database, at least until something drives you to re-evaluate.</p>
+
+<h3 id="总结">总结</h3>
+
+<p>我相信当使用数据库的潜力时产品会性能会表现更好，更容易。建议</p>
+
+<p>减少查询的数量，使用索引，或任何别的建议都不是初级优化IMHO。 它是正确的使用你的数据库。当然，有一个收益递减的点： 例如写一个七七八八的原始SQL查询，从3个一般的查询减少到1个。利用你最好的判断力。</p>
+
+  ]]></description>
+</item>
+
+<item>
+  <title>Rails Callback Best Prectice Part 1</title>
+  <link>//rails-callback-best-prectice-part-1</link>
+  <author>nju520</author>
+  <pubDate>2017-08-23T00:00:00+08:00</pubDate>
+  <guid>//rails-callback-best-prectice-part-1</guid>
+  <description><![CDATA[
+  <p>Here are our guidelines:</p>
+<pre><code>Omit when possible
+Asynchronous by default
+Prefer after_commit to after_save
+Avoid conditional execution
+Don’t use for data validation
+</code></pre>
+<h3 id="guideline-1-omit-when-possible">Guideline 1: Omit When Possible</h3>
+<p>Callbacks ensure that anyone updating or saving a record won’t forget to perform an operation that should be performed on #save.</p>
+
+<p>Most parts of our applications directly modify our ActiveRecord::Base subclasses instead of using a service object to perform an operation. More and more, we are trying to use service objects to encapsulate groups of operations rather than callbacks.</p>
+
+<p>Let’s take a look at a code example for a hypothetical company onboarding flow:</p>
+
+<pre><code class="language-ruby"># Bad
+class Company &lt; ActiveRecord::Base
+  after_commit :send_emails_after_onboarding
+
+  private
+
+  def send_emails_after_onboarding
+    if just_finished_onboarding?
+      EmailSender.send_emails_for_company!(self)
+    end
+  end
+end
+
+# Good
+class Company &lt; ActiveRecord::Base
+end
+
+class CompanyOnboarder
+  def onboard!(company_params)
+    company = Company.new(company_params)
+    company.save!
+    EmailSender.send_emails_for_company!(company)
+  end
+end
+</code></pre>
+<p>By locating our logic in a service object and not a callback, we are not adding logic that will need to run after every #save. Because we have a service class to handle signing up a company, we also reduce the coupling between Company and EmailSender.</p>
+
+<p>Guideline #2: Asynchronous by default
+Whenever we add a callback, that is code that will execute before we can respond to a request. If a class defines 20 callbacks, that’s 20 blocks of code that must execute before we can respond to the user. Generally, this will make requests take longer. Requests that take longer result in a sluggish experience on the front-end.</p>
+
+<p>Therefore if you must write a callback, make sure it gets out of the critical path of the request by making the bulk of itself asynchronous. (Note: This only applies to logic that does not need to exist within the same transaction.) For us at Gusto, that means enqueuing a Sidekiq job.</p>
+
+<p>Let’rubys look at an example:</p>
+
+<pre><code class="language-ruby"># Bad
+class Company &lt; ActiveRecord::Base
+  after_commit :create_welcome_notification, on: :create
+
+  private
+
+  def create_welcome_notification
+    # We're incurring an extra database request here, which
+    # is something we want to avoid during
+    # critical operations like signing up a
+    # new customer
+    notifications.create({ title: 'Welcome to Gusto!' })
+  end
+end
+
+# Good
+class Company &lt; ActiveRecord::Base
+  after_commit :create_welcome_notification, on: :create
+
+  private
+
+  def create_welcome_notification
+    WelcomeNotificationCreator.perform_async(id)
+  end
+end
+
+class WelcomeNotificationCreator
+  include Sidekiq::Worker
+
+  def perform(company_id)
+    @company = Company.find(company_id)
+    @company.notifications.create({ title: 'Welcome to Gusto!' })
+  end
+end
+</code></pre>
+
+<p>Now, you might say, “But the ‘Good’ example is way more code than the ‘Bad’ one! It now takes 2 files!” You would be correct. Writing callbacks in a safe manner by moving the bulk of the logic into a worker will result in more code. The resulting code, however, will reduce coupling on our models and make each component more testable.</p>
+
+<p>Spearubyking of tests, here’s a good way to test callbacks like this using RSpec:</p>
+
+<pre><code class="language-ruby"># spec/models/company_spec.rb
+require 'rails_helper'
+
+RSpec.describe Company, type: :model do
+  describe '#save' do
+    subject { company.save }
+    let(:company) { build(:company) }
+
+    it 'schedules a WelcomeNotificationCreator job' do
+      expect {
+        subject
+      }.to change{ WelcomeNotificationCreator.jobs.size }.by(1)
+      last_job = WelcomeNotificationCreator.jobs.last          
+      expect(last_job['args']).to eq([subject.id])
+    end
+  end
+end
+
+# spec/workers/welcome_notification_creator_spec.rb
+require 'rails_helper'
+
+RSpec.describe WelcomeNotificationCreator do
+  subject { described_class.new.perform(company.id)}
+  let(:company) { create(:company) }
+
+  it 'creates a notification' do
+    expect {
+      subject
+    }.to change(Notification, :count).by(1)
+    expect(Notification.last.title).to eq('Welcome to Gusto!')
+  end
+end
+</code></pre>
+
+<h3 id="guideline-3-prefer-after_commit-to-after_save">Guideline 3: Prefer after_commit to after_save</h3>
+<p>When writing a callback where you want to execute code after a save, create, or update, default to using an after_commit block.</p>
+
+<p>after_commit is the only callback that is triggered once the database transaction is committed. Putting it simply, it’s the only callback whose state will match “the outside world,” specifically the same state that worker process will see.</p>
+
+<p>Without an after_commit callback, you may see strange errors in Sidekiq to the tune of Cannot find Company with ID=12345. These errors will be frustrating to track down because they will only raise once before passing without a problem.</p>
+
+<p>What’s happening with this error is that Sidekiq is picking up the job before the database has committed the new record to it. To the outside world, it looks like your new record does not yet exist. It can be an incredibly frustrating race condition to debug.</p>
+
+<p>The safe default is to use after_commit.</p>
+
+<p>Let’rubys take a look at 2 different code examples:</p>
+
+<pre><code class="language-ruby"># Bad
+class Company &lt; ActiveRecord::Base
+  after_create :create_welcome_notification
+
+  private
+
+  def create_welcome_notification
+    # The database transaction has not been committed at this point,
+    # so there's a chance that the Sidekiq worker will pick up the job
+    # before our `Company` has been persisted to the database.
+    WelcomeNotificationCreator.perform_async(id)
+  end
+end
+
+# Good
+class Company &lt; ActiveRecord::Base
+  after_commit :create_welcome_notification, on: :create
+
+  private
+
+  def create_welcome_notification
+    WelcomeNotificationCreator.perform_async(id)
+  end
+end
+</code></pre>
+
+<p>Please note: The <code>*_changed?</code> helpers are not available within after_commit. If you need to conditionally execute a callback, please be aware of this and use the alternative method if looking at the previous_changes hash. Or…</p>
+
+<p>Guideline #4: Avoid conditional execution
+As a general rule, do not write callbacks that are conditional.</p>
+
+<p>Instead, try to make callbacks that are idempotent and can be safely run multiple times. This is especially important when you begin moving your callback logic to Sidekiq jobs. (See the best practices on Sidekiq to see why Sidekiq jobs must be idempotent.)</p>
+
+<p>Note that this will enqueue more jobs onto Sidekiq, but many of these jobs should be no-ops.</p>
+
+<p>If you must conditionally execute a job, please define that logic within the method body and not in the callback signature. The reason for this is to make sure that the conditions only live in a single place. It’s much easier for the conditional to grow in the method body instead of on the line that defines the conditional.</p>
+
+<p>Let’rubys take a look at a few examples:</p>
+
+<pre><code class="language-ruby"># Bad
+class Company &lt; ActiveRecord::Base
+  after_commit :create_welcome_notification, if: -&gt; { should_welcome? &amp;&amp; admirable_company? }
+
+  private
+
+  def create_welcome_notification
+    WelcomeNotificationCreator.perform_async(id)
+  end
+end
+
+# Good
+class Company &lt; ActiveRecord::Base
+  after_commit :create_welcome_notification
+
+  private
+
+  def create_welcome_notification
+    if should_welcome? &amp;&amp; admirable_company?
+      WelcomeNotificationCreator.perform_async(id)
+    end
+  end
+end
+
+# Best
+class Company &lt; ActiveRecord::Base
+  after_commit :create_welcome_notification
+
+  private
+
+  def create_welcome_notification
+    WelcomeNotificationCreator.perform_async(id)
+  end
+end
+
+class WelcomeNotificationCreator
+  include Sidekiq::Worker
+
+  def perform(company_id)
+    @company = Company.find(company_id)
+
+    return unless @company.should_welcome? &amp;&amp; @company.admirable_company?
+
+    # We passed our check, do the work.
+  end
+end
+</code></pre>
+<p>Please keep in mind that things like on: :create are their own flavor of conditional execution. Generally, try to push that logic into the worker.</p>
+
+<h3 id="guideline-5-dont-use-for-data-validation">Guideline 5: Don’t use for data validation</h3>
+<p>It is possible to use callbacks for data validation, but that should be avoided. ActiveRecord makes certain assumptions on how and when validations will be run, and putting these in callbacks breaks some of those assumptions.</p>
+
+<p>Instead, use the ActiveRecord Validations API.</p>
+
+<p>Conclusion
+With great power comes great responsibility, and Rails callbacks are no exception. They are expressive tools but also come with drawbacks.</p>
+
+<p>We are generally moving away from using callbacks and toward using rich service objects in our applications, but we still have many callbacks that exist. We still have a lot left to do, but we’ve found that the code that follows these guidelines requires less maintenance.</p>
+
+  ]]></description>
+</item>
+
+
+  </channel>
+</rss>

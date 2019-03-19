@@ -1,0 +1,506 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+	<channel>
+		<title>雄关漫道真如铁
+			- Articles</title>
+		<description>
+			nju520's Blog
+			
+		</description>
+		<link>
+			http://localhost:4000
+    </link>
+		
+			
+				<item>
+					<title>MySQL Explain</title>
+					
+						<description>&lt;h2 id=&quot;数据表准备&quot;&gt;数据表准备&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Wed, 21 Nov 2018 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/mysql-explain
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/mysql-explain</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>Rails 数据库最佳实践</title>
+					
+						<description>&lt;h2 id=&quot;规则1-让数据库完成它应该完成的工作&quot;&gt;规则1： 让数据库完成它应该完成的工作&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Sat, 13 Oct 2018 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/rails-database-best-prectice-part-1
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/rails-database-best-prectice-part-1</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>rails重构</title>
+					
+						<description>&lt;p&gt;&lt;code&gt;Ruby on Rails&lt;/code&gt;近几年在国内受到越来越多的开发者的青睐，&lt;code&gt;Rails&lt;/code&gt;应用也从比较简单的内部系统深入到复杂的企业级应用。&lt;/p&gt;
+
+</description>
+					
+					<pubDate>Sat, 01 Sep 2018 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/rails-refactor
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/rails-refactor</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>Sidekiq 异步任务调度与执行</title>
+					
+						<description>&lt;p&gt;sidekiq 是 Ruby 中一款非常优秀的后台任务处理软件, 其本身提供的API十分简洁, 源代码也易于阅读, 没有太多花哨的代码. Sidekiq 将 Redis 的各种数据结构用得都起到好处, 我们可以通过 Sidekiq 加深对 Redis 的印象以及学习如何恰当高效地结合 Redis 实现业务逻辑.本篇文章从 Sidekiq 的启动开始,详细解读 Sidekiq 的异步任务调度和执行.  除此之外, 我还会介绍中间件机制以及在此基础上实现的任务重试机制.&lt;/p&gt;
+
+</description>
+					
+					<pubDate>Thu, 18 Jan 2018 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/sidekiq
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/sidekiq</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>手动实现 MVVM 架构中的双向绑定</title>
+					
+						<description>&lt;h2 id=&quot;mvvm-实现双向绑定&quot;&gt;MVVM 实现双向绑定&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Mon, 08 Jan 2018 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/vue-mvvm
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/vue-mvvm</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>TCP Socket 编程 -- 网络架构模式</title>
+					
+						<description>&lt;p&gt;前面的两篇&lt;code&gt;TCP Socket&lt;/code&gt;系列文章涵盖了&lt;code&gt;TCP Socket&lt;/code&gt;的基础知识和必备技能, 接下来的部分我们将转向最佳实践和真实案例.&lt;/p&gt;
+
+</description>
+					
+					<pubDate>Fri, 15 Dec 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/tcp-scokets-arch
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/tcp-scokets-arch</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>Promise 点滴</title>
+					
+						<description>&lt;h2 id=&quot;promise的含义&quot;&gt;Promise的含义&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Tue, 05 Dec 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/javascript-promise
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/javascript-promise</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>Rails Sessions 原理</title>
+					
+						<description>&lt;p&gt;如果 Rails 不能告诉你谁在访问你的网站？如果你不知道同一个人在访问2个不同的页面？ 如果所有的数据在你返回 response 之前都消失的话？&lt;/p&gt;
+
+</description>
+					
+					<pubDate>Wed, 08 Nov 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/how-rails-session-work
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/how-rails-session-work</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>Ruby Rack 协议及其应用(三)</title>
+					
+						<description>&lt;h2 id=&quot;ruby-on-rails-启动流程&quot;&gt;Ruby on Rails 启动流程&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Sun, 05 Nov 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/rack-rails
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/rack-rails</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>TCP Socket 编程 -- 非阻塞式 IO</title>
+					
+						<description>&lt;h2 id=&quot;非阻塞式读操作&quot;&gt;非阻塞式读操作&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Fri, 03 Nov 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/tcp-scokets-no-block
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/tcp-scokets-no-block</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>TCP Socket 编程 -- 基础</title>
+					
+						<description>&lt;p&gt;网络编程归根结底是关于共享和通信的, 很大程度上要归功于一组特定地套接字编程API的出现.  &lt;code&gt;Berkely Socket API&lt;/code&gt;真正经受住了时间的考验, 它之所以能够屹立不倒的原因就是&lt;strong&gt;我可以在无需了解底层协议的情况下使用套接字&lt;/strong&gt;. &lt;code&gt;Bekeley Socket API&lt;/code&gt;是一种编程&lt;code&gt;API&lt;/code&gt;, 它运作在实际的协议实现之上. 它所关注的是连接两个端点&lt;code&gt;endpoint&lt;/code&gt;共享数据, 而非处理分组和序列号等底层操作.&lt;/p&gt;
+
+</description>
+					
+					<pubDate>Wed, 01 Nov 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/tcp-scokets
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/tcp-scokets</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>Ruby Rack 协议及其应用(二)</title>
+					
+						<description>&lt;h2 id=&quot;rack实现分析&quot;&gt;Rack实现分析&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Tue, 24 Oct 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/rack-working
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/rack-working</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>WEBrick 源码分析</title>
+					
+						<description>&lt;p&gt;&lt;code&gt;WEBrick&lt;/code&gt;是&lt;code&gt;Rack&lt;/code&gt;自带的一个 &lt;code&gt;Web Server&lt;/code&gt;, 历史悠久, 代码量一共才 4000多行. 本文就从源码入手, 解读 &lt;code&gt;WEBrick&lt;/code&gt;实现原理, 并从多线程和&lt;code&gt;IO&lt;/code&gt;的角度来分析 &lt;code&gt;WEBrick&lt;/code&gt; 的优缺点.&lt;/p&gt;
+
+</description>
+					
+					<pubDate>Fri, 01 Sep 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/rack-webrick
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/rack-webrick</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>Rails Callback Best Prectice Part 1</title>
+					
+						<description>&lt;p&gt;Here are our guidelines:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;Omit when possible
+Asynchronous by default
+Prefer after_commit to after_save
+Avoid conditional execution
+Don’t use for data validation
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&quot;guideline-1-omit-when-possible&quot;&gt;Guideline 1: Omit When Possible&lt;/h3&gt;
+&lt;p&gt;Callbacks ensure that anyone updating or saving a record won’t forget to perform an operation that should be performed on #save.&lt;/p&gt;
+
+</description>
+					
+					<pubDate>Wed, 23 Aug 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/rails-callback-best-prectice-part-1
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/rails-callback-best-prectice-part-1</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>Ruby Rack 协议及其应用(一)</title>
+					
+						<description>&lt;h2 id=&quot;rack协议&quot;&gt;Rack协议&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Thu, 17 Aug 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/rack-start
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/rack-start</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>JavaScript bind 原理和实现</title>
+					
+						<description>&lt;h2 id=&quot;bind-原理&quot;&gt;bind 原理&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Sat, 10 Jun 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/javascript-bind
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/javascript-bind</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>Nginx 初探</title>
+					
+						<description>&lt;p&gt;Nginx（发音同engine x）是一个异步框架的 Web服务器，也可以用作反向代理，负载平衡器 和 HTTP缓存。一大部分Web服务器使用Nginx作为负载均衡器。&lt;/p&gt;
+
+</description>
+					
+					<pubDate>Fri, 26 May 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/nginx
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/nginx</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>JavaScript 深入理解 执行上下文</title>
+					
+						<description>&lt;h2 id=&quot;什么是执行上下文执行环境&quot;&gt;什么是执行上下文(执行环境)&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Fri, 12 May 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/javascript-execution-content
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/javascript-execution-content</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>JavaScript 深入理解 this</title>
+					
+						<description>&lt;h3 id=&quot;什么是this&quot;&gt;什么是this&lt;/h3&gt;
+&lt;ol&gt;
+  &lt;li&gt;this: 顾名思义就是这个对象，this到底指向哪个对象呢?
+  this的指向取决于函数执行上下文.
+  当一个函数被调用时, 会创建一个执行上下文. 这个记录会包含函数在哪里被调用, 传入的参数, 函数内部的声明, 以及this的指向.&lt;/li&gt;
+&lt;/ol&gt;
+
+</description>
+					
+					<pubDate>Fri, 05 May 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/javascript-this
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/javascript-this</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>Rails includes and joins</title>
+					
+						<description>&lt;p&gt;在使用 Rails ActiveRecord期间,我们经常使用 &lt;code&gt;includes&lt;/code&gt;来预加载数据, 使用 &lt;code&gt;joins&lt;/code&gt;来生成联接表. 但是有时候我们会生成一个小而精悍的SQL, 有时候却得到一个巨大的SQL. 与此同时, Rails中存在 &lt;code&gt;preload&lt;/code&gt;、 &lt;code&gt;eager_load&lt;/code&gt;、&lt;code&gt;includes&lt;/code&gt;等三种形式来预加载数据,  存在 &lt;code&gt;joins&lt;/code&gt;、&lt;code&gt;left_outer_joins&lt;/code&gt;来生成联接表. 深入研究它们的使用场景和差异会让我们使用 ActiveRecord 处理数据时更加得心应手.&lt;/p&gt;
+
+</description>
+					
+					<pubDate>Wed, 26 Apr 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/rails-includes-and-joins
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/rails-includes-and-joins</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>Redis 实战 (一)</title>
+					
+						<description>&lt;blockquote&gt;
+  &lt;ol&gt;
+    &lt;li&gt;本系列文章参考 《Redis 入门指南》  《Redis IN ACTION》&lt;/li&gt;
+    &lt;li&gt;本系列文章的代码采用 Ruby实现.&lt;/li&gt;
+  &lt;/ol&gt;
+&lt;/blockquote&gt;
+
+</description>
+					
+					<pubDate>Thu, 06 Apr 2017 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/redis-in-action
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/redis-in-action</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>JavaScript 继承模式</title>
+					
+						<description>&lt;h2 id=&quot;继承&quot;&gt;继承&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Tue, 27 Dec 2016 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/javascript-inherit
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/javascript-inherit</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>JavaScript 深入理解 prototype</title>
+					
+						<description>&lt;h2 id=&quot;原型对象&quot;&gt;原型对象&lt;/h2&gt;
+&lt;p&gt;[[Prototype]]
+ 在面向对象语言中,类可以被复制(也就是实例化)多次,就像用模具制作东西一样.之所以会这样是因为实例化一个类就意味着”把类的行为复制到对象中”,对于每一个实例来说都会重复这个过程.&lt;/p&gt;
+
+</description>
+					
+					<pubDate>Sun, 20 Nov 2016 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/javascript-prototype
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/javascript-prototype</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>JavaScript 深入理解 对象 (一)</title>
+					
+						<description>&lt;h2 id=&quot;javascript对象&quot;&gt;Javascript对象&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Fri, 04 Nov 2016 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/javascript-object
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/javascript-object</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>大话 Ruby Block</title>
+					
+						<description>&lt;h2 id=&quot;代码块基础&quot;&gt;代码块基础&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Tue, 20 Sep 2016 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/ruby-block
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/ruby-block</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>JavaScript 与 事件</title>
+					
+						<description>&lt;h2 id=&quot;事件机制&quot;&gt;事件机制&lt;/h2&gt;
+&lt;p&gt;与浏览器进行交互的时候浏览器就会触发各种事件。比如当我们打开某一个网页的时候，浏览器加载完成了这个网页，就会触发一个 load 事件；当我们点击页面中的某一个“地方”，浏览器就会在那个“地方”触发一个 click 事件。&lt;/p&gt;
+
+</description>
+					
+					<pubDate>Tue, 13 Sep 2016 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/javascript-event
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/javascript-event</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>妙用JavaScript中的apply/call/bind</title>
+					
+						<description>&lt;h2 id=&quot;applycall&quot;&gt;apply/call&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;call和apply都是为了改变某个函数运行时的上下文(context)而存在的.换句话说, 就是为了改变函数体内部的this指向.&lt;/strong&gt;&lt;/p&gt;
+
+</description>
+					
+					<pubDate>Sat, 09 Jul 2016 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/javascript-call-apply-bind
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/javascript-call-apply-bind</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>Rails Concern 的使用以及源码解读</title>
+					
+						<description>&lt;h2 id=&quot;使用-activesupportconcern&quot;&gt;使用 ActiveSupport::Concern&lt;/h2&gt;
+
+</description>
+					
+					<pubDate>Fri, 15 Apr 2016 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/rails-concern
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/rails-concern</guid>
+				</item>
+			
+		
+			
+				<item>
+					<title>JavaScript 闭包</title>
+					
+						<description>&lt;h2 id=&quot;闭包产生的条件&quot;&gt;闭包产生的条件&lt;/h2&gt;
+&lt;ul&gt;
+  &lt;li&gt;调用的函数是内部声明&lt;/li&gt;
+  &lt;li&gt;调用的函数是在声明位置函数之外调用的&lt;/li&gt;
+  &lt;li&gt;调用的函数引用外部变量&lt;/li&gt;
+&lt;/ul&gt;
+
+</description>
+					
+					<pubDate>Mon, 07 Mar 2016 00:00:00 +0800</pubDate>
+					<link>
+						http://localhost:4000/javascript-closure
+					</link>
+					<guid isPermaLink="true">http://localhost:4000/javascript-closure</guid>
+				</item>
+			
+		
+	</channel>
+</rss>

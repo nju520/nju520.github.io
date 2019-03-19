@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- [[! Document Settings ]] -->
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- [[! Page Meta ]] -->
+    <title>
+      
+        JavaScript 深入理解 prototype
+      
+    </title>
+    
+    <meta name="description" content="如果你之前只接触过传统的OOP继承模式的话, 就会对 JavaScript 原型模型感到困惑, 但这正是JavaScript原型继承的优势所在. 实现传统的继承模型很简单, 但是实现JavaScript中的原型继承则要困难的多. 本篇文章就围绕 prototype深入探讨一下 原型继承." />
+    
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="/assets/images/favicon.ico" >
+
+    <!-- [[! Styles'n'Scripts ]] -->
+    <link rel="stylesheet" type="text/css" href="/assets/css/screen.css" />
+    <link rel="stylesheet" type="text/css"
+      href="//fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400" />
+
+    <link rel="stylesheet" type="text/css" href="/assets/css/prism.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/toc.css" />
+
+    <!-- [[! Ghost outputs important style and meta data with this tag ]] -->
+    <link rel="canonical" href="/" />
+<meta name="referrer" content="origin" />
+<link rel="next" href="/page2/" />
+
+<meta property="og:site_name" content="雄关漫道真如铁" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="JavaScript 深入理解 prototype" />
+
+<meta property="og:description" content="如果你之前只接触过传统的OOP继承模式的话, 就会对 JavaScript 原型模型感到困惑, 但这正是JavaScript原型继承的优势所在. 实现传统的继承模型很简单, 但是实现JavaScript中的原型继承则要困难的多. 本篇文章就围绕 prototype深入探讨一下 原型继承." />
+
+<meta property="og:url" content="http://localhost:4000/javascript-prototype" />
+<meta property="og:image" content="" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="JavaScript 深入理解 prototype" />
+
+<meta name="twitter:description" content="如果你之前只接触过传统的OOP继承模式的话, 就会对 JavaScript 原型模型感到困惑, 但这正是JavaScript原型继承的优势所在. 实现传统的继承模型很简单, 但是实现JavaScript中的原型继承则要困难的多. 本篇文章就围绕 prototype深入探讨一下 原型继承." />
+
+<meta name="twitter:url" content="http://localhost:4000/javascript-prototype" />
+<meta name="twitter:image:src" content="" />
+
+<script type="application/ld+json">
+  {
+  "@context": "http://schema.org",
+  "@type": "Website",
+  "publisher": "nju520",
+  "url": "http://localhost:4000/javascript-prototype",
+  "image": "",
+  "description": "如果你之前只接触过传统的OOP继承模式的话, 就会对 JavaScript 原型模型感到困惑, 但这正是JavaScript原型继承的优势所在. 实现传统的继承模型很简单, 但是实现JavaScript中的原型继承则要困难的多. 本篇文章就围绕 prototype深入探讨一下 原型继承."
+  }
+</script>
+
+<meta name="generator" content="Jekyll 3.0.0" />
+<link rel="alternate" type="application/rss+xml" title="雄关漫道真如铁" href="/feed.xml" />
+
+    <!-- Add Google Analytics  -->
+    <!-- Google Analytics Tracking code -->
+<script>
+ (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+ })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ ga('create', 'UA-114647632-1', 'auto');
+ ga('send', 'pageview', location.pathname);
+
+</script>
+
+<!-- Baidu Analytics  Manager -->
+<script>
+ var _hmt = _hmt || [];
+ (function() {
+   var hm = document.createElement("script");
+   hm.src = "https://hm.baidu.com/hm.js?e9208862845c46a0f79e7828f495e407";
+   var s = document.getElementsByTagName("script")[0];
+   s.parentNode.insertBefore(hm, s);
+ })();
+</script>
+
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-PWFC85B');</script>
+  <!-- End Google Tag Manager -->
+
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-114647632-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-114647632-1');
+</script>
+
+  </head>
+  <body class=" post-template nav-closed">
+    <!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PWFC85B"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+
+    <div class="nav">
+  <h3 class="nav-title">Home</h3>
+  <a href="#" class="nav-close">
+    <span class="hidden">Close</span>
+  </a>
+  <ul>
+    <li class="nav-home " role="presentation"><a href="/">Home</a></li>
+    <li class="nav-ruby " role="presentation"><a href="/tag/ruby">Ruby</a></li>
+    <li class="nav-javascript  nav-current" role="presentation"><a href="/tag/javascript">JavaScript</a></li>
+    <li class="nav-server " role="presentation"><a href="/tag/server">Server</a></li>
+    <li class="nav-database " role="presentation"><a href="/tag/database">Database</a></li>
+  </ul>
+  <a class="subscribe-button icon-feed" href="/feed.xml">Subscribe</a>
+</div>
+<span class="nav-cover"></span>
+
+
+    <div class="site-wrapper">
+
+      <!-- [[! Everything else gets inserted here ]] -->
+      <!-- < default -->
+
+<!-- The comment above "< default" means - insert everything in this file into -->
+<!-- the [body] of the default.hbs template, which contains our header/footer. -->
+
+<!-- Everything inside the #post tags pulls data from the post -->
+<!-- #post -->
+
+<header class="main-header post-head no-cover">
+  <nav class="main-nav overlay clearfix">
+    <a class="back-button icon-arrow-left" href="/">Home</a>
+    <a class="menu-button icon-menu" href="#"><span class="word">Menu</span></a>
+  </nav>
+</header>
+
+<main class="content" role="main">
+
+  <article class="post">
+
+    <header class="post-template post-header">
+      <h1 class="post-title">JavaScript 深入理解 prototype</h1>
+      <section class="post-meta">
+        <time class="post-date" datetime="2016-11-20">20 Nov 2016</time>
+        <!-- <a href='/'>nju520</a> -->
+        <!-- [[tags prefix=" on "]] -->
+        
+        
+        <a href='/tag/JavaScript'>JavaScript</a>
+        
+        <a href='/tag/prototype'>prototype</a>
+        
+        <a href='/tag/OOP'>OOP</a>
+        
+        
+      </section>
+    </header>
+
+    <section class="post-content">
+
+      <ul class="section-nav">
+<li class="toc-entry toc-h2"><a href="#原型对象">原型对象</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#内省检查类的身份">内省(检查”类”的身份)</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#对象的创建方式之原型模式">对象的创建方式之原型模式</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#更简单的原型语法以及需要注意的一点">更简单的原型语法以及需要注意的一点</a></li>
+<li class="toc-entry toc-h3"><a href="#原型的动态性">原型的动态性</a></li>
+</ul>
+</li>
+</ul><h2 id="原型对象">
+<a id="原型对象" class="anchor" href="#%E5%8E%9F%E5%9E%8B%E5%AF%B9%E8%B1%A1" aria-hidden="true"><span class="octicon octicon-link"></span></a>原型对象</h2>
+<p>[[Prototype]]
+ 在面向对象语言中,类可以被复制(也就是实例化)多次,就像用模具制作东西一样.之所以会这样是因为实例化一个类就意味着”把类的行为复制到对象中”,对于每一个实例来说都会重复这个过程.</p>
+
+<p>但是在 javascript 中,并没有类似的复制机制. 我只能创建多个对象,然后让他们的[[Prototype]]对象关联到同一个对象. 但是在默认情况下并不会进行复制,因此这些对象之间并不会完全失去联系, 他们是互相关联的.</p>
+
+<pre><code class="language-javascript">
+ function Person() {
+   this.name = "hehe";
+ }
+
+ var xiaoming = new Person();
+</code></pre>
+
+<p>javascript 中采用 new Person()这种形式创建一个新对象,新对象的内部链接[[Prototype]]关联的是 Person.prototype对象.</p>
+
+<p><strong>我们并没有初始化一个类,实际上我们并没有从”类”中复制任何行为到一个对象中,只是让两个对象互相关联</strong></p>
+
+<p>==&gt; 我们可以采用 Object.create()方法直接实现一个对象关联到另外一个对象上,这样我们就可以充分发挥[[Prototype]]的威力(委托机制)并且避免不必要的麻烦(比如使用 new 的构造函数调用会生成.prototype 和.constructor引用)</p>
+
+<pre><code class="language-javascript">
+//create 方法的简易实现形式
+if(!Object.create) {
+  Object.create = function(obj) {
+    function F();
+    F.prototype = obj;
+    return new F();
+  };
+}
+</code></pre>
+
+<p>这段 polyfill 代码使用了一个一次性函数 F,我们通过改写它的.prototype 属性使其指向想要关联的对象, 然后再使用 new F()来构造一个新对象关联.</p>
+
+<p>==&gt; ES6可以采用 Object.setPrototypeOf(…)来直接修改对象的原型</p>
+<pre><code class="language-javascript">
+//ES6之前需要抛弃默认的 Bar.prototype
+Bar.prototype = Object.create(Foo.prototype);
+
+//ES6开始可以直接修改现有的 Bar.prototype
+Object.setPrototypeOf(Bar.prototype, Foo.prototype)
+
+</code></pre>
+
+<h3 id="内省检查类的身份">
+<a id="内省检查类的身份" class="anchor" href="#%E5%86%85%E7%9C%81%E6%A3%80%E6%9F%A5%E7%B1%BB%E7%9A%84%E8%BA%AB%E4%BB%BD" aria-hidden="true"><span class="octicon octicon-link"></span></a>内省(检查”类”的身份)</h3>
+
+<p>__proto__属性大致实现过程如下</p>
+
+<pre><code class="language-javascript">
+ Object.defineProperty(Object.prototype, "__proto__", {
+   get: function() {
+     return Object.getPrototypeOf(this);
+   },
+
+   set: function(obj) {
+     Object.setPrototypeOf(this, obj);
+     return obj;
+   }
+ });
+
+</code></pre>
+
+<h2 id="对象的创建方式之原型模式">
+<a id="对象的创建方式之原型模式" class="anchor" href="#%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%88%9B%E5%BB%BA%E6%96%B9%E5%BC%8F%E4%B9%8B%E5%8E%9F%E5%9E%8B%E6%A8%A1%E5%BC%8F" aria-hidden="true"><span class="octicon octicon-link"></span></a>对象的创建方式之原型模式</h2>
+
+<pre><code class="language-javascript">function Person(name, age, job) {
+  this.name = name;
+  this.age = age;
+  this.job = job;
+}
+
+Person.prototype.description = function() {
+  console.log(this.name + this.age + this.job);
+}
+
+使用原型对象的好处就是让所有对象实例都共享它所包含的属性和方法
+
+### 理解原型对象
+
+**无论什么时候,只要创建了一个函数,就会根据一组特定的规则为该函数创建一个 prototype 属性,这个属性指向函数的原型对象.**
+**在默认情况下,函数的原型对象都有一个 constructor 属性,这个 constructor 属性指向函数**
+
+​```javascript
+
+//测试一个属性是否属于原型属性
+function hasPrototypeProperty(object, name) {
+  return !object.hasOwnProperty(name) &amp;&amp;(name in object);
+}
+</code></pre>
+
+<h3 id="更简单的原型语法以及需要注意的一点">
+<a id="更简单的原型语法以及需要注意的一点" class="anchor" href="#%E6%9B%B4%E7%AE%80%E5%8D%95%E7%9A%84%E5%8E%9F%E5%9E%8B%E8%AF%AD%E6%B3%95%E4%BB%A5%E5%8F%8A%E9%9C%80%E8%A6%81%E6%B3%A8%E6%84%8F%E7%9A%84%E4%B8%80%E7%82%B9" aria-hidden="true"><span class="octicon octicon-link"></span></a>更简单的原型语法以及需要注意的一点</h3>
+
+<pre><code class="language-javascript">
+function Person() {
+
+}
+
+Person.prototype = {
+  name: "bobo",
+  age: 22,
+  job: "programmer",
+  description: function() {
+    console.log(this.name + this.age + this.job);
+  }
+};
+
+var friend = new Person();
+alert(friend instanceof Object);//true
+alert(friend instanceof Person);//true
+
+alert(friend.constructor == Person);//false
+alert(friend.constructor == Object);//true
+
+</code></pre>
+<p>上面的代码中我们将 Person.prototype 设置为等于一个以字面量形式创建的对象,最终结果与上面的一样,但是有一个例外:
+<strong>constructor属性不再指向 Person 了,而是指向 Object</strong>
+原因: 当每创建一个函数时,系统就会同时创建它的 prototype 对象,这个对象也会自动获取 construcotr 属性,指向这个函数.也就是说,每一个原型对象都有一个 constructor 属性.</p>
+<pre><code class="language-javascript">var obj = new Person();
+obj.__proto__.constructor == Person;
+Person.prototype.constructor == Person;
+</code></pre>
+<p>现在我们Person.prototype = {…}的形式,相当于重写了默认的原型对象,这个原型对象是Object对象实例的原型对象,因此这个原型对象的 constructor 属性指向的是Object函数,不再指向原来的构造函数 Person.
+尽管 instanceof 能够返回正确的结果,但是 constructor 已经无法确认对象的类型了</p>
+<pre><code class="language-javascript">
+var obj = new Object();//等价于 var obj = {}
+obj.__proto__.constructor == Object
+
+</code></pre>
+
+<p>可以显式地设定原型的 constructor 属性,这样就确保通过 constructor 属性访问到正确的构造函数.</p>
+<pre><code class="language-javascript">
+
+function Person() {
+
+}
+
+Person.prototype = {
+  constructor: Person,
+  name: "bobo",
+  age: 22,
+  job: "programmer",
+  description: function() {
+    console.log(this.name + this.age + this.job);
+  }
+};
+
+
+</code></pre>
+<p>显式定义的 constructor 属性会导致它的[[Enumerable]]特性被设置为 true.默认情况下,原生的 constructor 属性是不可枚举的,因此如果想让 Enumerable 为默认的 false, 可以使用 Object.defineProperty</p>
+
+<pre><code class="language-javascript">
+
+
+function Person() {
+
+}
+
+Person.prototype = {
+  name: "bobo",
+  age: 22,
+  job: "programmer",
+  description: function() {
+    console.log(this.name + this.age + this.job);
+  }
+};
+
+Object.defineProperty(Person.prototype, "constructor", {
+  enumerable: false,
+  value: Person
+})
+</code></pre>
+
+<h3 id="原型的动态性">
+<a id="原型的动态性" class="anchor" href="#%E5%8E%9F%E5%9E%8B%E7%9A%84%E5%8A%A8%E6%80%81%E6%80%A7" aria-hidden="true"><span class="octicon octicon-link"></span></a>原型的动态性</h3>
+<p>由于在原型上查找值的过程是一次搜索,因此我们对原型对象所做的任何修改都能够立即从实例中体现-即使是先创建了实例然后修改原型也是如此</p>
+<pre><code class="language-javascript">
+var friend = new Person();
+
+Person.prototype.sayHi = function() {
+  alert("Hi");
+}
+
+friend.sayHi();//Hi
+
+</code></pre>
+<p>尽管可以随时为原型添加属性和方法,并且修改能够立即在所有的实例中反映出来,但是如果是<strong>重写整个原型对象</strong>,那么情况就不一样.
+调用构造函数时为实例添加一个指向最初原型的[[prototype]]指针,如果把原型对象修改为另外一个对象就切断了构造函数和最初原型之间的关系.
+<strong>实例中的__ proto__指针仅仅指向原型,而不是指向构造函数</strong></p>
+
+<pre><code class="language-javascript">
+
+function Person() {
+
+}
+
+var friend = new Person();
+
+
+Person.prototype = {
+  name: "bobo",
+  age: 22,
+  job: "programmer",
+  description: function() {
+    console.log(this.name + this.age + this.job);
+  }
+};
+
+var myself = new Person();
+
+myself.description();//正常显示结果  bobo22programmer
+
+friend.description();//error
+//friend 指向的最初的原型,最初的原型并没有添加任何属性和方法
+//之后我们手动修改了 Person.prototype
+//但是实例对象并不指向这个最新的原型对象
+</code></pre>
+
+
+      <h3>关于图片和转载</h3>
+
+      <a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="知识共享许可协议" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br />本作品采用<a rel="license" href="http://creativecommons.org/licenses/by/4.0/">知识共享署名 4.0 国际许可协议</a>进行许可。
+
+      转载时请注明原文链接，图片在使用时请保留图片中的全部内容，可适当缩放并在引用处附上图片所在的文章链接，图片使用 Sketch 进行绘制。
+
+      <h3>关于评论和留言</h3>
+
+      如果对本文 <a href="/javascript-prototype">JavaScript 深入理解 prototype</a> 的内容有疑问，请在下面的评论系统中留言，谢谢。
+
+      <blockquote>
+        <p>原文链接：<a href="/javascript-prototype">JavaScript 深入理解 prototype · 雄关漫道真如铁</a></p>
+
+        <p>Follow: <a href="https://github.com/nju520">nju520 · GitHub</a></p>
+      </blockquote>
+
+    </section>
+
+    <footer class="post-footer">
+
+      <!-- Everything inside the #author tags pulls data from the author -->
+      <!-- #author-->
+
+      
+      <figure class="author-image">
+        <a class="img" href="https://github.com/nju520" style="background-image: url(/assets/images/hacker.png)"><span class="hidden">'s Picture</span></a>
+      </figure>
+      
+
+      <section class="author">
+        <h4><a href="https://github.com/nju520">nju520</a></h4>
+
+        
+        <p> Ruby / Go / JS</p>
+        
+        <div class="author-meta">
+          <span class="author-location icon-location"> Hangzhou, China</span>
+          <span class="author-link icon-link"><a href="http://localhost:4000"> hwbnju.com</a></span>
+        </div>
+      </section>
+
+      <!-- /author  -->
+
+      <section class="share">
+        <h4>Share this post</h4>
+        <a class="icon-twitter" href="http://twitter.com/share?text=JavaScript 深入理解 prototype&amp;url=http://localhost:4000javascript-prototype"
+          onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+          <span class="hidden">Twitter</span>
+        </a>
+        <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000javascript-prototype"
+          onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+          <span class="hidden">Facebook</span>
+        </a>
+        <a class="icon-google-plus" href="https://plus.google.com/share?url=http://localhost:4000javascript-prototype"
+          onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+          <span class="hidden">Google+</span>
+        </a>
+      </section>
+
+      <div id="gitalk-container"></div>
+      <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+      <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+      <script>
+       const gitalk = new Gitalk({
+         clientID: 'e552ed507a5a4581d8a1',
+         clientSecret: '0abbd4193a0f9b2700936214ff6fda088c665a73',
+         repo: 'bobo-comments',
+         owner: 'nju520',
+         admin: ['nju520'],
+         // labels: ['Gitalk', 'gitment'].concat(["JavaScript","prototype","OOP"]),
+         // id: location.origin + location.pathname,
+         id: "http://hwbnju.com/javascript-prototype",
+         distractionFreeMode: false
+       });
+
+       gitalk.render('gitalk-container')
+      </script>
+
+    </footer>
+
+  </article>
+
+</main>
+
+<aside class="read-next">
+
+  <!-- [[! next_post ]] -->
+  
+  <a class="read-next-story no-cover" href="javascript-inherit">
+    <section class="post">
+      <h2>JavaScript 继承模式</h2>
+      <p>## 继承 ### 原型链 **利用原型让一个引用类型继承另一个引用类型的属性和方法** #### 阐述原型继承连 JavaScript中的每个对象，都有一个内置的_proto_属性,它实际上是对另一个对象或者null的引用。 当一个对象需要引用一个属性时，JavaScript引擎首先会从这个对象自身的属性表中寻找这个属性标识，如果找到则进行相应读写操作，若没有在自身的属性表中找到，则在_proto_属性引用的对象的属性表中查找，如此往复，直到找到这个属性或者_proto_属性指向null为止。 这个_proto_的引用链，被称作原型链。 ```javascript function SuperType() { this.property...</p>
+    </section>
+  </a>
+  
+  <!-- [[! /next_post ]] -->
+  <!-- [[! prev_post ]] -->
+  
+  <a class="read-next-story prev no-cover" href="javascript-object">
+    <section class="post">
+      <h2>JavaScript 深入理解 对象 (一)</h2>
+      <p>Javascript对象 var person = { name: 'hanwenbo', age: 29, job: "code" } 上面的代码就是创建了一个 person 对象,...</p>
+    </section>
+  </a>
+  
+  <!-- [[! /prev_post ]] -->
+</aside>
+
+<!-- /post -->
+
+
+      <footer class="site-footer clearfix">
+        <section class="copyright"><a href="/">雄关漫道真如铁</a> &copy; 2019</section>
+        <section class="poweredby">Proudly published with <a href="https://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/biomadeira/jasper">Jasper</a></section>
+      </footer>
+    </div>
+    <!-- [[! Ghost outputs important scripts and data with this tag ]] -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <!-- [[! The main JavaScript file for Casper ]] -->
+    <script type="text/javascript" src="/assets/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="/assets/js/index.js"></script>
+    <script type="text/javascript" src="/assets/js/prism.js"></script>
+    <script type="text/javascript" src="/assets/js/toc.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+  </body>
+</html>

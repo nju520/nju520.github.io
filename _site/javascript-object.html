@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- [[! Document Settings ]] -->
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- [[! Page Meta ]] -->
+    <title>
+      
+        JavaScript 深入理解 对象 (一)
+      
+    </title>
+    
+    <meta name="description" content="JavaScript提供了强大而灵活的OOP语言能力.学习JavaScript的难点之一就是理解Object(对象),因为JavaScript的Object对象模型很独特, 初学者不容易掌握. 本系列文章就带你来深入理解 JavaScript的对象, 原型模型以及继承" />
+    
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="/assets/images/favicon.ico" >
+
+    <!-- [[! Styles'n'Scripts ]] -->
+    <link rel="stylesheet" type="text/css" href="/assets/css/screen.css" />
+    <link rel="stylesheet" type="text/css"
+      href="//fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400" />
+
+    <link rel="stylesheet" type="text/css" href="/assets/css/prism.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/toc.css" />
+
+    <!-- [[! Ghost outputs important style and meta data with this tag ]] -->
+    <link rel="canonical" href="/" />
+<meta name="referrer" content="origin" />
+<link rel="next" href="/page2/" />
+
+<meta property="og:site_name" content="雄关漫道真如铁" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="JavaScript 深入理解 对象 (一)" />
+
+<meta property="og:description" content="JavaScript提供了强大而灵活的OOP语言能力.学习JavaScript的难点之一就是理解Object(对象),因为JavaScript的Object对象模型很独特, 初学者不容易掌握. 本系列文章就带你来深入理解 JavaScript的对象, 原型模型以及继承" />
+
+<meta property="og:url" content="http://localhost:4000/javascript-object" />
+<meta property="og:image" content="" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="JavaScript 深入理解 对象 (一)" />
+
+<meta name="twitter:description" content="JavaScript提供了强大而灵活的OOP语言能力.学习JavaScript的难点之一就是理解Object(对象),因为JavaScript的Object对象模型很独特, 初学者不容易掌握. 本系列文章就带你来深入理解 JavaScript的对象, 原型模型以及继承" />
+
+<meta name="twitter:url" content="http://localhost:4000/javascript-object" />
+<meta name="twitter:image:src" content="" />
+
+<script type="application/ld+json">
+  {
+  "@context": "http://schema.org",
+  "@type": "Website",
+  "publisher": "nju520",
+  "url": "http://localhost:4000/javascript-object",
+  "image": "",
+  "description": "JavaScript提供了强大而灵活的OOP语言能力.学习JavaScript的难点之一就是理解Object(对象),因为JavaScript的Object对象模型很独特, 初学者不容易掌握. 本系列文章就带你来深入理解 JavaScript的对象, 原型模型以及继承"
+  }
+</script>
+
+<meta name="generator" content="Jekyll 3.0.0" />
+<link rel="alternate" type="application/rss+xml" title="雄关漫道真如铁" href="/feed.xml" />
+
+    <!-- Add Google Analytics  -->
+    <!-- Google Analytics Tracking code -->
+<script>
+ (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+ })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ ga('create', 'UA-114647632-1', 'auto');
+ ga('send', 'pageview', location.pathname);
+
+</script>
+
+<!-- Baidu Analytics  Manager -->
+<script>
+ var _hmt = _hmt || [];
+ (function() {
+   var hm = document.createElement("script");
+   hm.src = "https://hm.baidu.com/hm.js?e9208862845c46a0f79e7828f495e407";
+   var s = document.getElementsByTagName("script")[0];
+   s.parentNode.insertBefore(hm, s);
+ })();
+</script>
+
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-PWFC85B');</script>
+  <!-- End Google Tag Manager -->
+
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-114647632-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-114647632-1');
+</script>
+
+  </head>
+  <body class=" post-template nav-closed">
+    <!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PWFC85B"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+
+    <div class="nav">
+  <h3 class="nav-title">Home</h3>
+  <a href="#" class="nav-close">
+    <span class="hidden">Close</span>
+  </a>
+  <ul>
+    <li class="nav-home " role="presentation"><a href="/">Home</a></li>
+    <li class="nav-ruby " role="presentation"><a href="/tag/ruby">Ruby</a></li>
+    <li class="nav-javascript  nav-current" role="presentation"><a href="/tag/javascript">JavaScript</a></li>
+    <li class="nav-server " role="presentation"><a href="/tag/server">Server</a></li>
+    <li class="nav-database " role="presentation"><a href="/tag/database">Database</a></li>
+  </ul>
+  <a class="subscribe-button icon-feed" href="/feed.xml">Subscribe</a>
+</div>
+<span class="nav-cover"></span>
+
+
+    <div class="site-wrapper">
+
+      <!-- [[! Everything else gets inserted here ]] -->
+      <!-- < default -->
+
+<!-- The comment above "< default" means - insert everything in this file into -->
+<!-- the [body] of the default.hbs template, which contains our header/footer. -->
+
+<!-- Everything inside the #post tags pulls data from the post -->
+<!-- #post -->
+
+<header class="main-header post-head no-cover">
+  <nav class="main-nav overlay clearfix">
+    <a class="back-button icon-arrow-left" href="/">Home</a>
+    <a class="menu-button icon-menu" href="#"><span class="word">Menu</span></a>
+  </nav>
+</header>
+
+<main class="content" role="main">
+
+  <article class="post">
+
+    <header class="post-template post-header">
+      <h1 class="post-title">JavaScript 深入理解 对象 (一)</h1>
+      <section class="post-meta">
+        <time class="post-date" datetime="2016-11-04">04 Nov 2016</time>
+        <!-- <a href='/'>nju520</a> -->
+        <!-- [[tags prefix=" on "]] -->
+        
+        
+        <a href='/tag/JavaScript'>JavaScript</a>
+        
+        <a href='/tag/object'>object</a>
+        
+        <a href='/tag/OOP'>OOP</a>
+        
+        
+      </section>
+    </header>
+
+    <section class="post-content">
+
+      <ul class="section-nav">
+<li class="toc-entry toc-h2"><a href="#javascript对象">Javascript对象</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#属性类型">属性类型</a>
+<ul>
+<li class="toc-entry toc-h4"><a href="#数据属性">数据属性</a></li>
+<li class="toc-entry toc-h4"><a href="#访问器属性">访问器属性</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h3"><a href="#定义多个属性">定义多个属性</a></li>
+<li class="toc-entry toc-h3"><a href="#读取属性的特性">读取属性的特性</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#创建对象">创建对象</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#工厂模式">工厂模式</a></li>
+<li class="toc-entry toc-h3"><a href="#构造函数模式">构造函数模式</a>
+<ul>
+<li class="toc-entry toc-h4"><a href="#构造函数的缺点">构造函数的缺点</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul><h2 id="javascript对象">
+<a id="javascript对象" class="anchor" href="#javascript%E5%AF%B9%E8%B1%A1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Javascript对象</h2>
+
+<pre><code class="language-javascript">var person = {
+  name: 'hanwenbo',
+  age: 29,
+  job: "code"
+}
+
+</code></pre>
+<p>上面的代码就是创建了一个 person 对象, 并为其添加了三个属性: name age job.</p>
+
+<h3 id="属性类型">
+<a id="属性类型" class="anchor" href="#%E5%B1%9E%E6%80%A7%E7%B1%BB%E5%9E%8B" aria-hidden="true"><span class="octicon octicon-link"></span></a>属性类型</h3>
+<p>ECMA 定义了一些只在内部采用的特性(attribute),这些特性描述了属性(property)的各种特征.
+这些特性是为了实现Javascript 引擎用的内部属性. Javascript无法直接访问这些属性.我们采用[[ Enumerable]]的形式来表示对象的内部特性.</p>
+
+<p>ECMA 中有两种属性: 数据属性和访问器属性</p>
+
+<h4 id="数据属性">
+<a id="数据属性" class="anchor" href="#%E6%95%B0%E6%8D%AE%E5%B1%9E%E6%80%A7" aria-hidden="true"><span class="octicon octicon-link"></span></a>数据属性</h4>
+<p>数据属性包含一个数据值的位置.在这个位置可以读取和写入值.通俗地讲,数据属性就是我们常见的对象的属性(另外一个是对象的方法)
+数据属性有4个描述其行为的特性</p>
+
+<ul>
+  <li>[[configurable]]: 表示能否通过delete 删除属性从而重新定义属性,能够修改属性的特性,或者能否把属性修改为访问器属性.</li>
+  <li>[[Enumerable]]: 能否通过 for-in 循环返回属性</li>
+  <li>[[Writable]]: 表示能够修改属性的值.</li>
+  <li>[[Value]]: 表示这个属性的数据值.</li>
+</ul>
+
+<pre><code class="language-javascript">var person = {}
+Object.defineProperty(person, "name", {
+  configurable: false,
+  writable: false,
+  value: "hanwenbo"
+})
+alert(person.name); //hawnenbo
+person.name = "bobo";
+alert(person.name); //hanwenbo
+
+delete person.name;// 因为 configurable 设置为 false,因为无法删除对象的name 属性
+
+//一旦把对象的属性设置为configurable: false,此时就不能再把它变回可配置了.
+// 以下代码抛出错误
+// VM633:1 Uncaught TypeError: Cannot redefine property: name
+Object.defineProperty(person, "name", {
+  configurable: true,
+  value: "Hanwenbo"
+})
+
+</code></pre>
+<p>可以通过Object.defineProperty修改对象的属性默认值.</p>
+<ul>
+  <li>在调用Object.defineProperty方法创建一个新的属性时,如果不明确指定, configurable enumerable writable 默认都是 false.</li>
+  <li>如果在调用 Object.defineProperty 只是修改已经存在的属性,那么就无限制.</li>
+</ul>
+
+<h4 id="访问器属性">
+<a id="访问器属性" class="anchor" href="#%E8%AE%BF%E9%97%AE%E5%99%A8%E5%B1%9E%E6%80%A7" aria-hidden="true"><span class="octicon octicon-link"></span></a>访问器属性</h4>
+
+<p>访问器属性不包含数据值,他们是一对 getter setter 函数.</p>
+<ul>
+  <li>在读取访问器属性时,调用 getter 函数,这个函数负责返回有效的值</li>
+  <li>在写入的访问器属性时,调用 setter 函数,这个函数决定如何处理数据.</li>
+</ul>
+
+<p>访问器属性也有四个特性( attribute):</p>
+<ul>
+  <li>[[Configurable]]: 能否通过删除属性从而重新定义属性.这个特性默认是 true</li>
+  <li>[[Enumerable]]: 能否通过 for-in 循环返回属性.这个特性默认也是 true</li>
+  <li>[[Get]]: 在读取属性时调用的函数,默认是 undefined</li>
+  <li>[[Set]]: 在写入属性时调用的函数,默认是 undefined</li>
+</ul>
+
+<p>老版浏览器如果需要创建访问器属性,一般使用两种非标准的方法</p>
+<ul>
+  <li><strong>defineGetter</strong></li>
+  <li><strong>defineSetter</strong></li>
+</ul>
+
+<p>访问器属性不能直接定义,必须通过 Object.defineProperty()来定义.</p>
+
+<pre><code class="language-javascript">
+var book = {
+  //_year:表示只能通过对象方法访问的属性,但是我在浏览器console下可以直接访问 book._year
+  _year: 2004,
+  edition: 1
+}
+
+//设置访问器属性 year, 设置其 Get Set 特性
+Object.defineProperty(book, "year", {
+  get: function() {
+    return this._year;
+  }
+  set: function(newValue) {
+    if(newValue &gt; 2004) {
+      this._year = newValue;
+      this.edition += newValue - 2004;
+    }
+  }
+})
+
+book.year = 2005; //设置属性 year, 实际上调用的是 year 属性的 set 特性,修改属性_year 的 value
+alert(book.year);//访问 book.year 实际上是调用的year属性的 get 特性
+alert(book.edition); //访问器常见方式,即设置一个属性的值会导致其他属性发生变化.
+</code></pre>
+
+<h3 id="定义多个属性">
+<a id="定义多个属性" class="anchor" href="#%E5%AE%9A%E4%B9%89%E5%A4%9A%E4%B8%AA%E5%B1%9E%E6%80%A7" aria-hidden="true"><span class="octicon octicon-link"></span></a>定义多个属性</h3>
+
+<pre><code>var book = {};
+
+Object.defineProteries(book, {
+  _year: {
+    writable: true,
+    value: 2004
+  },
+
+  edition: {
+    writable: true,
+    value: 1
+  },
+
+  year: {
+    get: function() {
+      return this._year;
+    },
+
+    set: function(newValue) {
+      if(newValue &gt; 2004) {
+        this._year = newValue;
+        this.edition += newValue - 2004;
+      }
+    }
+  }
+});
+
+</code></pre>
+
+<h3 id="读取属性的特性">
+<a id="读取属性的特性" class="anchor" href="#%E8%AF%BB%E5%8F%96%E5%B1%9E%E6%80%A7%E7%9A%84%E7%89%B9%E6%80%A7" aria-hidden="true"><span class="octicon octicon-link"></span></a>读取属性的特性</h3>
+
+<p>使用 Object.getOwnProteryDescriptor()方法,可以取得给定属性的描述符.返回值是一个对象.如果是访问器属性,那么这个对象的属性有 configurable enumerable get set;如果是数据属性,这个对象的属性有 configurable enumerable writable value</p>
+
+<pre><code class="language-javascript">var book = {}
+Object.defineProperties(book, {
+  _year: {
+    value: 2004
+  },
+
+  edition: {
+    value: 1
+  },
+
+  year: {
+    get: function() {
+      return this._year;
+    },
+
+    set: function(newValue) {
+      if(newValue &gt; 2004) {
+        this._year = newValue;
+        this.edition += newValue - 2004;
+      }
+    }
+  }
+});
+
+var description = Object.getOwnPropertyDescriptor(book, "_year");
+alert(descriptor.value);  // 2004
+alert(descriptor.configrable);  //false(首次用 Object.definePropery 创建属性时, configurable 默认是 false)
+// writable: false, enumerable: false
+alert(descriptor.get);  //undefinded
+
+var descriptor = Object.getOwnPropertyDescriptor(book, "year");
+alert(descriptor.value);  // undefined
+// configurable enumerable 默认应该都是 false 吧
+alert(descriptor.configrable);  // false
+alert(descriptor.enumerable);  // false
+alert(descriptor.get);  //"function"
+
+</code></pre>
+
+<h2 id="创建对象">
+<a id="创建对象" class="anchor" href="#%E5%88%9B%E5%BB%BA%E5%AF%B9%E8%B1%A1" aria-hidden="true"><span class="octicon octicon-link"></span></a>创建对象</h2>
+
+<h3 id="工厂模式">
+<a id="工厂模式" class="anchor" href="#%E5%B7%A5%E5%8E%82%E6%A8%A1%E5%BC%8F" aria-hidden="true"><span class="octicon octicon-link"></span></a>工厂模式</h3>
+
+<pre><code class="language-javascript">
+function createPerson(name, age, job) {
+  var obj = new Object();
+  //var obj = {};
+  obj.name = name;
+  obj.age = age;
+  obj.job = job;
+  obj.description = function() {
+    console.log(this.name + this.age + this.job);
+  }
+  return obj;
+}
+
+var bobo = createPerson("hanwenbo", 27, "programmer");
+bobo.description(); //hanwenbo27programmer
+
+</code></pre>
+<p>工厂模式无法获悉对象的类型</p>
+
+<h3 id="构造函数模式">
+<a id="构造函数模式" class="anchor" href="#%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%E6%A8%A1%E5%BC%8F" aria-hidden="true"><span class="octicon octicon-link"></span></a>构造函数模式</h3>
+<pre><code class="language-javascript">
+function Person(name, age, job) {
+  this.name = name;
+  this.age = age;
+  this.job = job;
+  //下面一行代码默认执行.也就是让新对象的原型的 constructor 属性指向 构造函数 Person
+  //this.__proto__.constructor = Person;
+
+  this.description = function() {
+    console.log(this.name + this.age + this.job);
+  }
+}
+
+var yanzi = new Person("yanzi", 22, "teacher");
+yanzi.description();//yanzi22teacher
+
+</code></pre>
+
+<p>构造函数创建对象经过四个步骤:</p>
+<ul>
+  <li>创建一个新对象 obj, 将obj的原型对象指向构造函数的prototype属性</li>
+  <li>将构造函数的作用域赋值给新对象 obj(因此 this 就指向这个新对象),换句话说,就是让新对象调用构造函数, eg: obj.Person(“yanzi”, 22, “teacher”),所以构造函数的 this 自然执行的是隐式绑定. (这样说虽然不甚严谨, 但是方便理解)</li>
+  <li>执行构造函数中的代码,也就是为这个新对象添加属性和方法</li>
+  <li>
+    <p>如果构造函数没有显式地返回一个对象,默认就返回新创建的对象</p>
+  </li>
+  <li>每个新创建的对象都有一个属性 constructor,该属性指向 constructor. yanzi instanceof Person == true</li>
+</ul>
+
+<p><strong>创建自定义的构造函数意味着可以将它的实例标识为一种特定的类型</strong></p>
+
+<h4 id="构造函数的缺点">
+<a id="构造函数的缺点" class="anchor" href="#%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%E7%9A%84%E7%BC%BA%E7%82%B9" aria-hidden="true"><span class="octicon octicon-link"></span></a>构造函数的缺点</h4>
+<p>每次构造实例时,都会重新建立实例上的方法,实例的方法本质上也是一种对象, 因此每定义一个函数,实际上就是实例化一个函数对象</p>
+<pre><code>function Person(name, age, job) {
+  this.name = name;
+  this.age = age;
+  this.job = job;
+
+  this.description = new Function() {
+    console.log(this.name + this.age + this.job);
+  }
+
+}
+</code></pre>
+
+
+      <h3>关于图片和转载</h3>
+
+      <a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="知识共享许可协议" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br />本作品采用<a rel="license" href="http://creativecommons.org/licenses/by/4.0/">知识共享署名 4.0 国际许可协议</a>进行许可。
+
+      转载时请注明原文链接，图片在使用时请保留图片中的全部内容，可适当缩放并在引用处附上图片所在的文章链接，图片使用 Sketch 进行绘制。
+
+      <h3>关于评论和留言</h3>
+
+      如果对本文 <a href="/javascript-object">JavaScript 深入理解 对象 (一)</a> 的内容有疑问，请在下面的评论系统中留言，谢谢。
+
+      <blockquote>
+        <p>原文链接：<a href="/javascript-object">JavaScript 深入理解 对象 (一) · 雄关漫道真如铁</a></p>
+
+        <p>Follow: <a href="https://github.com/nju520">nju520 · GitHub</a></p>
+      </blockquote>
+
+    </section>
+
+    <footer class="post-footer">
+
+      <!-- Everything inside the #author tags pulls data from the author -->
+      <!-- #author-->
+
+      
+      <figure class="author-image">
+        <a class="img" href="https://github.com/nju520" style="background-image: url(/assets/images/hacker.png)"><span class="hidden">'s Picture</span></a>
+      </figure>
+      
+
+      <section class="author">
+        <h4><a href="https://github.com/nju520">nju520</a></h4>
+
+        
+        <p> Ruby / Go / JS</p>
+        
+        <div class="author-meta">
+          <span class="author-location icon-location"> Hangzhou, China</span>
+          <span class="author-link icon-link"><a href="http://localhost:4000"> hwbnju.com</a></span>
+        </div>
+      </section>
+
+      <!-- /author  -->
+
+      <section class="share">
+        <h4>Share this post</h4>
+        <a class="icon-twitter" href="http://twitter.com/share?text=JavaScript 深入理解 对象 (一)&amp;url=http://localhost:4000javascript-object"
+          onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+          <span class="hidden">Twitter</span>
+        </a>
+        <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000javascript-object"
+          onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+          <span class="hidden">Facebook</span>
+        </a>
+        <a class="icon-google-plus" href="https://plus.google.com/share?url=http://localhost:4000javascript-object"
+          onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+          <span class="hidden">Google+</span>
+        </a>
+      </section>
+
+      <div id="gitalk-container"></div>
+      <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+      <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+      <script>
+       const gitalk = new Gitalk({
+         clientID: 'e552ed507a5a4581d8a1',
+         clientSecret: '0abbd4193a0f9b2700936214ff6fda088c665a73',
+         repo: 'bobo-comments',
+         owner: 'nju520',
+         admin: ['nju520'],
+         // labels: ['Gitalk', 'gitment'].concat(["JavaScript","object","OOP"]),
+         // id: location.origin + location.pathname,
+         id: "http://hwbnju.com/javascript-object",
+         distractionFreeMode: false
+       });
+
+       gitalk.render('gitalk-container')
+      </script>
+
+    </footer>
+
+  </article>
+
+</main>
+
+<aside class="read-next">
+
+  <!-- [[! next_post ]] -->
+  
+  <a class="read-next-story no-cover" href="javascript-prototype">
+    <section class="post">
+      <h2>JavaScript 深入理解 prototype</h2>
+      <p>## 原型对象 [[Prototype]] 在面向对象语言中,类可以被复制(也就是实例化)多次,就像用模具制作东西一样.之所以会这样是因为实例化一个类就意味着"把类的行为复制到对象中",对于每一个实例来说都会重复这个过程. 但是在 javascript 中,并没有类似的复制机制. 我只能创建多个对象,然后让他们的[[Prototype]]对象关联到同一个对象. 但是在默认情况下并不会进行复制,因此这些对象之间并不会完全失去联系, 他们是互相关联的. ```javascript function Person() { this.name...</p>
+    </section>
+  </a>
+  
+  <!-- [[! /next_post ]] -->
+  <!-- [[! prev_post ]] -->
+  
+  <a class="read-next-story prev no-cover" href="ruby-block">
+    <section class="post">
+      <h2>大话 Ruby Block</h2>
+      <p>代码块基础 只有在调用一个方法时,才可以定义一个代码块. 这在一定程度上可以将代码块看做是回调函数. 块直接传递给这个方法, 在方法内部, 可以使用yield关键字来调用代码块. 我的理解: 上面所说的定义一个代码块, 可以将代码块看做一个参数, 调用方法时,除了传入常规的参数外, 也可以传入代码块(匿名函数). 为什么不像JS那样直接传入一个函数作为参数呢? Ruby中方法不能作为参数, 所有才有了方法调用时挂载代码块来实现类似的效果. 块可以有自己的参数,...</p>
+    </section>
+  </a>
+  
+  <!-- [[! /prev_post ]] -->
+</aside>
+
+<!-- /post -->
+
+
+      <footer class="site-footer clearfix">
+        <section class="copyright"><a href="/">雄关漫道真如铁</a> &copy; 2019</section>
+        <section class="poweredby">Proudly published with <a href="https://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/biomadeira/jasper">Jasper</a></section>
+      </footer>
+    </div>
+    <!-- [[! Ghost outputs important scripts and data with this tag ]] -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <!-- [[! The main JavaScript file for Casper ]] -->
+    <script type="text/javascript" src="/assets/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="/assets/js/index.js"></script>
+    <script type="text/javascript" src="/assets/js/prism.js"></script>
+    <script type="text/javascript" src="/assets/js/toc.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+  </body>
+</html>

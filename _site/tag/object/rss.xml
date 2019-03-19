@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    
+    <title>hwbnju.com</title>
+    
+    <link>http://localhost:4000</link>
+    <description>nju520's Blog</description>
+    <language>en-uk</language>
+    <managingEditor> nju520</managingEditor>
+    <atom:link href="rss" rel="self" type="application/rss+xml" />
+    
+<item>
+  <title>JavaScript 深入理解 对象 (一)</title>
+  <link>//javascript-object</link>
+  <author>nju520</author>
+  <pubDate>2016-11-04T00:00:00+08:00</pubDate>
+  <guid>//javascript-object</guid>
+  <description><![CDATA[
+  <h2 id="javascript对象">Javascript对象</h2>
+
+<pre><code class="language-javascript">var person = {
+  name: 'hanwenbo',
+  age: 29,
+  job: "code"
+}
+
+</code></pre>
+<p>上面的代码就是创建了一个 person 对象, 并为其添加了三个属性: name age job.</p>
+
+<h3 id="属性类型">属性类型</h3>
+<p>ECMA 定义了一些只在内部采用的特性(attribute),这些特性描述了属性(property)的各种特征.
+这些特性是为了实现Javascript 引擎用的内部属性. Javascript无法直接访问这些属性.我们采用[[ Enumerable]]的形式来表示对象的内部特性.</p>
+
+<p>ECMA 中有两种属性: 数据属性和访问器属性</p>
+
+<h4 id="数据属性">数据属性</h4>
+<p>数据属性包含一个数据值的位置.在这个位置可以读取和写入值.通俗地讲,数据属性就是我们常见的对象的属性(另外一个是对象的方法)
+数据属性有4个描述其行为的特性</p>
+
+<ul>
+  <li>[[configurable]]: 表示能否通过delete 删除属性从而重新定义属性,能够修改属性的特性,或者能否把属性修改为访问器属性.</li>
+  <li>[[Enumerable]]: 能否通过 for-in 循环返回属性</li>
+  <li>[[Writable]]: 表示能够修改属性的值.</li>
+  <li>[[Value]]: 表示这个属性的数据值.</li>
+</ul>
+
+<pre><code class="language-javascript">var person = {}
+Object.defineProperty(person, "name", {
+  configurable: false,
+  writable: false,
+  value: "hanwenbo"
+})
+alert(person.name); //hawnenbo
+person.name = "bobo";
+alert(person.name); //hanwenbo
+
+delete person.name;// 因为 configurable 设置为 false,因为无法删除对象的name 属性
+
+//一旦把对象的属性设置为configurable: false,此时就不能再把它变回可配置了.
+// 以下代码抛出错误
+// VM633:1 Uncaught TypeError: Cannot redefine property: name
+Object.defineProperty(person, "name", {
+  configurable: true,
+  value: "Hanwenbo"
+})
+
+</code></pre>
+<p>可以通过Object.defineProperty修改对象的属性默认值.</p>
+<ul>
+  <li>在调用Object.defineProperty方法创建一个新的属性时,如果不明确指定, configurable enumerable writable 默认都是 false.</li>
+  <li>如果在调用 Object.defineProperty 只是修改已经存在的属性,那么就无限制.</li>
+</ul>
+
+<h4 id="访问器属性">访问器属性</h4>
+
+<p>访问器属性不包含数据值,他们是一对 getter setter 函数.</p>
+<ul>
+  <li>在读取访问器属性时,调用 getter 函数,这个函数负责返回有效的值</li>
+  <li>在写入的访问器属性时,调用 setter 函数,这个函数决定如何处理数据.</li>
+</ul>
+
+<p>访问器属性也有四个特性( attribute):</p>
+<ul>
+  <li>[[Configurable]]: 能否通过删除属性从而重新定义属性.这个特性默认是 true</li>
+  <li>[[Enumerable]]: 能否通过 for-in 循环返回属性.这个特性默认也是 true</li>
+  <li>[[Get]]: 在读取属性时调用的函数,默认是 undefined</li>
+  <li>[[Set]]: 在写入属性时调用的函数,默认是 undefined</li>
+</ul>
+
+<p>老版浏览器如果需要创建访问器属性,一般使用两种非标准的方法</p>
+<ul>
+  <li><strong>defineGetter</strong></li>
+  <li><strong>defineSetter</strong></li>
+</ul>
+
+<p>访问器属性不能直接定义,必须通过 Object.defineProperty()来定义.</p>
+
+<pre><code class="language-javascript">
+var book = {
+  //_year:表示只能通过对象方法访问的属性,但是我在浏览器console下可以直接访问 book._year
+  _year: 2004,
+  edition: 1
+}
+
+//设置访问器属性 year, 设置其 Get Set 特性
+Object.defineProperty(book, "year", {
+  get: function() {
+    return this._year;
+  }
+  set: function(newValue) {
+    if(newValue &gt; 2004) {
+      this._year = newValue;
+      this.edition += newValue - 2004;
+    }
+  }
+})
+
+book.year = 2005; //设置属性 year, 实际上调用的是 year 属性的 set 特性,修改属性_year 的 value
+alert(book.year);//访问 book.year 实际上是调用的year属性的 get 特性
+alert(book.edition); //访问器常见方式,即设置一个属性的值会导致其他属性发生变化.
+</code></pre>
+
+<h3 id="定义多个属性">定义多个属性</h3>
+
+<pre><code>var book = {};
+
+Object.defineProteries(book, {
+  _year: {
+    writable: true,
+    value: 2004
+  },
+
+  edition: {
+    writable: true,
+    value: 1
+  },
+
+  year: {
+    get: function() {
+      return this._year;
+    },
+
+    set: function(newValue) {
+      if(newValue &gt; 2004) {
+        this._year = newValue;
+        this.edition += newValue - 2004;
+      }
+    }
+  }
+});
+
+</code></pre>
+
+<h3 id="读取属性的特性">读取属性的特性</h3>
+
+<p>使用 Object.getOwnProteryDescriptor()方法,可以取得给定属性的描述符.返回值是一个对象.如果是访问器属性,那么这个对象的属性有 configurable enumerable get set;如果是数据属性,这个对象的属性有 configurable enumerable writable value</p>
+
+<pre><code class="language-javascript">var book = {}
+Object.defineProperties(book, {
+  _year: {
+    value: 2004
+  },
+
+  edition: {
+    value: 1
+  },
+
+  year: {
+    get: function() {
+      return this._year;
+    },
+
+    set: function(newValue) {
+      if(newValue &gt; 2004) {
+        this._year = newValue;
+        this.edition += newValue - 2004;
+      }
+    }
+  }
+});
+
+var description = Object.getOwnPropertyDescriptor(book, "_year");
+alert(descriptor.value);  // 2004
+alert(descriptor.configrable);  //false(首次用 Object.definePropery 创建属性时, configurable 默认是 false)
+// writable: false, enumerable: false
+alert(descriptor.get);  //undefinded
+
+var descriptor = Object.getOwnPropertyDescriptor(book, "year");
+alert(descriptor.value);  // undefined
+// configurable enumerable 默认应该都是 false 吧
+alert(descriptor.configrable);  // false
+alert(descriptor.enumerable);  // false
+alert(descriptor.get);  //"function"
+
+</code></pre>
+
+<h2 id="创建对象">创建对象</h2>
+
+<h3 id="工厂模式">工厂模式</h3>
+
+<pre><code class="language-javascript">
+function createPerson(name, age, job) {
+  var obj = new Object();
+  //var obj = {};
+  obj.name = name;
+  obj.age = age;
+  obj.job = job;
+  obj.description = function() {
+    console.log(this.name + this.age + this.job);
+  }
+  return obj;
+}
+
+var bobo = createPerson("hanwenbo", 27, "programmer");
+bobo.description(); //hanwenbo27programmer
+
+</code></pre>
+<p>工厂模式无法获悉对象的类型</p>
+
+<h3 id="构造函数模式">构造函数模式</h3>
+<pre><code class="language-javascript">
+function Person(name, age, job) {
+  this.name = name;
+  this.age = age;
+  this.job = job;
+  //下面一行代码默认执行.也就是让新对象的原型的 constructor 属性指向 构造函数 Person
+  //this.__proto__.constructor = Person;
+
+  this.description = function() {
+    console.log(this.name + this.age + this.job);
+  }
+}
+
+var yanzi = new Person("yanzi", 22, "teacher");
+yanzi.description();//yanzi22teacher
+
+</code></pre>
+
+<p>构造函数创建对象经过四个步骤:</p>
+<ul>
+  <li>创建一个新对象 obj, 将obj的原型对象指向构造函数的prototype属性</li>
+  <li>将构造函数的作用域赋值给新对象 obj(因此 this 就指向这个新对象),换句话说,就是让新对象调用构造函数, eg: obj.Person(“yanzi”, 22, “teacher”),所以构造函数的 this 自然执行的是隐式绑定. (这样说虽然不甚严谨, 但是方便理解)</li>
+  <li>执行构造函数中的代码,也就是为这个新对象添加属性和方法</li>
+  <li>
+    <p>如果构造函数没有显式地返回一个对象,默认就返回新创建的对象</p>
+  </li>
+  <li>每个新创建的对象都有一个属性 constructor,该属性指向 constructor. yanzi instanceof Person == true</li>
+</ul>
+
+<p><strong>创建自定义的构造函数意味着可以将它的实例标识为一种特定的类型</strong></p>
+
+<h4 id="构造函数的缺点">构造函数的缺点</h4>
+<p>每次构造实例时,都会重新建立实例上的方法,实例的方法本质上也是一种对象, 因此每定义一个函数,实际上就是实例化一个函数对象</p>
+<pre><code>function Person(name, age, job) {
+  this.name = name;
+  this.age = age;
+  this.job = job;
+
+  this.description = new Function() {
+    console.log(this.name + this.age + this.job);
+  }
+
+}
+</code></pre>
+
+  ]]></description>
+</item>
+
+
+  </channel>
+</rss>

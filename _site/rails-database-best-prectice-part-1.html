@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- [[! Document Settings ]] -->
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- [[! Page Meta ]] -->
+    <title>
+      
+        Rails 数据库最佳实践
+      
+    </title>
+    
+    <meta name="description" content="在维护一些老旧的Rails项目的时候，我偶尔会碰到一些不好的ActiveRecord代码。我也花费过一些时间来加速一些相对较慢的、或者多次调用数据库的数据库操作。有了这些经历，启发了我写一些“回归到基础”的Rails数据库最佳实践。" />
+    
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="/assets/images/favicon.ico" >
+
+    <!-- [[! Styles'n'Scripts ]] -->
+    <link rel="stylesheet" type="text/css" href="/assets/css/screen.css" />
+    <link rel="stylesheet" type="text/css"
+      href="//fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400" />
+
+    <link rel="stylesheet" type="text/css" href="/assets/css/prism.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/toc.css" />
+
+    <!-- [[! Ghost outputs important style and meta data with this tag ]] -->
+    <link rel="canonical" href="/" />
+<meta name="referrer" content="origin" />
+<link rel="next" href="/page2/" />
+
+<meta property="og:site_name" content="雄关漫道真如铁" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Rails 数据库最佳实践" />
+
+<meta property="og:description" content="在维护一些老旧的Rails项目的时候，我偶尔会碰到一些不好的ActiveRecord代码。我也花费过一些时间来加速一些相对较慢的、或者多次调用数据库的数据库操作。有了这些经历，启发了我写一些“回归到基础”的Rails数据库最佳实践。" />
+
+<meta property="og:url" content="http://localhost:4000/rails-database-best-prectice-part-1" />
+<meta property="og:image" content="" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Rails 数据库最佳实践" />
+
+<meta name="twitter:description" content="在维护一些老旧的Rails项目的时候，我偶尔会碰到一些不好的ActiveRecord代码。我也花费过一些时间来加速一些相对较慢的、或者多次调用数据库的数据库操作。有了这些经历，启发了我写一些“回归到基础”的Rails数据库最佳实践。" />
+
+<meta name="twitter:url" content="http://localhost:4000/rails-database-best-prectice-part-1" />
+<meta name="twitter:image:src" content="" />
+
+<script type="application/ld+json">
+  {
+  "@context": "http://schema.org",
+  "@type": "Website",
+  "publisher": "nju520",
+  "url": "http://localhost:4000/rails-database-best-prectice-part-1",
+  "image": "",
+  "description": "在维护一些老旧的Rails项目的时候，我偶尔会碰到一些不好的ActiveRecord代码。我也花费过一些时间来加速一些相对较慢的、或者多次调用数据库的数据库操作。有了这些经历，启发了我写一些“回归到基础”的Rails数据库最佳实践。"
+  }
+</script>
+
+<meta name="generator" content="Jekyll 3.0.0" />
+<link rel="alternate" type="application/rss+xml" title="雄关漫道真如铁" href="/feed.xml" />
+
+    <!-- Add Google Analytics  -->
+    <!-- Google Analytics Tracking code -->
+<script>
+ (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+ })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ ga('create', 'UA-114647632-1', 'auto');
+ ga('send', 'pageview', location.pathname);
+
+</script>
+
+<!-- Baidu Analytics  Manager -->
+<script>
+ var _hmt = _hmt || [];
+ (function() {
+   var hm = document.createElement("script");
+   hm.src = "https://hm.baidu.com/hm.js?e9208862845c46a0f79e7828f495e407";
+   var s = document.getElementsByTagName("script")[0];
+   s.parentNode.insertBefore(hm, s);
+ })();
+</script>
+
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-PWFC85B');</script>
+  <!-- End Google Tag Manager -->
+
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-114647632-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-114647632-1');
+</script>
+
+  </head>
+  <body class=" post-template nav-closed">
+    <!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PWFC85B"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+
+    <div class="nav">
+  <h3 class="nav-title">Home</h3>
+  <a href="#" class="nav-close">
+    <span class="hidden">Close</span>
+  </a>
+  <ul>
+    <li class="nav-home " role="presentation"><a href="/">Home</a></li>
+    <li class="nav-ruby " role="presentation"><a href="/tag/ruby">Ruby</a></li>
+    <li class="nav-javascript " role="presentation"><a href="/tag/javascript">JavaScript</a></li>
+    <li class="nav-server " role="presentation"><a href="/tag/server">Server</a></li>
+    <li class="nav-database " role="presentation"><a href="/tag/database">Database</a></li>
+  </ul>
+  <a class="subscribe-button icon-feed" href="/feed.xml">Subscribe</a>
+</div>
+<span class="nav-cover"></span>
+
+
+    <div class="site-wrapper">
+
+      <!-- [[! Everything else gets inserted here ]] -->
+      <!-- < default -->
+
+<!-- The comment above "< default" means - insert everything in this file into -->
+<!-- the [body] of the default.hbs template, which contains our header/footer. -->
+
+<!-- Everything inside the #post tags pulls data from the post -->
+<!-- #post -->
+
+<header class="main-header post-head no-cover">
+  <nav class="main-nav overlay clearfix">
+    <a class="back-button icon-arrow-left" href="/">Home</a>
+    <a class="menu-button icon-menu" href="#"><span class="word">Menu</span></a>
+  </nav>
+</header>
+
+<main class="content" role="main">
+
+  <article class="post">
+
+    <header class="post-template post-header">
+      <h1 class="post-title">Rails 数据库最佳实践</h1>
+      <section class="post-meta">
+        <time class="post-date" datetime="2018-10-13">13 Oct 2018</time>
+        <!-- <a href='/'>nju520</a> -->
+        <!-- [[tags prefix=" on "]] -->
+        
+        
+        <a href='/tag/rails'>rails</a>
+        
+        <a href='/tag/database'>database</a>
+        
+        <a href='/tag/best'>best</a>
+        
+        <a href='/tag/prectice'>prectice</a>
+        
+        
+      </section>
+    </header>
+
+    <section class="post-content">
+
+      <ul class="section-nav">
+<li class="toc-entry toc-h2"><a href="#规则1-让数据库完成它应该完成的工作">规则1： 让数据库完成它应该完成的工作</a></li>
+<li class="toc-entry toc-h2"><a href="#规则2-编写高效的和可以级联调用的scope">规则2： 编写高效的和可以级联调用的Scope</a>
+<ul>
+<li class="toc-entry toc-h4"><a href="#1-返回activerecordrelation-例如不触发查询">#1 返回ActiveRecord::Relation （例如不触发查询）</a></li>
+<li class="toc-entry toc-h4"><a href="#2-用db选择数据而不是ruby">#2 用DB选择数据（而不是Ruby）</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#首要原则-ruby做的越少越好">首要原则： Ruby做的越少越好</a>
+<ul>
+<li class="toc-entry toc-h4"><a href="#3-让数据库排序而不是ruby">#3 让数据库排序（而不是Ruby）</a></li>
+<li class="toc-entry toc-h4"><a href="#4-不要把排序放进scope里面或放到一个专用的scope里">#4 不要把排序放进scope里面（或放到一个专用的scope里）</a></li>
+<li class="toc-entry toc-h3"><a href="#规则3-减少数据库调用">规则3： 减少数据库调用</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#最佳实践假如经常被访问的页面需要多次访问db那么就需要多花点时间来减少查询数据库的次数">最佳实践：假如经常被访问的页面需要多次访问DB，那么就需要多花点时间来减少查询数据库的次数。</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#4使用索引">#4：使用索引</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#首要原则在每个id列和其他在where语句里出现的列上都添加索引">首要原则：在每个id列和其他在where语句里出现的列上都添加索引。</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#规则5对复杂的查询使用query对象">#规则5：对复杂的查询使用Query对象</a></li>
+<li class="toc-entry toc-h3"><a href="#规则6-避免scope和查询对象外的ad-hoc查询及时查询">#规则6： 避免Scope和查询对象外的ad-hoc查询（及时查询）</a></li>
+<li class="toc-entry toc-h3"><a href="#规则7使用正确的类型">#规则7：使用正确的类型</a></li>
+<li class="toc-entry toc-h3"><a href="#规则8考虑你的数据库的全文检索">#规则8：考虑你的数据库的全文检索</a></li>
+<li class="toc-entry toc-h3"><a href="#规则9-存储过程作为最后的选择翻译略">#规则9： 存储过程作为最后的选择（翻译略）</a></li>
+<li class="toc-entry toc-h3"><a href="#总结">总结</a></li>
+</ul>
+</li>
+</ul><h2 id="规则1-让数据库完成它应该完成的工作">
+<a id="规则1-让数据库完成它应该完成的工作" class="anchor" href="#%E8%A7%84%E5%88%991-%E8%AE%A9%E6%95%B0%E6%8D%AE%E5%BA%93%E5%AE%8C%E6%88%90%E5%AE%83%E5%BA%94%E8%AF%A5%E5%AE%8C%E6%88%90%E7%9A%84%E5%B7%A5%E4%BD%9C" aria-hidden="true"><span class="octicon octicon-link"></span></a>规则1： 让数据库完成它应该完成的工作</h2>
+
+<p>当我们正确使用数据库的时候，数据库会表现出非常丰富的特性以及令人难以置信的速度。他们在数据过滤和排序方面是非常厉害的，当然其他方面也不错。假如数据库可以做的，我们就让数据库来完成，这方面肯定速度会比Ruby，或其他语言快。</p>
+
+<p>你可能必须学习一点关于数据库方面的知识，但是老实说，为了发挥数据库的最佳好处你不必深入学习太多相关知识。</p>
+
+<p>通常我们用的都是Postgres。选择哪种数据库和认识它、使用它，让它发挥它的长处相比来说，后者更重要。假如你对Postgres好奇，在这篇博客后面有挺多相关资源的链接。我们喜爱他们。</p>
+
+<p>我们的首要原则就是：让数据库来做它擅长的事情，而不是Ruby。</p>
+
+<h2 id="规则2-编写高效的和可以级联调用的scope">
+<a id="规则2-编写高效的和可以级联调用的scope" class="anchor" href="#%E8%A7%84%E5%88%992-%E7%BC%96%E5%86%99%E9%AB%98%E6%95%88%E7%9A%84%E5%92%8C%E5%8F%AF%E4%BB%A5%E7%BA%A7%E8%81%94%E8%B0%83%E7%94%A8%E7%9A%84scope" aria-hidden="true"><span class="octicon octicon-link"></span></a>规则2： 编写高效的和可以级联调用的Scope</h2>
+
+<p>Scope很好用。它们允许你根据具体的要求创建直观的helper来获取数据的子集，但是反模式的scope反而会显著的扼杀它带给我们的优势。我们先看看<code>.active</code> scope：</p>
+
+<pre><code>class Client &lt; ActiveRecord::Base
+  has_many :projects
+end
+
+class Project &lt; ActiveRecord::Base
+  belongs_to :client
+
+  # Please don't do this...
+  scope :active, -&gt; {
+    includes(:client)
+      .where(active: true)
+      .select { |project| project.client.active? }
+      .sort_by { |project| project.name.downcase }
+  }
+end
+</code></pre>
+
+<p>有几点需要我们注意的是：</p>
+
+<ol>
+  <li>这个scope返回的不是ActiveRecord Relation，所以它不可以链式调用，也不能用<code>.merge</code>方法。</li>
+  <li>这个scope用Ruby来实现数据选择（过滤）</li>
+  <li>用Ruby实现排序</li>
+  <li>周期性的用Ruby实现排序</li>
+</ol>
+
+<h4 id="1-返回activerecordrelation-例如不触发查询">
+<a id="1-返回activerecordrelation-例如不触发查询" class="anchor" href="#1-%E8%BF%94%E5%9B%9Eactiverecordrelation-%E4%BE%8B%E5%A6%82%E4%B8%8D%E8%A7%A6%E5%8F%91%E6%9F%A5%E8%AF%A2" aria-hidden="true"><span class="octicon octicon-link"></span></a>#1 返回ActiveRecord::Relation （例如不触发查询）</h4>
+
+<p>为什么返回Relation更好？ 因为Relation可以链式调用。可链式调用的scope更容易被复用。当scope返回的是Relation时，你可以把多个scope组合进一条查询语句，例如<code>Athlete.active.men.older_than(40)</code>。Relation也可以和<code>.merge()</code>一起使用，安利一下<code>.merge()</code>非常好用。</p>
+
+<h4 id="2-用db选择数据而不是ruby">
+<a id="2-用db选择数据而不是ruby" class="anchor" href="#2-%E7%94%A8db%E9%80%89%E6%8B%A9%E6%95%B0%E6%8D%AE%E8%80%8C%E4%B8%8D%E6%98%AFruby" aria-hidden="true"><span class="octicon octicon-link"></span></a>#2 用DB选择数据（而不是Ruby）</h4>
+
+<p>为什么用Ruby过滤数据是个坏主意？因为和DB相比，Ruby这方面确实很慢。对于小的数据集来说关系大，但是对大量数据集来说，差别就太大了。</p>
+
+<h2 id="首要原则-ruby做的越少越好">
+<a id="首要原则-ruby做的越少越好" class="anchor" href="#%E9%A6%96%E8%A6%81%E5%8E%9F%E5%88%99-ruby%E5%81%9A%E7%9A%84%E8%B6%8A%E5%B0%91%E8%B6%8A%E5%A5%BD" aria-hidden="true"><span class="octicon octicon-link"></span></a>首要原则： Ruby做的越少越好</h2>
+
+<p>为什么Ruby在这方面很慢，有三方面原因：</p>
+
+<ul>
+  <li>花费在把数据从数据库里传到应用服务器上的时间</li>
+  <li>ActiveRecord必须解析查询结果，然后为每条记录创建AR模型对象</li>
+  <li>你的数据库有索引（对吧？！），它会让数据过滤非常快，Ruby不会。</li>
+</ul>
+
+<h4 id="3-让数据库排序而不是ruby">
+<a id="3-让数据库排序而不是ruby" class="anchor" href="#3-%E8%AE%A9%E6%95%B0%E6%8D%AE%E5%BA%93%E6%8E%92%E5%BA%8F%E8%80%8C%E4%B8%8D%E6%98%AFruby" aria-hidden="true"><span class="octicon octicon-link"></span></a>#3 让数据库排序（而不是Ruby）</h4>
+
+<p>那么排序呢？在数据库里排序会更快，除非你处理很大的数据集，否则很难注意到这点。最大的问题是<code>.sort_by</code>会触发执行查询，而且我们丢失了Relation数据结构。光这个原因就足够说服我们了。</p>
+
+<h4 id="4-不要把排序放进scope里面或放到一个专用的scope里">
+<a id="4-不要把排序放进scope里面或放到一个专用的scope里" class="anchor" href="#4-%E4%B8%8D%E8%A6%81%E6%8A%8A%E6%8E%92%E5%BA%8F%E6%94%BE%E8%BF%9Bscope%E9%87%8C%E9%9D%A2%E6%88%96%E6%94%BE%E5%88%B0%E4%B8%80%E4%B8%AA%E4%B8%93%E7%94%A8%E7%9A%84scope%E9%87%8C" aria-hidden="true"><span class="octicon octicon-link"></span></a>#4 不要把排序放进scope里面（或放到一个专用的scope里）</h4>
+
+<p>因为我们尽量创建一个可复用的scope，不可能每个scope的调用都有相同的排序要求。因此，我推荐把微不足道的排序一起单独拿出来。或者，把混合的或比较重要的排序移到它自己的scope，如下：</p>
+
+<pre><code>scope :ordered, =&gt; { order(:status).order('LOWER(name) DESC') }
+</code></pre>
+
+<p>更好的scope看起来如下：</p>
+
+<pre><code>class Client &lt; ActiveRecord::Base
+  has_many :projects
+
+  scope :active, -&gt; { where(active: true) }
+end
+
+class Project &lt; ActiveRecord::Model
+  belongs_to :client
+
+  scope :active, -&gt; {
+    where(active: true)
+      .joins(:client)
+      .merge(Client.active)
+  }
+
+  scope :ordered, -&gt; {
+    order('LOWER(name)')
+  }
+end
+</code></pre>
+
+<p>在重构过的scope版本里看看<code>.merge()</code> <a href="http://api.rubyonrails.org/classes/ActiveRecord/SpawnMethods.html#method-i-merge">api</a>的用法。<code>.merge()</code>让从别的已经join进查询的model中使用scope变得更加容易，减少了潜在的可能存在的重复。</p>
+
+<p>这个版本在效率上等价，但是消除了原来的scope的一些缺点。我觉得也更容易阅读。</p>
+
+<h3 id="规则3-减少数据库调用">
+<a id="规则3-减少数据库调用" class="anchor" href="#%E8%A7%84%E5%88%993-%E5%87%8F%E5%B0%91%E6%95%B0%E6%8D%AE%E5%BA%93%E8%B0%83%E7%94%A8" aria-hidden="true"><span class="octicon octicon-link"></span></a>规则3： 减少数据库调用</h3>
+
+<p>ActiveRecord为操作数据库提供了容易使用的API。问题主要是在开发期间我们的通常使用本地数据库，数据也很少。一旦你把代码push到生产环境，等待时间瞬间增加了10+倍。数据量显著上升。请求变得非常非常慢。</p>
+
+<h2 id="最佳实践假如经常被访问的页面需要多次访问db那么就需要多花点时间来减少查询数据库的次数">
+<a id="最佳实践假如经常被访问的页面需要多次访问db那么就需要多花点时间来减少查询数据库的次数" class="anchor" href="#%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5%E5%81%87%E5%A6%82%E7%BB%8F%E5%B8%B8%E8%A2%AB%E8%AE%BF%E9%97%AE%E7%9A%84%E9%A1%B5%E9%9D%A2%E9%9C%80%E8%A6%81%E5%A4%9A%E6%AC%A1%E8%AE%BF%E9%97%AEdb%E9%82%A3%E4%B9%88%E5%B0%B1%E9%9C%80%E8%A6%81%E5%A4%9A%E8%8A%B1%E7%82%B9%E6%97%B6%E9%97%B4%E6%9D%A5%E5%87%8F%E5%B0%91%E6%9F%A5%E8%AF%A2%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E6%AC%A1%E6%95%B0" aria-hidden="true"><span class="octicon octicon-link"></span></a>最佳实践：假如经常被访问的页面需要多次访问DB，那么就需要多花点时间来减少查询数据库的次数。</h2>
+
+<p>在很多情况下，区别就在于用<code>.includes()</code> 还是<code>.joins()</code>。有时你还必须使用<code>.group()</code>, <code>.having()</code>和一些其他函数。在很稀少的情况下，你可能需要直接写SQL语言。</p>
+
+<p>对于非不重要的查询, 一旦你实现了SQL，然后在弄清楚怎么把它转化为ActiveRecord。这样的话，你每次只需弄明白一件事，先是纯SQL，然后是ActiveRecord。DB是Postgres？使用<a href="http://pgcli.com/">pgcli</a>而不是psql。</p>
+
+<p>这方面有很多详细的介绍。下面是一些链接：</p>
+
+<ul>
+  <li><a href="http://tomdallimore.com/blog/includes-vs-joins-in-rails-when-and-where">Includes vs Joins in Rails</a></li>
+  <li><a href="http://blog.bigbinary.com/2013/07/01/preload-vs-eager-load-vs-joins-vs-includes.html">Preload vs Eager Load vs Joins vs Includes</a></li>
+  <li><a href="https://github.com/flyerhzm/bullet">Bullet – A gem that warns of N+1 select (and other) issues</a></li>
+</ul>
+
+<p>那么用缓存会怎么样呢？当然，缓存是另外一个加速这些加载速度慢的页面，但是最好先消除低效的查询。当没有缓存时可以提高表现，通常也会减少DB的压力，这对scale会很有帮助。</p>
+
+<h3 id="4使用索引">
+<a id="4使用索引" class="anchor" href="#4%E4%BD%BF%E7%94%A8%E7%B4%A2%E5%BC%95" aria-hidden="true"><span class="octicon octicon-link"></span></a>#4：使用索引</h3>
+
+<p>DB仅在查询有索引的列的时候会很快，否则就会做全表查询（坏消息）。</p>
+
+<h2 id="首要原则在每个id列和其他在where语句里出现的列上都添加索引">
+<a id="首要原则在每个id列和其他在where语句里出现的列上都添加索引" class="anchor" href="#%E9%A6%96%E8%A6%81%E5%8E%9F%E5%88%99%E5%9C%A8%E6%AF%8F%E4%B8%AAid%E5%88%97%E5%92%8C%E5%85%B6%E4%BB%96%E5%9C%A8where%E8%AF%AD%E5%8F%A5%E9%87%8C%E5%87%BA%E7%8E%B0%E7%9A%84%E5%88%97%E4%B8%8A%E9%83%BD%E6%B7%BB%E5%8A%A0%E7%B4%A2%E5%BC%95" aria-hidden="true"><span class="octicon octicon-link"></span></a>首要原则：在每个id列和其他在where语句里出现的列上都添加索引。</h2>
+
+<p>为表添加索引很容易。在Rails的迁移里：</p>
+
+<pre><code class="language-ruby">class SomeMigration &lt; ActiveRecord::Migration
+  def change
+    # Specify that an index is desired when initially defining the table.
+    create_table :memberships do |t|
+      t.timestamps             null: false
+      t.string :status,        null: false, default: 'active', index: true
+      t.references :account,   null: false, index: true, foreign_key: true
+      t.references :club,      null: false, index: true, foreign_key: true
+      # ...
+    end
+
+    # Add an index to an existing table.
+    add_index :payments, :billing_period
+
+    # An index on multiple columns.
+    # This is useful when we always use multiple items in the where clause.
+    add_index :accounts, [:provider, :uid]
+  end
+end
+</code></pre>
+
+<p>现实略微有点差别，而且总是。过度索引和在insert/update时会增加一些开销是可能的，但是作为首要原则，有胜于无。</p>
+
+<p>想要理解当你触发查询或更新时DB正做什么吗？你可以在ActiveRecord Relation末尾添加<code>.explain</code>，它会返回DB的查询计划。见<a href="http://guides.rubyonrails.org/active_record_querying.html#running-explain">running explain</a></p>
+
+<h3 id="规则5对复杂的查询使用query对象">
+<a id="规则5对复杂的查询使用query对象" class="anchor" href="#%E8%A7%84%E5%88%995%E5%AF%B9%E5%A4%8D%E6%9D%82%E7%9A%84%E6%9F%A5%E8%AF%A2%E4%BD%BF%E7%94%A8query%E5%AF%B9%E8%B1%A1" aria-hidden="true"><span class="octicon octicon-link"></span></a>#规则5：对复杂的查询使用Query对象</h3>
+
+<p>我发现scope当他们很简单而且做的不多的时候最好用。我把它们当中可复用的构建块。假如我需要做一些复杂的事情，我会使用Query类来包装复杂的查询。示例如下：</p>
+
+<pre><code class="language-ruby"># A query that returns all of the adults who have signed up as volunteers this year,
+# but have not yet become a pta member.
+class VolunteersNotMembersQuery
+  def initialize(year:)
+    @year = year
+  end
+
+  def relation
+    volunteer_ids  = GroupMembership.select(:person_id).school_year(@year)
+    pta_member_ids = PtaMembership.select(:person_id).school_year(@year)
+
+    Person
+      .active
+      .adults
+      .where(id: volunteer_ids)
+      .where.not(id: pta_member_ids)
+      .order(:last_name)
+  end
+end
+</code></pre>
+
+<p>粗看起来好像查询了多次数据库，然而并没有。
+9-10行只是定义Relation。在15-16行里的两个子查询用到它们。这是生成的SQL（一个单独的查询）：</p>
+
+<pre><code>SELECT people.*
+FROM people
+WHERE people.status = 0
+  AND people.kind != "student"
+  AND (people.id IN (SELECT group_memberships.person_id FROM group_memberships WHERE group_memberships.school_year_id = 1))
+  AND (people.id NOT IN (SELECT pta_memberships.person_id FROM pta_memberships WHERE pta_memberships.school_year_id = 1))
+ORDER BY people.last_name ASC
+</code></pre>
+
+<p>注意，这个查询返回的是一个ActiveRecord::Relation，它可以被复用。</p>
+
+<p>不过有时候要返回一个Relation实在太难，或者因为我只是在做原型设计，不值得那么努力。在这些情况下，我会写一个返回数据的查询类（例如触发查询，然后以模型、hash、或者其他的形式返回数据）。我使用命名惯例：加入返回的是已经查询的数据，用<code>.data</code>，否则用<code>.relation</code>。如上。</p>
+
+<p>查询模式的主要好处是代码组织；这个也是把一些潜在的复杂的代码从Model/Controller里提取到自己的文件的一个比较容易的方式。单独的查询也容易测试。它们也遵循单负责原则。</p>
+
+<h3 id="规则6-避免scope和查询对象外的ad-hoc查询及时查询">
+<a id="规则6-避免scope和查询对象外的ad-hoc查询及时查询" class="anchor" href="#%E8%A7%84%E5%88%996-%E9%81%BF%E5%85%8Dscope%E5%92%8C%E6%9F%A5%E8%AF%A2%E5%AF%B9%E8%B1%A1%E5%A4%96%E7%9A%84ad-hoc%E6%9F%A5%E8%AF%A2%E5%8F%8A%E6%97%B6%E6%9F%A5%E8%AF%A2" aria-hidden="true"><span class="octicon octicon-link"></span></a>#规则6： 避免Scope和查询对象外的ad-hoc查询（及时查询）</h3>
+
+<p>我不记得我第一次从哪里听到的，但是首要原则是和我站在一条线：</p>
+
+<blockquote>
+  <p>限制Scope和查询对象对ActiveRecord的构建查询方法（如<code>.where</code>, <code>.group</code>, <code>joins</code>, <code>.not</code>, 等）的访问。</p>
+</blockquote>
+
+<p>即，把数据读写写进scope和查询对象，而不是在service、controller、task里构建ad-hoc查询。</p>
+
+<p>为什么？嵌入控制器（或视图、任务、等）里的ad-hoc查询更难测试，不能复用。对于推理代码遵从什么原则更容易，让它更容易理解和维护。</p>
+
+<h3 id="规则7使用正确的类型">
+<a id="规则7使用正确的类型" class="anchor" href="#%E8%A7%84%E5%88%997%E4%BD%BF%E7%94%A8%E6%AD%A3%E7%A1%AE%E7%9A%84%E7%B1%BB%E5%9E%8B" aria-hidden="true"><span class="octicon octicon-link"></span></a>#规则7：使用正确的类型</h3>
+
+<p>每个数据库提供的数据类型都比你以为的要多。这些不常用的Postgres类型我认为适合绝大多数应用：</p>
+
+<ul>
+  <li>想要保留状态（preserve case），但是希望所有的比较都大小写不敏感吗？<code>citext</code><a href="https://www.postgresql.org/docs/9.6/static/citext.html">doc</a>正是你需要的。在migration里和String用法差不多。</li>
+  <li>想要保存一个集合（例如地址，标签，关键词）但是用一个独立的表觉得太重了？使用<code>array</code>类型。 <a href="https://www.postgresql.org/docs/9.6/static/arrays.html">(PG docs)</a>/<a href="http://guides.rubyonrails.org/active_record_postgresql.html#array">(Rails doc)</a>
+</li>
+  <li>模型化date, int, float Range？使用range类型<a href="https://www.postgresql.org/docs/9.6/static/rangetypes.html">(PG doc)</a>/<a href="http://guides.rubyonrails.org/active_record_postgresql.html#range-types">(Rails doc)</a>
+</li>
+  <li>需要全局独立的ID（主键或其他）使用<code>UUID</code>类型<a href="https://www.postgresql.org/docs/9.6/static/datatype-uuid.html">(PG doc)</a>/<a href="http://guides.rubyonrails.org/active_record_postgresql.html#uuid">(Rails doc)</a>
+</li>
+  <li>需要保存JSON数据，或者在考虑NoSQL DB？使用JSON类型之一<a href="https://www.postgresql.org/docs/9.6/static/datatype-json.html">(PG doc)</a>/<a href="http://guides.rubyonrails.org/active_record_postgresql.html#json">(Rails doc)</a>
+</li>
+</ul>
+
+<p>这些只是特殊的数据类型中的一小部分。感兴趣可以看<a href="http://postgres-data-types.pvh.ca/">理解数据类型的能量–PG的秘密武器</a>了解更多。</p>
+
+<h3 id="规则8考虑你的数据库的全文检索">
+<a id="规则8考虑你的数据库的全文检索" class="anchor" href="#%E8%A7%84%E5%88%998%E8%80%83%E8%99%91%E4%BD%A0%E7%9A%84%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E5%85%A8%E6%96%87%E6%A3%80%E7%B4%A2" aria-hidden="true"><span class="octicon octicon-link"></span></a>#规则8：考虑你的数据库的全文检索</h3>
+
+<p>PG高级查询链接 <a href="http://blog.carbonfive.com/2014/10/28/adventures-in-searching-with-postgres-part-1">(1)</a> <a href="http://blog.carbonfive.com/2014/10/28/adventures-in-searching-with-postgres-part-2">(2)</a></p>
+
+<p>和<a href="https://www.postgresql.org/docs/9.6/static/textsearch.html">(PG文档)</a></p>
+
+<h3 id="规则9-存储过程作为最后的选择翻译略">
+<a id="规则9-存储过程作为最后的选择翻译略" class="anchor" href="#%E8%A7%84%E5%88%999-%E5%AD%98%E5%82%A8%E8%BF%87%E7%A8%8B%E4%BD%9C%E4%B8%BA%E6%9C%80%E5%90%8E%E7%9A%84%E9%80%89%E6%8B%A9%E7%BF%BB%E8%AF%91%E7%95%A5" aria-hidden="true"><span class="octicon octicon-link"></span></a>#规则9： 存储过程作为最后的选择（翻译略）</h3>
+
+<p>Wait what?! I’m saying use your database, but not to use stored procedures?!</p>
+
+<p>Yup. There’s a time and place for them, but I think it’s better to avoid them while a product is rapidly evolving. They’re harder to work with and change, awkward to test, and almost definitely unnecessary early on. Keep it simple by leaving business logic out of your database, at least until something drives you to re-evaluate.</p>
+
+<h3 id="总结">
+<a id="总结" class="anchor" href="#%E6%80%BB%E7%BB%93" aria-hidden="true"><span class="octicon octicon-link"></span></a>总结</h3>
+
+<p>我相信当使用数据库的潜力时产品会性能会表现更好，更容易。建议</p>
+
+<p>减少查询的数量，使用索引，或任何别的建议都不是初级优化IMHO。 它是正确的使用你的数据库。当然，有一个收益递减的点： 例如写一个七七八八的原始SQL查询，从3个一般的查询减少到1个。利用你最好的判断力。</p>
+
+
+      <h3>关于图片和转载</h3>
+
+      <a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="知识共享许可协议" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br />本作品采用<a rel="license" href="http://creativecommons.org/licenses/by/4.0/">知识共享署名 4.0 国际许可协议</a>进行许可。
+
+      转载时请注明原文链接，图片在使用时请保留图片中的全部内容，可适当缩放并在引用处附上图片所在的文章链接，图片使用 Sketch 进行绘制。
+
+      <h3>关于评论和留言</h3>
+
+      如果对本文 <a href="/rails-database-best-prectice-part-1">Rails 数据库最佳实践</a> 的内容有疑问，请在下面的评论系统中留言，谢谢。
+
+      <blockquote>
+        <p>原文链接：<a href="/rails-database-best-prectice-part-1">Rails 数据库最佳实践 · 雄关漫道真如铁</a></p>
+
+        <p>Follow: <a href="https://github.com/nju520">nju520 · GitHub</a></p>
+      </blockquote>
+
+    </section>
+
+    <footer class="post-footer">
+
+      <!-- Everything inside the #author tags pulls data from the author -->
+      <!-- #author-->
+
+      
+      <figure class="author-image">
+        <a class="img" href="https://github.com/nju520" style="background-image: url(/assets/images/hacker.png)"><span class="hidden">'s Picture</span></a>
+      </figure>
+      
+
+      <section class="author">
+        <h4><a href="https://github.com/nju520">nju520</a></h4>
+
+        
+        <p> Ruby / Go / JS</p>
+        
+        <div class="author-meta">
+          <span class="author-location icon-location"> Hangzhou, China</span>
+          <span class="author-link icon-link"><a href="http://localhost:4000"> hwbnju.com</a></span>
+        </div>
+      </section>
+
+      <!-- /author  -->
+
+      <section class="share">
+        <h4>Share this post</h4>
+        <a class="icon-twitter" href="http://twitter.com/share?text=Rails 数据库最佳实践&amp;url=http://localhost:4000rails-database-best-prectice-part-1"
+          onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+          <span class="hidden">Twitter</span>
+        </a>
+        <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000rails-database-best-prectice-part-1"
+          onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+          <span class="hidden">Facebook</span>
+        </a>
+        <a class="icon-google-plus" href="https://plus.google.com/share?url=http://localhost:4000rails-database-best-prectice-part-1"
+          onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+          <span class="hidden">Google+</span>
+        </a>
+      </section>
+
+      <div id="gitalk-container"></div>
+      <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+      <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+      <script>
+       const gitalk = new Gitalk({
+         clientID: 'e552ed507a5a4581d8a1',
+         clientSecret: '0abbd4193a0f9b2700936214ff6fda088c665a73',
+         repo: 'bobo-comments',
+         owner: 'nju520',
+         admin: ['nju520'],
+         // labels: ['Gitalk', 'gitment'].concat(["rails","database","best","prectice"]),
+         // id: location.origin + location.pathname,
+         id: "http://hwbnju.com/rails-database-best-prectice-part-1",
+         distractionFreeMode: false
+       });
+
+       gitalk.render('gitalk-container')
+      </script>
+
+    </footer>
+
+  </article>
+
+</main>
+
+<aside class="read-next">
+
+  <!-- [[! next_post ]] -->
+  
+  <a class="read-next-story no-cover" href="mysql-explain">
+    <section class="post">
+      <h2>MySQL Explain</h2>
+      <p>## 数据表准备 ### 数据库 ```sql > CREATE database explain_examples ``` ### 数据表 ```sql ``` ```sql...</p>
+    </section>
+  </a>
+  
+  <!-- [[! /next_post ]] -->
+  <!-- [[! prev_post ]] -->
+  
+  <a class="read-next-story prev no-cover" href="rails-refactor">
+    <section class="post">
+      <h2>rails重构</h2>
+      <p>Ruby on Rails近几年在国内受到越来越多的开发者的青睐，Rails应用也从比较简单的内部系统深入到复杂的企业级应用。 Rails的习惯大于配置的思想以及ActiveRecord等众多优秀的技术极大地提高了开发效率，但是在业务复杂的大型系统中，Rails应用也会面临很多问题。 本篇文章围绕以下几种模式来详细地阐述如何更好的进行Rails代码重构: Services Objects Form Objects Query Objects View Objects(Serializer/Presenter) Policies Objects...</p>
+    </section>
+  </a>
+  
+  <!-- [[! /prev_post ]] -->
+</aside>
+
+<!-- /post -->
+
+
+      <footer class="site-footer clearfix">
+        <section class="copyright"><a href="/">雄关漫道真如铁</a> &copy; 2019</section>
+        <section class="poweredby">Proudly published with <a href="https://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/biomadeira/jasper">Jasper</a></section>
+      </footer>
+    </div>
+    <!-- [[! Ghost outputs important scripts and data with this tag ]] -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <!-- [[! The main JavaScript file for Casper ]] -->
+    <script type="text/javascript" src="/assets/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="/assets/js/index.js"></script>
+    <script type="text/javascript" src="/assets/js/prism.js"></script>
+    <script type="text/javascript" src="/assets/js/toc.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+  </body>
+</html>

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- [[! Document Settings ]] -->
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- [[! Page Meta ]] -->
+    <title>
+      
+        Rails Callback Best Prectice Part 1
+      
+    </title>
+    
+    <meta name="description" content="Ruby and Rails are known for their conventions, optimizations for programmer happiness, and an anything-goes mentality (monkey-patching, anyone?). Nonetheless, the language and framework excel when it comes to expressiveness. When dealing with thousands of federal, state, and local taxes—all of which change every single year—the ability to move quickly and safely is important. Rails is not without its tradeoffs. Particularly, we’ve found Rails callbacks to be problematic. Callbacks allow you to bind actions to the lifecycle of models, known as ActiveRecord objects, in Rails." />
+    
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="/assets/images/favicon.ico" >
+
+    <!-- [[! Styles'n'Scripts ]] -->
+    <link rel="stylesheet" type="text/css" href="/assets/css/screen.css" />
+    <link rel="stylesheet" type="text/css"
+      href="//fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400" />
+
+    <link rel="stylesheet" type="text/css" href="/assets/css/prism.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/toc.css" />
+
+    <!-- [[! Ghost outputs important style and meta data with this tag ]] -->
+    <link rel="canonical" href="/" />
+<meta name="referrer" content="origin" />
+<link rel="next" href="/page2/" />
+
+<meta property="og:site_name" content="雄关漫道真如铁" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Rails Callback Best Prectice Part 1" />
+
+<meta property="og:description" content="Ruby and Rails are known for their conventions, optimizations for programmer happiness, and an anything-goes mentality (monkey-patching, anyone?). Nonetheless, the language and framework excel when it comes to expressiveness. When dealing with thousands of federal, state, and local taxes—all of which change every single year—the ability to move quickly and safely is important. Rails is not without its tradeoffs. Particularly, we’ve found Rails callbacks to be problematic. Callbacks allow you to bind actions to the lifecycle of models, known as ActiveRecord objects, in Rails." />
+
+<meta property="og:url" content="http://localhost:4000/rails-callback-best-prectice-part-1" />
+<meta property="og:image" content="" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Rails Callback Best Prectice Part 1" />
+
+<meta name="twitter:description" content="Ruby and Rails are known for their conventions, optimizations for programmer happiness, and an anything-goes mentality (monkey-patching, anyone?). Nonetheless, the language and framework excel when it comes to expressiveness. When dealing with thousands of federal, state, and local taxes—all of which change every single year—the ability to move quickly and safely is important. Rails is not without its tradeoffs. Particularly, we’ve found Rails callbacks to be problematic. Callbacks allow you to bind actions to the lifecycle of models, known as ActiveRecord objects, in Rails." />
+
+<meta name="twitter:url" content="http://localhost:4000/rails-callback-best-prectice-part-1" />
+<meta name="twitter:image:src" content="" />
+
+<script type="application/ld+json">
+  {
+  "@context": "http://schema.org",
+  "@type": "Website",
+  "publisher": "nju520",
+  "url": "http://localhost:4000/rails-callback-best-prectice-part-1",
+  "image": "",
+  "description": "Ruby and Rails are known for their conventions, optimizations for programmer happiness, and an anything-goes mentality (monkey-patching, anyone?). Nonetheless, the language and framework excel when it comes to expressiveness. When dealing with thousands of federal, state, and local taxes—all of which change every single year—the ability to move quickly and safely is important. Rails is not without its tradeoffs. Particularly, we’ve found Rails callbacks to be problematic. Callbacks allow you to bind actions to the lifecycle of models, known as ActiveRecord objects, in Rails."
+  }
+</script>
+
+<meta name="generator" content="Jekyll 3.0.0" />
+<link rel="alternate" type="application/rss+xml" title="雄关漫道真如铁" href="/feed.xml" />
+
+    <!-- Add Google Analytics  -->
+    <!-- Google Analytics Tracking code -->
+<script>
+ (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+ })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ ga('create', 'UA-114647632-1', 'auto');
+ ga('send', 'pageview', location.pathname);
+
+</script>
+
+<!-- Baidu Analytics  Manager -->
+<script>
+ var _hmt = _hmt || [];
+ (function() {
+   var hm = document.createElement("script");
+   hm.src = "https://hm.baidu.com/hm.js?e9208862845c46a0f79e7828f495e407";
+   var s = document.getElementsByTagName("script")[0];
+   s.parentNode.insertBefore(hm, s);
+ })();
+</script>
+
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-PWFC85B');</script>
+  <!-- End Google Tag Manager -->
+
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-114647632-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-114647632-1');
+</script>
+
+  </head>
+  <body class=" post-template nav-closed">
+    <!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PWFC85B"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+
+    <div class="nav">
+  <h3 class="nav-title">Home</h3>
+  <a href="#" class="nav-close">
+    <span class="hidden">Close</span>
+  </a>
+  <ul>
+    <li class="nav-home " role="presentation"><a href="/">Home</a></li>
+    <li class="nav-ruby " role="presentation"><a href="/tag/ruby">Ruby</a></li>
+    <li class="nav-javascript " role="presentation"><a href="/tag/javascript">JavaScript</a></li>
+    <li class="nav-server " role="presentation"><a href="/tag/server">Server</a></li>
+    <li class="nav-database " role="presentation"><a href="/tag/database">Database</a></li>
+  </ul>
+  <a class="subscribe-button icon-feed" href="/feed.xml">Subscribe</a>
+</div>
+<span class="nav-cover"></span>
+
+
+    <div class="site-wrapper">
+
+      <!-- [[! Everything else gets inserted here ]] -->
+      <!-- < default -->
+
+<!-- The comment above "< default" means - insert everything in this file into -->
+<!-- the [body] of the default.hbs template, which contains our header/footer. -->
+
+<!-- Everything inside the #post tags pulls data from the post -->
+<!-- #post -->
+
+<header class="main-header post-head no-cover">
+  <nav class="main-nav overlay clearfix">
+    <a class="back-button icon-arrow-left" href="/">Home</a>
+    <a class="menu-button icon-menu" href="#"><span class="word">Menu</span></a>
+  </nav>
+</header>
+
+<main class="content" role="main">
+
+  <article class="post">
+
+    <header class="post-template post-header">
+      <h1 class="post-title">Rails Callback Best Prectice Part 1</h1>
+      <section class="post-meta">
+        <time class="post-date" datetime="2017-08-23">23 Aug 2017</time>
+        <!-- <a href='/'>nju520</a> -->
+        <!-- [[tags prefix=" on "]] -->
+        
+        
+        <a href='/tag/rails'>rails</a>
+        
+        <a href='/tag/callback'>callback</a>
+        
+        <a href='/tag/best'>best</a>
+        
+        <a href='/tag/prectice'>prectice</a>
+        
+        
+      </section>
+    </header>
+
+    <section class="post-content">
+
+      <ul class="section-nav">
+<li class="toc-entry toc-h3"><a href="#guideline-1-omit-when-possible">Guideline 1: Omit When Possible</a></li>
+<li class="toc-entry toc-h3"><a href="#guideline-3-prefer-after_commit-to-after_save">Guideline 3: Prefer after_commit to after_save</a></li>
+<li class="toc-entry toc-h3"><a href="#guideline-5-dont-use-for-data-validation">Guideline 5: Don’t use for data validation</a></li>
+</ul><p>Here are our guidelines:</p>
+<pre><code>Omit when possible
+Asynchronous by default
+Prefer after_commit to after_save
+Avoid conditional execution
+Don’t use for data validation
+</code></pre>
+<h3 id="guideline-1-omit-when-possible">
+<a id="guideline-1-omit-when-possible" class="anchor" href="#guideline-1-omit-when-possible" aria-hidden="true"><span class="octicon octicon-link"></span></a>Guideline 1: Omit When Possible</h3>
+<p>Callbacks ensure that anyone updating or saving a record won’t forget to perform an operation that should be performed on #save.</p>
+
+<p>Most parts of our applications directly modify our ActiveRecord::Base subclasses instead of using a service object to perform an operation. More and more, we are trying to use service objects to encapsulate groups of operations rather than callbacks.</p>
+
+<p>Let’s take a look at a code example for a hypothetical company onboarding flow:</p>
+
+<pre><code class="language-ruby"># Bad
+class Company &lt; ActiveRecord::Base
+  after_commit :send_emails_after_onboarding
+
+  private
+
+  def send_emails_after_onboarding
+    if just_finished_onboarding?
+      EmailSender.send_emails_for_company!(self)
+    end
+  end
+end
+
+# Good
+class Company &lt; ActiveRecord::Base
+end
+
+class CompanyOnboarder
+  def onboard!(company_params)
+    company = Company.new(company_params)
+    company.save!
+    EmailSender.send_emails_for_company!(company)
+  end
+end
+</code></pre>
+<p>By locating our logic in a service object and not a callback, we are not adding logic that will need to run after every #save. Because we have a service class to handle signing up a company, we also reduce the coupling between Company and EmailSender.</p>
+
+<p>Guideline #2: Asynchronous by default
+Whenever we add a callback, that is code that will execute before we can respond to a request. If a class defines 20 callbacks, that’s 20 blocks of code that must execute before we can respond to the user. Generally, this will make requests take longer. Requests that take longer result in a sluggish experience on the front-end.</p>
+
+<p>Therefore if you must write a callback, make sure it gets out of the critical path of the request by making the bulk of itself asynchronous. (Note: This only applies to logic that does not need to exist within the same transaction.) For us at Gusto, that means enqueuing a Sidekiq job.</p>
+
+<p>Let’rubys look at an example:</p>
+
+<pre><code class="language-ruby"># Bad
+class Company &lt; ActiveRecord::Base
+  after_commit :create_welcome_notification, on: :create
+
+  private
+
+  def create_welcome_notification
+    # We're incurring an extra database request here, which
+    # is something we want to avoid during
+    # critical operations like signing up a
+    # new customer
+    notifications.create({ title: 'Welcome to Gusto!' })
+  end
+end
+
+# Good
+class Company &lt; ActiveRecord::Base
+  after_commit :create_welcome_notification, on: :create
+
+  private
+
+  def create_welcome_notification
+    WelcomeNotificationCreator.perform_async(id)
+  end
+end
+
+class WelcomeNotificationCreator
+  include Sidekiq::Worker
+
+  def perform(company_id)
+    @company = Company.find(company_id)
+    @company.notifications.create({ title: 'Welcome to Gusto!' })
+  end
+end
+</code></pre>
+
+<p>Now, you might say, “But the ‘Good’ example is way more code than the ‘Bad’ one! It now takes 2 files!” You would be correct. Writing callbacks in a safe manner by moving the bulk of the logic into a worker will result in more code. The resulting code, however, will reduce coupling on our models and make each component more testable.</p>
+
+<p>Spearubyking of tests, here’s a good way to test callbacks like this using RSpec:</p>
+
+<pre><code class="language-ruby"># spec/models/company_spec.rb
+require 'rails_helper'
+
+RSpec.describe Company, type: :model do
+  describe '#save' do
+    subject { company.save }
+    let(:company) { build(:company) }
+
+    it 'schedules a WelcomeNotificationCreator job' do
+      expect {
+        subject
+      }.to change{ WelcomeNotificationCreator.jobs.size }.by(1)
+      last_job = WelcomeNotificationCreator.jobs.last          
+      expect(last_job['args']).to eq([subject.id])
+    end
+  end
+end
+
+# spec/workers/welcome_notification_creator_spec.rb
+require 'rails_helper'
+
+RSpec.describe WelcomeNotificationCreator do
+  subject { described_class.new.perform(company.id)}
+  let(:company) { create(:company) }
+
+  it 'creates a notification' do
+    expect {
+      subject
+    }.to change(Notification, :count).by(1)
+    expect(Notification.last.title).to eq('Welcome to Gusto!')
+  end
+end
+</code></pre>
+
+<h3 id="guideline-3-prefer-after_commit-to-after_save">
+<a id="guideline-3-prefer-after_commit-to-after_save" class="anchor" href="#guideline-3-prefer-after_commit-to-after_save" aria-hidden="true"><span class="octicon octicon-link"></span></a>Guideline 3: Prefer after_commit to after_save</h3>
+<p>When writing a callback where you want to execute code after a save, create, or update, default to using an after_commit block.</p>
+
+<p>after_commit is the only callback that is triggered once the database transaction is committed. Putting it simply, it’s the only callback whose state will match “the outside world,” specifically the same state that worker process will see.</p>
+
+<p>Without an after_commit callback, you may see strange errors in Sidekiq to the tune of Cannot find Company with ID=12345. These errors will be frustrating to track down because they will only raise once before passing without a problem.</p>
+
+<p>What’s happening with this error is that Sidekiq is picking up the job before the database has committed the new record to it. To the outside world, it looks like your new record does not yet exist. It can be an incredibly frustrating race condition to debug.</p>
+
+<p>The safe default is to use after_commit.</p>
+
+<p>Let’rubys take a look at 2 different code examples:</p>
+
+<pre><code class="language-ruby"># Bad
+class Company &lt; ActiveRecord::Base
+  after_create :create_welcome_notification
+
+  private
+
+  def create_welcome_notification
+    # The database transaction has not been committed at this point,
+    # so there's a chance that the Sidekiq worker will pick up the job
+    # before our `Company` has been persisted to the database.
+    WelcomeNotificationCreator.perform_async(id)
+  end
+end
+
+# Good
+class Company &lt; ActiveRecord::Base
+  after_commit :create_welcome_notification, on: :create
+
+  private
+
+  def create_welcome_notification
+    WelcomeNotificationCreator.perform_async(id)
+  end
+end
+</code></pre>
+
+<p>Please note: The <code>*_changed?</code> helpers are not available within after_commit. If you need to conditionally execute a callback, please be aware of this and use the alternative method if looking at the previous_changes hash. Or…</p>
+
+<p>Guideline #4: Avoid conditional execution
+As a general rule, do not write callbacks that are conditional.</p>
+
+<p>Instead, try to make callbacks that are idempotent and can be safely run multiple times. This is especially important when you begin moving your callback logic to Sidekiq jobs. (See the best practices on Sidekiq to see why Sidekiq jobs must be idempotent.)</p>
+
+<p>Note that this will enqueue more jobs onto Sidekiq, but many of these jobs should be no-ops.</p>
+
+<p>If you must conditionally execute a job, please define that logic within the method body and not in the callback signature. The reason for this is to make sure that the conditions only live in a single place. It’s much easier for the conditional to grow in the method body instead of on the line that defines the conditional.</p>
+
+<p>Let’rubys take a look at a few examples:</p>
+
+<pre><code class="language-ruby"># Bad
+class Company &lt; ActiveRecord::Base
+  after_commit :create_welcome_notification, if: -&gt; { should_welcome? &amp;&amp; admirable_company? }
+
+  private
+
+  def create_welcome_notification
+    WelcomeNotificationCreator.perform_async(id)
+  end
+end
+
+# Good
+class Company &lt; ActiveRecord::Base
+  after_commit :create_welcome_notification
+
+  private
+
+  def create_welcome_notification
+    if should_welcome? &amp;&amp; admirable_company?
+      WelcomeNotificationCreator.perform_async(id)
+    end
+  end
+end
+
+# Best
+class Company &lt; ActiveRecord::Base
+  after_commit :create_welcome_notification
+
+  private
+
+  def create_welcome_notification
+    WelcomeNotificationCreator.perform_async(id)
+  end
+end
+
+class WelcomeNotificationCreator
+  include Sidekiq::Worker
+
+  def perform(company_id)
+    @company = Company.find(company_id)
+
+    return unless @company.should_welcome? &amp;&amp; @company.admirable_company?
+
+    # We passed our check, do the work.
+  end
+end
+</code></pre>
+<p>Please keep in mind that things like on: :create are their own flavor of conditional execution. Generally, try to push that logic into the worker.</p>
+
+<h3 id="guideline-5-dont-use-for-data-validation">
+<a id="guideline-5-dont-use-for-data-validation" class="anchor" href="#guideline-5-dont-use-for-data-validation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Guideline 5: Don’t use for data validation</h3>
+<p>It is possible to use callbacks for data validation, but that should be avoided. ActiveRecord makes certain assumptions on how and when validations will be run, and putting these in callbacks breaks some of those assumptions.</p>
+
+<p>Instead, use the ActiveRecord Validations API.</p>
+
+<p>Conclusion
+With great power comes great responsibility, and Rails callbacks are no exception. They are expressive tools but also come with drawbacks.</p>
+
+<p>We are generally moving away from using callbacks and toward using rich service objects in our applications, but we still have many callbacks that exist. We still have a lot left to do, but we’ve found that the code that follows these guidelines requires less maintenance.</p>
+
+
+      <h3>关于图片和转载</h3>
+
+      <a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="知识共享许可协议" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br />本作品采用<a rel="license" href="http://creativecommons.org/licenses/by/4.0/">知识共享署名 4.0 国际许可协议</a>进行许可。
+
+      转载时请注明原文链接，图片在使用时请保留图片中的全部内容，可适当缩放并在引用处附上图片所在的文章链接，图片使用 Sketch 进行绘制。
+
+      <h3>关于评论和留言</h3>
+
+      如果对本文 <a href="/rails-callback-best-prectice-part-1">Rails Callback Best Prectice Part 1</a> 的内容有疑问，请在下面的评论系统中留言，谢谢。
+
+      <blockquote>
+        <p>原文链接：<a href="/rails-callback-best-prectice-part-1">Rails Callback Best Prectice Part 1 · 雄关漫道真如铁</a></p>
+
+        <p>Follow: <a href="https://github.com/nju520">nju520 · GitHub</a></p>
+      </blockquote>
+
+    </section>
+
+    <footer class="post-footer">
+
+      <!-- Everything inside the #author tags pulls data from the author -->
+      <!-- #author-->
+
+      
+      <figure class="author-image">
+        <a class="img" href="https://github.com/nju520" style="background-image: url(/assets/images/hacker.png)"><span class="hidden">'s Picture</span></a>
+      </figure>
+      
+
+      <section class="author">
+        <h4><a href="https://github.com/nju520">nju520</a></h4>
+
+        
+        <p> Ruby / Go / JS</p>
+        
+        <div class="author-meta">
+          <span class="author-location icon-location"> Hangzhou, China</span>
+          <span class="author-link icon-link"><a href="http://localhost:4000"> hwbnju.com</a></span>
+        </div>
+      </section>
+
+      <!-- /author  -->
+
+      <section class="share">
+        <h4>Share this post</h4>
+        <a class="icon-twitter" href="http://twitter.com/share?text=Rails Callback Best Prectice Part 1&amp;url=http://localhost:4000rails-callback-best-prectice-part-1"
+          onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+          <span class="hidden">Twitter</span>
+        </a>
+        <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000rails-callback-best-prectice-part-1"
+          onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+          <span class="hidden">Facebook</span>
+        </a>
+        <a class="icon-google-plus" href="https://plus.google.com/share?url=http://localhost:4000rails-callback-best-prectice-part-1"
+          onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+          <span class="hidden">Google+</span>
+        </a>
+      </section>
+
+      <div id="gitalk-container"></div>
+      <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+      <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+      <script>
+       const gitalk = new Gitalk({
+         clientID: 'e552ed507a5a4581d8a1',
+         clientSecret: '0abbd4193a0f9b2700936214ff6fda088c665a73',
+         repo: 'bobo-comments',
+         owner: 'nju520',
+         admin: ['nju520'],
+         // labels: ['Gitalk', 'gitment'].concat(["rails","callback","best","prectice"]),
+         // id: location.origin + location.pathname,
+         id: "http://hwbnju.com/rails-callback-best-prectice-part-1",
+         distractionFreeMode: false
+       });
+
+       gitalk.render('gitalk-container')
+      </script>
+
+    </footer>
+
+  </article>
+
+</main>
+
+<aside class="read-next">
+
+  <!-- [[! next_post ]] -->
+  
+  <a class="read-next-story no-cover" href="rack-webrick">
+    <section class="post">
+      <h2>WEBrick 源码分析</h2>
+      <p>`WEBrick`是`Rack`自带的一个 `Web Server`, 历史悠久, 代码量一共才 4000多行. 本文就从源码入手, 解读 `WEBrick`实现原理, 并从多线程和`IO`的角度来分析 `WEBrick` 的优缺点. ## 源码分析 我们知道...</p>
+    </section>
+  </a>
+  
+  <!-- [[! /next_post ]] -->
+  <!-- [[! prev_post ]] -->
+  
+  <a class="read-next-story prev no-cover" href="rack-start">
+    <section class="post">
+      <h2>Ruby Rack 协议及其应用(一)</h2>
+      <p>Rack协议 什么是Rack Rack是Ruby Web服务器和Rack应用程序之间的一个接口 上图给出了一个简单的图示. 当用户的请求抵达Web服务器时, Web服务器就会调用(call)Rack, Rack对请求进行包装, 然后调用Rack应用程序(一般是一个封装好的框架). Rack程序可以方便地利用Rack提供的各种API, 分析请求(request), 进行处理, 返回响应(response). 为什么是Rack Rack提供了一种标准的接口,...</p>
+    </section>
+  </a>
+  
+  <!-- [[! /prev_post ]] -->
+</aside>
+
+<!-- /post -->
+
+
+      <footer class="site-footer clearfix">
+        <section class="copyright"><a href="/">雄关漫道真如铁</a> &copy; 2019</section>
+        <section class="poweredby">Proudly published with <a href="https://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/biomadeira/jasper">Jasper</a></section>
+      </footer>
+    </div>
+    <!-- [[! Ghost outputs important scripts and data with this tag ]] -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <!-- [[! The main JavaScript file for Casper ]] -->
+    <script type="text/javascript" src="/assets/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="/assets/js/index.js"></script>
+    <script type="text/javascript" src="/assets/js/prism.js"></script>
+    <script type="text/javascript" src="/assets/js/toc.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+  </body>
+</html>

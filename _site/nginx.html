@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- [[! Document Settings ]] -->
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- [[! Page Meta ]] -->
+    <title>
+      
+        Nginx 初探
+      
+    </title>
+    
+    <meta name="description" content="Linux Nginx" />
+    
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="/assets/images/favicon.ico" >
+
+    <!-- [[! Styles'n'Scripts ]] -->
+    <link rel="stylesheet" type="text/css" href="/assets/css/screen.css" />
+    <link rel="stylesheet" type="text/css"
+      href="//fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400" />
+
+    <link rel="stylesheet" type="text/css" href="/assets/css/prism.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/toc.css" />
+
+    <!-- [[! Ghost outputs important style and meta data with this tag ]] -->
+    <link rel="canonical" href="/" />
+<meta name="referrer" content="origin" />
+<link rel="next" href="/page2/" />
+
+<meta property="og:site_name" content="雄关漫道真如铁" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Nginx 初探" />
+
+<meta property="og:description" content="Linux Nginx" />
+
+<meta property="og:url" content="http://localhost:4000/nginx" />
+<meta property="og:image" content="" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Nginx 初探" />
+
+<meta name="twitter:description" content="Linux Nginx" />
+
+<meta name="twitter:url" content="http://localhost:4000/nginx" />
+<meta name="twitter:image:src" content="" />
+
+<script type="application/ld+json">
+  {
+  "@context": "http://schema.org",
+  "@type": "Website",
+  "publisher": "nju520",
+  "url": "http://localhost:4000/nginx",
+  "image": "",
+  "description": "Linux Nginx"
+  }
+</script>
+
+<meta name="generator" content="Jekyll 3.0.0" />
+<link rel="alternate" type="application/rss+xml" title="雄关漫道真如铁" href="/feed.xml" />
+
+    <!-- Add Google Analytics  -->
+    <!-- Google Analytics Tracking code -->
+<script>
+ (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+ })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ ga('create', 'UA-114647632-1', 'auto');
+ ga('send', 'pageview', location.pathname);
+
+</script>
+
+<!-- Baidu Analytics  Manager -->
+<script>
+ var _hmt = _hmt || [];
+ (function() {
+   var hm = document.createElement("script");
+   hm.src = "https://hm.baidu.com/hm.js?e9208862845c46a0f79e7828f495e407";
+   var s = document.getElementsByTagName("script")[0];
+   s.parentNode.insertBefore(hm, s);
+ })();
+</script>
+
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-PWFC85B');</script>
+  <!-- End Google Tag Manager -->
+
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-114647632-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-114647632-1');
+</script>
+
+  </head>
+  <body class=" post-template nav-closed">
+    <!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PWFC85B"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+
+    <div class="nav">
+  <h3 class="nav-title">Home</h3>
+  <a href="#" class="nav-close">
+    <span class="hidden">Close</span>
+  </a>
+  <ul>
+    <li class="nav-home " role="presentation"><a href="/">Home</a></li>
+    <li class="nav-ruby " role="presentation"><a href="/tag/ruby">Ruby</a></li>
+    <li class="nav-javascript " role="presentation"><a href="/tag/javascript">JavaScript</a></li>
+    <li class="nav-server " role="presentation"><a href="/tag/server">Server</a></li>
+    <li class="nav-database " role="presentation"><a href="/tag/database">Database</a></li>
+  </ul>
+  <a class="subscribe-button icon-feed" href="/feed.xml">Subscribe</a>
+</div>
+<span class="nav-cover"></span>
+
+
+    <div class="site-wrapper">
+
+      <!-- [[! Everything else gets inserted here ]] -->
+      <!-- < default -->
+
+<!-- The comment above "< default" means - insert everything in this file into -->
+<!-- the [body] of the default.hbs template, which contains our header/footer. -->
+
+<!-- Everything inside the #post tags pulls data from the post -->
+<!-- #post -->
+
+<header class="main-header post-head no-cover">
+  <nav class="main-nav overlay clearfix">
+    <a class="back-button icon-arrow-left" href="/">Home</a>
+    <a class="menu-button icon-menu" href="#"><span class="word">Menu</span></a>
+  </nav>
+</header>
+
+<main class="content" role="main">
+
+  <article class="post">
+
+    <header class="post-template post-header">
+      <h1 class="post-title">Nginx 初探</h1>
+      <section class="post-meta">
+        <time class="post-date" datetime="2017-05-26">26 May 2017</time>
+        <!-- <a href='/'>nju520</a> -->
+        <!-- [[tags prefix=" on "]] -->
+        
+        
+        <a href='/tag/Linux'>Linux</a>
+        
+        <a href='/tag/Nginx'>Nginx</a>
+        
+        
+      </section>
+    </header>
+
+    <section class="post-content">
+
+      <ul class="section-nav">
+<li class="toc-entry toc-h1"><a href="#nginx-简介">Nginx 简介</a>
+<ul>
+<li class="toc-entry toc-h2"><a href="#反向代理">反向代理</a></li>
+<li class="toc-entry toc-h2"><a href="#启动-停止-重载">启动 停止 重载</a></li>
+<li class="toc-entry toc-h2"><a href="#配置文件的结构">配置文件的结构</a></li>
+<li class="toc-entry toc-h2"><a href="#nginx配置最佳实践">Nginx配置最佳实践</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#default配置解析">default配置解析</a></li>
+<li class="toc-entry toc-h3"><a href="#配置反向代理">配置反向代理</a></li>
+<li class="toc-entry toc-h3"><a href="#配置临时跳转">配置临时跳转</a></li>
+<li class="toc-entry toc-h3"><a href="#配置限制访问">配置限制访问</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#default-ssl-配置解析">default-ssl 配置解析</a></li>
+<li class="toc-entry toc-h2"><a href="#服务静态内容">服务静态内容</a></li>
+<li class="toc-entry toc-h2"><a href="#搭建代理服务器">搭建代理服务器</a></li>
+</ul>
+</li>
+</ul><p>Nginx（发音同engine x）是一个异步框架的 Web服务器，也可以用作反向代理，负载平衡器 和 HTTP缓存。一大部分Web服务器使用Nginx作为负载均衡器。</p>
+
+<h1 id="nginx-简介">
+<a id="nginx-简介" class="anchor" href="#nginx-%E7%AE%80%E4%BB%8B" aria-hidden="true"><span class="octicon octicon-link"></span></a>Nginx 简介</h1>
+<p>nginx有一个主进程和若干个工作进程。主进程的主要目的是读取和分析配置文件以及管理工作进程。工作进程处理实际的请求。nginx使用了基于事件的模型和操作系统依赖型的机制来有效地向工作进程分发请求。工作进程的数量由配置文件定义，也可以通过修改一个给定的配置文件中来改变，或者自动地根据cpu的核数进行调整（详见工作进程）</p>
+
+<p>nginx和它的模块们的工作方式由配置文件决定，默认情况下，配置文件名叫nginx.conf，它被放置在/usr/local/nginx/conf，/etc/nginx 或 usr/local/etc/nginx 目录下。</p>
+
+<h2 id="反向代理">
+<a id="反向代理" class="anchor" href="#%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86" aria-hidden="true"><span class="octicon octicon-link"></span></a>反向代理</h2>
+
+<p>提到<code>反向代理</code>，必然先提到<code>正向代理</code>，正向代理(forward)是一个位于客户端【用户A】和原始服务器(origin server)【服务器B】之间的服务器【代理服务器Z】，为了从原始服务器取得内容，用户A向代理服务器Z发送一个请求并指定目标(服务器B),然后代理服务器Z向服务器B转交请求并将获得的内容返回给客户端。客户端必须要进行一些特别的设置才能使用正向代理。如下图:</p>
+
+<p><img src="http://cnt1992.xyz/img/nginx/forwards_proxy.jpg" alt="正向代理示意图"></p>
+
+<p>从上图可以看出，所谓的<code>正向代理</code>就是<code>代理服务器替代访问方【用户A】去访问目标服务器【服务器B】</code>，在现实中的例子就是『翻墙』！但如果代理服务器Z被完全控制（或不完全控制），就变成了『肉鸡』了。</p>
+
+<p>而<code>反向代理</code>与正向代理相反，对客户端而言代理服务器就像是原始服务器，并且客户端不需要进行任何特别的设置。客户端向反向代理的命名空间（name-space）中的内容发送普通请求，接着反向代理将判断向何处（原始服务器）转交请求，并将获得的内容返回给客户端。</p>
+
+<p>使用反向代理服务器主要核心作用如下：</p>
+
+<ol>
+  <li>保护和隐藏原始资源服务器</li>
+</ol>
+
+<p><img src="http://cnt1992.xyz/img/nginx/backward_proxy_1.jpg" alt="反向代理原理图"></p>
+
+<p>从上图可以看出，用户A始终认为它访问的是代理服务器Z而不是原始服务器B，但实际上反向代理服务器接受用户A的应答，从原始资源服务器B中取得用户A的需求资源，然后发送给用户A。由于防火墙的作用，只允许代理服务器Z访问原始资源服务器B。尽管在这个虚拟的环境下，防火墙和反向代理的共同作用保护了原始资源服务器B，但用户A并不知情。</p>
+
+<ol>
+  <li>负载均衡</li>
+</ol>
+
+<p><img src="http://cnt1992.xyz/img/nginx/backward_balance.jpg" alt="反向代理负载均衡示例图"></p>
+
+<p>当反向代理服务器不止一个的时候，我们甚至可以把它们做成集群，当更多的用户访问资源服务器B的时候，让不同的代理服务器Z（x）去应答不同的用户，然后发送不同用户需要的资源。</p>
+
+<p>当然<code>反向代理服务器</code>像<code>正向代理服务器</code>一样拥有<code>Cache</code>的作用，它可以缓存原始资源服务器B的资源，而不是每次都要向原始资源服务器B请求数据，特别是一些静态的数据，比如图片和文件，如果这些反向代理服务器能够做到和用户X来自同一个网络，那么用户X访问反向代理服务器X，就会得到很高质量的速度。这正是<code>CDN技术</code>的核心。如下图：</p>
+
+<p><img src="http://cnt1992.xyz/img/nginx/cdn.jpg" alt="CDN原理图"></p>
+
+<h2 id="启动-停止-重载">
+<a id="启动-停止-重载" class="anchor" href="#%E5%90%AF%E5%8A%A8-%E5%81%9C%E6%AD%A2-%E9%87%8D%E8%BD%BD" aria-hidden="true"><span class="octicon octicon-link"></span></a>启动 停止 重载</h2>
+
+<h2 id="配置文件的结构">
+<a id="配置文件的结构" class="anchor" href="#%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E7%9A%84%E7%BB%93%E6%9E%84" aria-hidden="true"><span class="octicon octicon-link"></span></a>配置文件的结构</h2>
+
+<p>Nginx能够发挥的淋漓尽致，就看配置文件了。</p>
+
+<p>下面的配置</p>
+
+<pre><code class="language-Nginx"># user字段表明了Nginx服务是由哪个用户哪个群组来负责维护进程的，默认是nobody
+# 我这里用了 hanwenbo 用户，staff组来启动并维护进程
+# 查看当前用户命令： whoami
+# 查看当前用户所属组命令： groups ，当前用户可能有多个所属组，选第一个即可
+user cainengtian staff;
+# worker_processes字段表示Nginx服务占用的内核数量
+# 为了充分利用服务器性能你可以直接写你本机最高内核
+# 查看本机最高内核数量命令： sysctl -n hw.ncpu
+worker_processes 4;
+# error_log字段表示Nginx错误日志记录的位置
+# 模式选择：debug/info/notice/warn/error/crit
+# 上面模式从左到右记录的信息从最详细到最少
+error_log  /usr/local/var/logs/nginx/error.log debug;
+# Nginx执行的进程id,默认配置文件是注释了
+# 如果上面worker_processes的数量大于1那Nginx就会启动多个进程
+# 而发信号的时候需要知道要向哪个进程发信息，不同进程有不同的pid，所以写进文件发信号比较简单
+# 你只需要手动创建，比如我下面的位置： touch /usr/local/var/run/nginx.pid
+pid  /usr/local/var/run/nginx.pid;
+events {
+    # 每一个worker进程能并发处理的最大连接数
+    # 当作为反向代理服务器，计算公式为： `worker_processes * worker_connections / 4`
+    # 当作为HTTP服务器时，公式是除以2
+    worker_connections  2048;
+}
+http {
+    # 关闭错误页面的nginx版本数字，提高安全性
+    server_tokens off;
+    include       mime.types;
+    default_type  application/octet-stream;
+    # 日志记录格式，如果关闭了access_log可以注释掉这段
+    #log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+    #                 '$status $body_bytes_sent "$http_referer" '
+    #                '"$http_user_agent" "$http_x_forwarded_for"';
+    # 关闭access_log可以让读取磁盘IO操作更快
+    # 当然如果你在学习的过程中可以打开方便查看Nginx的访问日志
+    access_log off;
+    sendfile        on;
+    # 在一个数据包里发送所有头文件，而不是一个接一个的发送
+    tcp_nopush     on;
+    # 不要缓存
+    tcp_nodelay on;
+    keepalive_timeout  65;
+    gzip  on;
+    client_max_body_size 10m;
+    client_body_buffer_size 128k;
+    # 关于下面这段在后面紧接着来谈！
+    include /usr/local/etc/nginx/sites-enabled/*;
+}
+</code></pre>
+<p>以上为 Nginx 默认的配置文件。Nginx包含一些被配置文件中的指令控制的模块。
+指令被分为<code>简单指令</code>和<code>块级指令</code>两种。</p>
+<ul>
+  <li>简单指令包含了由空格分开的名称和参数，并且以分号结尾。</li>
+  <li>一个块级指令和简单指令有一样的结构，但它不使用分号结尾而使用一些被{(和)}包围的额外结构来结尾</li>
+  <li>如果一个块级指令中包含了其它指令，那么它被称为一个上下文。比如events，http，server和location</li>
+</ul>
+
+<pre><code># server 为上下文
+server {
+        listen       8000;
+        listen       somename:8080;
+        server_name  somename  alias  another.alias;
+        # location 为块级指令
+        location / {
+            # root 为简单指令
+            root   html;
+            index  index.html index.htm;
+        }
+    }
+</code></pre>
+
+<h2 id="nginx配置最佳实践">
+<a id="nginx配置最佳实践" class="anchor" href="#nginx%E9%85%8D%E7%BD%AE%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5" aria-hidden="true"><span class="octicon octicon-link"></span></a>Nginx配置最佳实践</h2>
+
+<p>上面的<code>配置文件</code>最后一行<code>include</code>关键词会将<code>/usr/local/etc/nginx/sites-enabled/</code>文件夹下面的所有文件都加载进当前的配置文件，这样子就可以将配置文件分离，<code>nginx.conf</code>这个<code>配置文件</code>修改之后以后基本不会修改，配置不同站点的时候只需要在<code>/usr/local/etc/nginx/sites-enabled/</code>不断增加新的文件即可，这是比较好的配置方式。</p>
+
+<p>比如我在<code>/usr/local/etc/nginx/sites-enabled/</code>下面增加了两个文件，用来配置普通的<code>HTTP</code>服务还有<code>HTTPS</code>服务：</p>
+
+<pre><code>touch /usr/local/etc/nginx/sites-enabled/default
+touch /usr/local/etc/nginx/sites-enabled/default-ssl
+</code></pre>
+
+<h3 id="default配置解析">
+<a id="default配置解析" class="anchor" href="#default%E9%85%8D%E7%BD%AE%E8%A7%A3%E6%9E%90" aria-hidden="true"><span class="octicon octicon-link"></span></a>default配置解析</h3>
+
+<p><code>Nginx</code>整个配置的结构大致如下：</p>
+
+<pre><code>...
+events {
+    ...
+}
+http {
+    ...
+    server {
+        ...
+        location xxx {
+            ...
+        }
+    }
+}
+</code></pre>
+
+<p>对比上面我的<code>nginx.conf</code>文件可以知道<code>default</code>文件的内容就是配置<code>server</code>部分的，下面先弄一份最基本的配置（带有详细说明）：</p>
+
+<pre><code>server {
+    # Nginx监听端口号
+    listen       80;
+    # 服务器的名字，默认为localhost，你也可以写成aotu.jd.com，这样子就可以通过aotu.jd.com来访问
+    server_name  localhost;
+    # 代码放置的根目录
+    root /var/www/;
+    # 编码
+    charset utf-8;    
+
+    location / {
+        # index字段声明了解析的后缀名的先后顺序
+        # 下面匹配到/的时候默认找后缀名为php的文件，找不到再找html，再找不到就找htm
+        index index.php index.html index.htm;
+        # 自动索引
+        autoindex on;
+        # 这里引入了解析PHP的东西
+        include /usr/local/etc/nginx/conf.d/php-fpm;
+    }    
+
+    # 404页面跳转到404.html，相对于上面的root目录
+    error_page  404              /404.html;
+    # 403页面跳转到403.html，相对于上面的root目录
+    error_page  403              /403.html;
+    # 50x页面跳转到50x.html
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+        root   html;
+    }
+}
+</code></pre>
+
+<p>上面的配置的意思就是：访问<a href="http://localhost/">http://localhost</a>『80端口号可以直接省略』的时候会在<code>/var/www/</code>下面找<code>index.php</code>文件，如果没有找到就找<code>index.html</code>，如果再没有找到那就找<code>index.htm</code>，如果还是没有找到的话就<code>404</code>跳转到<code>404.html</code>，如果你刚好将<code>/var/www/</code>设置为<code>root</code>用户访问的话，那么就会直接无访问权限<code>403</code>跳转到<code>403.html</code>。</p>
+
+<p>值得注意的是<code>server</code>字段里面的<code>root</code>字段，这个字段需要跟<code>alias</code>字段区分开来，通过下面两段配置解释一下：</p>
+
+<pre><code># 当用root配置的时候，root后面指定的目录是上级目录
+# 并且该上级目录必须含有和location后指定的名称的同名目录，否则404
+# root末尾的"/"加不加无所谓
+# 下面的配置如果访问站点http://localhost/test1访问的就是/var/www/test1目录下的站点信息
+location /test1/ {
+    root /var/www/;
+}
+
+# 如果用alias配置，其后面跟的指定目录是准确的，并且末尾必须加"/"，否则404
+# 下面的配置如果访问站点http://localhost/test2访问的就是/var/www/目录下的站点信息
+location /test2/ {
+    alias /var/www/;
+}
+</code></pre>
+
+<p>大家在实践过程中注意区分即可，配置之后要是碰到<code>404</code>可以先考虑是否是这个原因。</p>
+
+<h3 id="配置反向代理">
+<a id="配置反向代理" class="anchor" href="#%E9%85%8D%E7%BD%AE%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86" aria-hidden="true"><span class="octicon octicon-link"></span></a>配置反向代理</h3>
+
+<p>对于前端工程师而言，可能最容易成为<code>全栈</code>的技能就是<code>NodeJS</code>了，当我们用<code>express</code>框架写好了一个<code>Node</code>应用之后，比如启动的时候的访问地址是：<code>http://localhost:3000/</code>，但是在部署到服务器上去之后，我们当然不希望别人这样子访问，最好的情况肯定是隐藏掉端口号。</p>
+
+<p>例如我有一个<code>Node</code>服务的名字是<code>o2blog_wx</code>，在启动<code>Node</code>的时候访问的地址是：<code>http://localhost:3000/</code>，但是对外网我们希望是：<code>http://aotu.jd.com/o2blog_wx</code>，接下来我们将通过<code>Nginx</code>进行配置（带有详细注释）。</p>
+
+<pre><code>server {
+    listen 80;
+    server_name aotu.jd.com;
+    root /var/www/;
+    location /o2blog_wx/ {
+        # 反向代理我们通过proxy_pass字段来设置
+        # 也就是当访问http://aotu.jd.com/o2blog_wx的时候经过Nginx反向代理到服务器上的http://127.0.0.1:3000
+        # 同时由于解析到服务器上的时候o2blog_wx这个字段都要处理
+        # 所以通过rewrite字段来进行正则匹配替换
+        # 也就是http://aotu.jd.com/o2blog_wx/hello经过Nginx解析到服务器变成http://127.0.0.1:3000/hello
+        proxy_pass http://127.0.0.1:3000;
+        rewrite ^/o2blog_wx/(.*) /$1 break;
+    }
+}
+</code></pre>
+
+<h3 id="配置临时跳转">
+<a id="配置临时跳转" class="anchor" href="#%E9%85%8D%E7%BD%AE%E4%B8%B4%E6%97%B6%E8%B7%B3%E8%BD%AC" aria-hidden="true"><span class="octicon octicon-link"></span></a>配置临时跳转</h3>
+
+<p>有时候我们觉得一开始配置的URL不好想换掉，但又不想原先的链接失效，比如一开始对外网的链接是：<a href="http://aotu.jd.com/o2blog_wx/%EF%BC%8C%E5%90%8E%E6%9D%A5%E6%83%B3%E6%94%B9%E6%88%90http://aotu.jd.com/wxblog%EF%BC%8C%E5%8F%88%E4%B8%8D%E6%83%B3%E5%8E%9F%E5%85%88%E7%9A%84%E5%A4%B1%E6%95%88%E3%80%82">http://aotu.jd.com/o2blog_wx/，后来想改成http://aotu.jd.com/wxblog，又不想原先的失效。</a></p>
+
+<p>这个时候可以在<code>Nginx</code>上配置一个<code>302</code>临时跳转，如下（<code>server</code>部分跟前面的一样）：</p>
+
+<pre><code>location /o2blog_wx/ {
+    # 当匹配到http://aotu.jd.com/o2blog_wx/的时候会跳转到http://aotu.jd.com/wxblog
+    return 302 http://aotu.jd.com/wxblog
+}
+</code></pre>
+
+<h3 id="配置限制访问">
+<a id="配置限制访问" class="anchor" href="#%E9%85%8D%E7%BD%AE%E9%99%90%E5%88%B6%E8%AE%BF%E9%97%AE" aria-hidden="true"><span class="octicon octicon-link"></span></a>配置限制访问</h3>
+
+<p>在一台服务器上的资源不全部都是对外开放的，这个时候就需要通过<code>Nginx</code>配置一个限制访问，比如查看本服务器的<code>PHP</code>信息，我们就可以通过下面配置来实现限制访问：</p>
+
+<pre><code># 当匹配到/info的时候只允许10.7.101.224访问，其它的全部限制
+# 同时改写为/info.php
+location = /info {
+    allow 10.7.101.224;
+    deny all;
+    rewrite (.*) /info.php
+}
+</code></pre>
+
+<p>这个时候只有<code>IP</code>为<code>10.7.101.224</code>的机器才可以访问：<a href="http://aotu.jd.com/info%EF%BC%8C%E5%85%B6%E5%AE%83%E6%9C%BA%E5%99%A8%E9%83%BD%E4%BC%9A%60403%60%E6%8B%92%E7%BB%9D%E8%AE%BF%E9%97%AE%EF%BC%81">http://aotu.jd.com/info，其它机器都会<code>403</code>拒绝访问！</a></p>
+
+<p>当然最佳的实践是将<code>IP</code>抽取出来变成白名单，这样子就可以实现部分<code>IP</code>可以访问，其它的不能访问。</p>
+
+<h2 id="default-ssl-配置解析">
+<a id="default-ssl-配置解析" class="anchor" href="#default-ssl-%E9%85%8D%E7%BD%AE%E8%A7%A3%E6%9E%90" aria-hidden="true"><span class="octicon octicon-link"></span></a>default-ssl 配置解析</h2>
+
+<p>我们都知道<code>HTTP</code>在传输的过程中都是明文的，这直接导致了在传输的任何一个过程中都容易被窃取信息，所以才有了<code>SSL</code>（安全套接层）以及升级版<code>TLS</code>（传输层安全协议）的出现，其实就是在<code>HTTP</code>应用层给<code>TCP/IP</code>传输层的中间增加了<code>TLS/SSL</code>层，统称为<code>HTTPS</code>。</p>
+
+<p>那如何通过<code>Nginx</code>配置<code>HTTPS</code>站点呢，下面就是<code>default-ssl</code>配置文件的内容（详细解析）：</p>
+
+<pre><code>server {
+    # 默认情况下HTTPS监听443端口
+    listen  443 ssl;
+    server_name  localhost;
+    root  /var/www/;
+    # 下面这些都是配置SSL需要的
+    ssl on;
+    # 下面两个字段需要的crt利用openssl生成，具体可以看[这里](http://nginx.org/en/docs/http/configuring_https_servers.html)
+    ssl_certificate ssl/localhost.crt;
+    ssl_certificate_key ssl/localhost.key;
+
+    ssl_session_timeout 10m;
+
+    ssl_protocols SSLv2 SSLv3 TLSv1;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+
+    location = /info {
+        allow 127.0.0.1;
+        deny all;
+        rewrite (.*) /info.php;
+    }
+
+    location /phpmyadmin/ {
+        root /usr/local/share/phpmyadmin;
+        index index.php index.html index.htm;
+    }
+
+    location / {
+        include /usr/local/etc/nginx/conf.d/php-fpm;
+    }
+
+    error_page 403 /403.html;
+    error_page 404 /404.html;
+}
+</code></pre>
+
+<p>上面配置之后，就可以通过<a href="https://localhost/">https://localhost</a>访问我们的<code>Nginx</code>首页了。</p>
+
+<p>当然若要在对外网使用，必须购买第三方信任证书才行，有兴趣的童鞋可以谷歌了解，这里不细谈。</p>
+
+<h2 id="服务静态内容">
+<a id="服务静态内容" class="anchor" href="#%E6%9C%8D%E5%8A%A1%E9%9D%99%E6%80%81%E5%86%85%E5%AE%B9" aria-hidden="true"><span class="octicon octicon-link"></span></a>服务静态内容</h2>
+
+<p>web服务器的一个重要任务是对外输出文件，比如图片和静态网页。你会实现一个这样的例子：根据不同的请求，文件会从不同的本地目录，如： /data/www (html) 和 /data/images 被输出。这需要修改配置文件并且在http块指令中建立带有两个location块的server块。</p>
+
+<p>首先,创建/data/www的目录并且放置一个index.html的文件，然后创建/data/images目录并放置一些图片</p>
+
+<p>在配置文件中删除所有的指令，我们来新建一个新的server块指令。</p>
+
+<pre><code>http {  
+    server {  
+    }  
+}
+</code></pre>
+
+<p>通常一个配置文件会包含若干个server块，并通过他们<code>监听的端口和他们的服务</code>名称来区分。一旦nginx决定了那个由哪个server来处理一个请求，它就会检验请求头部的URI并用location指令的参数和其对比，location块被定义在server块中。</p>
+
+<pre><code>location / {
+    root /data/www;
+}  
+</code></pre>
+
+<p>这里location块声明了一个”/”前缀来和请求中的URI进行对比。对于成功匹配的请求，URI会被添加到root指令声明的路径后面，形成一个在本地文件系统中对于所需文件的请求。如果有多个匹配的location块，则nginx选择<strong>最长前缀</strong>的那个。以上的location块的前缀只有一个字符，是最短的，因此只有当其它location都匹配失败时，这个location才会被选择。</p>
+
+<p>现在，添加第二个location块：</p>
+
+<pre><code>location /images/ {
+    root /data;
+}
+</code></pre>
+
+<p>它会匹配以/images/开始的请求(<code>location /</code> 也会匹配这个请求，但它的前缀更短)
+现在，server块指令看起来就像这样</p>
+
+<pre><code>server {
+    location / {
+        root /data/www;
+    }
+
+    location /images/ {
+        root /data;
+    }
+}
+</code></pre>
+
+<p>这个配置已经可以工作了，它监听在标准的80端口上，并且可以在本机上通过<a href="http://localhost/">http://localhost/</a>访问。为了响应以/images/开头的URI,服务器会从/data/images目录中发送文件。比如：为了响应<a href="http://localhost/images/example.png">http://localhost/images/example.png</a>，nginx会发送/data/images/example.png这个文件，如果不存在这样的文件，nginx就会发送404错误。而不以/images/开头的请求则被映射到/data/www目录，比如：<a href="http://localhost/some/example.html">http://localhost/some/example.html</a>被映射到/data/www/some/example.html文件。</p>
+
+<h2 id="搭建代理服务器">
+<a id="搭建代理服务器" class="anchor" href="#%E6%90%AD%E5%BB%BA%E4%BB%A3%E7%90%86%E6%9C%8D%E5%8A%A1%E5%99%A8" aria-hidden="true"><span class="octicon octicon-link"></span></a>搭建代理服务器</h2>
+
+<p>nginx一个最常见的用途就是用作代理服务器，也就是把收到的请求传递给被代理的服务器，并从被代理服务器中取回响应，再将其发送给客户端。</p>
+
+<p>我们会配置一个基本的代理服务器，对于图片文件的请求，从本地目录中发送文件，而对于其它的请求，则把请求转发给另一个被代理服务器。在这个例子里，两个服务器都会在一个单一的nginx实例中被定义。</p>
+
+<p>首先，通过添加一个块指令定义一个被代理服务器：</p>
+
+<pre><code>server {
+    listen 8080;
+    root /data/up1;
+
+    location / {
+    }
+}
+</code></pre>
+
+<p>这是一个监听在8080端口的简单服务器(之前我们定义的server块不声明listen指令是因为使用了标准的80端口)并且会把所有请求映射到本地的 /data/upl 文件夹。创建这个文件夹并且放入一个index.html文件。注意，这里的root指令被放在了server上下文中。当有一个location被选择了而它的内部却没有root指令时，它就会使用server中的这个root指令。</p>
+
+<p>接下来，修改在前一节中的server配置使它变为一个代理服务器的配置。在第一个location块中，添加proxy_pass指令，它的参数是被代理服务器的协议，名称和端口。(本例中，参数是 <a href="http://localhost:8080/">http://localhost:8080</a>):</p>
+
+<pre><code>server {
+    location / {
+        proxy_pass http://localhost:8080;
+    }
+
+    location /images/ {
+        root /data;
+    }
+}
+</code></pre>
+
+<p>我们现在修改第二个location块，使它由原先的匹配/images/前缀变为匹配典型的图片文件扩展名。修改后的location如下：</p>
+
+<pre><code>location ~ \.(gif|jpg|png)$ {
+    root /data/images;
+}
+</code></pre>
+
+<p>这个参数是一个匹配所有以.gif,.jpg或.png结尾的URI的正则表达式。~ 应该被写在正则表达式前面。</p>
+
+<p>当nginx选择一个location时，它先检查前缀，并且记录匹配的location(最长前缀),然后nginx再检查正则表达式，如果有一个正则表达式匹配，它就选择这个location，否则，选择之前记录的location。</p>
+
+<p>最终的代理服务器配置：</p>
+
+<pre><code>server {
+    location / {
+        proxy_pass http://localhost:8080/;
+    }
+
+    location ~ \.(gif|jpg|png)$ {
+        root /data/images;
+    }
+}
+</code></pre>
+
+<p>现在，这个服务器可以将以.gif,.jpg或.png结尾的请求映射到本机目录，将其它所有请求发送到被代理服务器。</p>
+
+<p>为了使配置生效，要发送reload信号。</p>
+
+
+      <h3>关于图片和转载</h3>
+
+      <a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="知识共享许可协议" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br />本作品采用<a rel="license" href="http://creativecommons.org/licenses/by/4.0/">知识共享署名 4.0 国际许可协议</a>进行许可。
+
+      转载时请注明原文链接，图片在使用时请保留图片中的全部内容，可适当缩放并在引用处附上图片所在的文章链接，图片使用 Sketch 进行绘制。
+
+      <h3>关于评论和留言</h3>
+
+      如果对本文 <a href="/nginx">Nginx 初探</a> 的内容有疑问，请在下面的评论系统中留言，谢谢。
+
+      <blockquote>
+        <p>原文链接：<a href="/nginx">Nginx 初探 · 雄关漫道真如铁</a></p>
+
+        <p>Follow: <a href="https://github.com/nju520">nju520 · GitHub</a></p>
+      </blockquote>
+
+    </section>
+
+    <footer class="post-footer">
+
+      <!-- Everything inside the #author tags pulls data from the author -->
+      <!-- #author-->
+
+      
+      <figure class="author-image">
+        <a class="img" href="https://github.com/nju520" style="background-image: url(/assets/images/hacker.png)"><span class="hidden">'s Picture</span></a>
+      </figure>
+      
+
+      <section class="author">
+        <h4><a href="https://github.com/nju520">nju520</a></h4>
+
+        
+        <p> Ruby / Go / JS</p>
+        
+        <div class="author-meta">
+          <span class="author-location icon-location"> Hangzhou, China</span>
+          <span class="author-link icon-link"><a href="http://localhost:4000"> hwbnju.com</a></span>
+        </div>
+      </section>
+
+      <!-- /author  -->
+
+      <section class="share">
+        <h4>Share this post</h4>
+        <a class="icon-twitter" href="http://twitter.com/share?text=Nginx 初探&amp;url=http://localhost:4000nginx"
+          onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+          <span class="hidden">Twitter</span>
+        </a>
+        <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000nginx"
+          onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+          <span class="hidden">Facebook</span>
+        </a>
+        <a class="icon-google-plus" href="https://plus.google.com/share?url=http://localhost:4000nginx"
+          onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+          <span class="hidden">Google+</span>
+        </a>
+      </section>
+
+      <div id="gitalk-container"></div>
+      <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+      <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+      <script>
+       const gitalk = new Gitalk({
+         clientID: 'e552ed507a5a4581d8a1',
+         clientSecret: '0abbd4193a0f9b2700936214ff6fda088c665a73',
+         repo: 'bobo-comments',
+         owner: 'nju520',
+         admin: ['nju520'],
+         // labels: ['Gitalk', 'gitment'].concat(["Linux","Nginx"]),
+         // id: location.origin + location.pathname,
+         id: "http://hwbnju.com/nginx",
+         distractionFreeMode: false
+       });
+
+       gitalk.render('gitalk-container')
+      </script>
+
+    </footer>
+
+  </article>
+
+</main>
+
+<aside class="read-next">
+
+  <!-- [[! next_post ]] -->
+  
+  <a class="read-next-story no-cover" href="javascript-bind">
+    <section class="post">
+      <h2>JavaScript bind 原理和实现</h2>
+      <p>## bind 原理 bind是 ECMAScript 新增的方法, 这个方法的主要作用就是将函数绑定到某个对象. 当在函数 func()上调用 bind()方法并传入一个对象比如 bobo 作为参数, 返回一个新的函数. 返回的函数运行时以传入的第一个对象作为 this....</p>
+    </section>
+  </a>
+  
+  <!-- [[! /next_post ]] -->
+  <!-- [[! prev_post ]] -->
+  
+  <a class="read-next-story prev no-cover" href="javascript-execution-content">
+    <section class="post">
+      <h2>JavaScript 深入理解 执行上下文</h2>
+      <p>什么是执行上下文(执行环境) 每次当控制器转到JS可执行代码的时候，就会进入到一个执行上下文。 “执行上下文”就是 当前代码的运行环境或者作用域。 javascript中代码运行环境分为三种: 全局级别的代码: 这个是默认的代码运行环境， 一旦代码被载入，javascript引擎最先进入的就是这个全局环境 函数级别的代码: 当执行一个函数时， 运行函数体的代码 eval的代码: 在eval函数内运行的代码 下图示例包含了全局和函数级别的执行上下文: 上图一共有四个执行上下文。从外至内分别是全局执行上下文，person函数内的上下文，firstName函数和lastName函数的执行上下文。...</p>
+    </section>
+  </a>
+  
+  <!-- [[! /prev_post ]] -->
+</aside>
+
+<!-- /post -->
+
+
+      <footer class="site-footer clearfix">
+        <section class="copyright"><a href="/">雄关漫道真如铁</a> &copy; 2019</section>
+        <section class="poweredby">Proudly published with <a href="https://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/biomadeira/jasper">Jasper</a></section>
+      </footer>
+    </div>
+    <!-- [[! Ghost outputs important scripts and data with this tag ]] -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <!-- [[! The main JavaScript file for Casper ]] -->
+    <script type="text/javascript" src="/assets/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="/assets/js/index.js"></script>
+    <script type="text/javascript" src="/assets/js/prism.js"></script>
+    <script type="text/javascript" src="/assets/js/toc.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+  </body>
+</html>

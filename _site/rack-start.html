@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- [[! Document Settings ]] -->
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- [[! Page Meta ]] -->
+    <title>
+      
+        Ruby Rack 协议及其应用(一)
+      
+    </title>
+    
+    <meta name="description" content="Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本系列文章就深入探讨Rack协议的原理以及实现." />
+    
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="/assets/images/favicon.ico" >
+
+    <!-- [[! Styles'n'Scripts ]] -->
+    <link rel="stylesheet" type="text/css" href="/assets/css/screen.css" />
+    <link rel="stylesheet" type="text/css"
+      href="//fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400" />
+
+    <link rel="stylesheet" type="text/css" href="/assets/css/prism.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/toc.css" />
+
+    <!-- [[! Ghost outputs important style and meta data with this tag ]] -->
+    <link rel="canonical" href="/" />
+<meta name="referrer" content="origin" />
+<link rel="next" href="/page2/" />
+
+<meta property="og:site_name" content="雄关漫道真如铁" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Ruby Rack 协议及其应用(一)" />
+
+<meta property="og:description" content="Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本系列文章就深入探讨Rack协议的原理以及实现." />
+
+<meta property="og:url" content="http://localhost:4000/rack-start" />
+<meta property="og:image" content="" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Ruby Rack 协议及其应用(一)" />
+
+<meta name="twitter:description" content="Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本系列文章就深入探讨Rack协议的原理以及实现." />
+
+<meta name="twitter:url" content="http://localhost:4000/rack-start" />
+<meta name="twitter:image:src" content="" />
+
+<script type="application/ld+json">
+  {
+  "@context": "http://schema.org",
+  "@type": "Website",
+  "publisher": "nju520",
+  "url": "http://localhost:4000/rack-start",
+  "image": "",
+  "description": "Rack是Ruby应用服务器和Rack应用程序之间的一个接口,用于两者之间的交互. 不仅仅是大名鼎鼎的Ruby on Rails ,几乎所有的Ruby Web 框架都是一个Rack应用. 除了Web框架之外, Rack同样支持很多Ruby Web服务器. 本系列文章就深入探讨Rack协议的原理以及实现."
+  }
+</script>
+
+<meta name="generator" content="Jekyll 3.0.0" />
+<link rel="alternate" type="application/rss+xml" title="雄关漫道真如铁" href="/feed.xml" />
+
+    <!-- Add Google Analytics  -->
+    <!-- Google Analytics Tracking code -->
+<script>
+ (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+ })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ ga('create', 'UA-114647632-1', 'auto');
+ ga('send', 'pageview', location.pathname);
+
+</script>
+
+<!-- Baidu Analytics  Manager -->
+<script>
+ var _hmt = _hmt || [];
+ (function() {
+   var hm = document.createElement("script");
+   hm.src = "https://hm.baidu.com/hm.js?e9208862845c46a0f79e7828f495e407";
+   var s = document.getElementsByTagName("script")[0];
+   s.parentNode.insertBefore(hm, s);
+ })();
+</script>
+
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-PWFC85B');</script>
+  <!-- End Google Tag Manager -->
+
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-114647632-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-114647632-1');
+</script>
+
+  </head>
+  <body class=" post-template nav-closed">
+    <!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PWFC85B"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+
+    <div class="nav">
+  <h3 class="nav-title">Home</h3>
+  <a href="#" class="nav-close">
+    <span class="hidden">Close</span>
+  </a>
+  <ul>
+    <li class="nav-home " role="presentation"><a href="/">Home</a></li>
+    <li class="nav-ruby " role="presentation"><a href="/tag/ruby">Ruby</a></li>
+    <li class="nav-javascript " role="presentation"><a href="/tag/javascript">JavaScript</a></li>
+    <li class="nav-server " role="presentation"><a href="/tag/server">Server</a></li>
+    <li class="nav-database " role="presentation"><a href="/tag/database">Database</a></li>
+  </ul>
+  <a class="subscribe-button icon-feed" href="/feed.xml">Subscribe</a>
+</div>
+<span class="nav-cover"></span>
+
+
+    <div class="site-wrapper">
+
+      <!-- [[! Everything else gets inserted here ]] -->
+      <!-- < default -->
+
+<!-- The comment above "< default" means - insert everything in this file into -->
+<!-- the [body] of the default.hbs template, which contains our header/footer. -->
+
+<!-- Everything inside the #post tags pulls data from the post -->
+<!-- #post -->
+
+<header class="main-header post-head no-cover">
+  <nav class="main-nav overlay clearfix">
+    <a class="back-button icon-arrow-left" href="/">Home</a>
+    <a class="menu-button icon-menu" href="#"><span class="word">Menu</span></a>
+  </nav>
+</header>
+
+<main class="content" role="main">
+
+  <article class="post">
+
+    <header class="post-template post-header">
+      <h1 class="post-title">Ruby Rack 协议及其应用(一)</h1>
+      <section class="post-meta">
+        <time class="post-date" datetime="2017-08-17">17 Aug 2017</time>
+        <!-- <a href='/'>nju520</a> -->
+        <!-- [[tags prefix=" on "]] -->
+        
+        
+        <a href='/tag/Rack系列'>Rack系列</a>
+        
+        <a href='/tag/rack'>rack</a>
+        
+        <a href='/tag/ruby'>ruby</a>
+        
+        <a href='/tag/rails'>rails</a>
+        
+        <a href='/tag/server'>server</a>
+        
+        
+      </section>
+    </header>
+
+    <section class="post-content">
+
+      <ul class="section-nav">
+<li class="toc-entry toc-h2"><a href="#rack协议">Rack协议</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#什么是rack">什么是Rack</a></li>
+<li class="toc-entry toc-h3"><a href="#为什么是rack">为什么是Rack</a></li>
+<li class="toc-entry toc-h3"><a href="#rack的使用">Rack的使用</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#rack初探">Rack初探</a>
+<ul>
+<li class="toc-entry toc-h4"><a href="#环境变量env">环境变量(env)</a></li>
+<li class="toc-entry toc-h4"><a href="#rackrequest">Rack::Request</a>
+<ul>
+<li class="toc-entry toc-h5"><a href="#源码解读">源码解读:</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h4"><a href="#rackresponse">Rack::Response</a>
+<ul>
+<li class="toc-entry toc-h5"><a href="#响应体">响应体</a></li>
+<li class="toc-entry toc-h5"><a href="#响应码">响应码</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h3"><a href="#响应头">响应头</a>
+<ul>
+<li class="toc-entry toc-h5"><a href="#源码解读-1">源码解读</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#rack中间件">Rack中间件</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#一个简单的中间件">一个简单的中间件</a></li>
+<li class="toc-entry toc-h3"><a href="#rack响应的标准">Rack响应的标准</a></li>
+<li class="toc-entry toc-h3"><a href="#装配中间件">装配中间件</a>
+<ul>
+<li class="toc-entry toc-h4"><a href="#简单实现">简单实现</a></li>
+<li class="toc-entry toc-h4"><a href="#更ruby化的实现">更Ruby化的实现</a></li>
+<li class="toc-entry toc-h4"><a href="#configru-配置文件">config.ru 配置文件</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul><h2 id="rack协议">
+<a id="rack协议" class="anchor" href="#rack%E5%8D%8F%E8%AE%AE" aria-hidden="true"><span class="octicon octicon-link"></span></a>Rack协议</h2>
+
+<h3 id="什么是rack">
+<a id="什么是rack" class="anchor" href="#%E4%BB%80%E4%B9%88%E6%98%AFrack" aria-hidden="true"><span class="octicon octicon-link"></span></a>什么是Rack</h3>
+
+<p>Rack是Ruby Web服务器和Rack应用程序之间的一个接口</p>
+
+<p><img src="https//img.nju520/me/2018-03-03-rack.png" alt="Rack接口"></p>
+
+<p>上图给出了一个简单的图示. 当用户的请求抵达Web服务器时, Web服务器就会调用(call)Rack, Rack对请求进行包装, 然后调用Rack应用程序(一般是一个封装好的框架). Rack程序可以方便地利用Rack提供的各种API, 分析请求(request), 进行处理, 返回响应(response).</p>
+
+<h3 id="为什么是rack">
+<a id="为什么是rack" class="anchor" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%98%AFrack" aria-hidden="true"><span class="octicon octicon-link"></span></a>为什么是Rack</h3>
+
+<p>Rack提供了一种标准的接口, 便于应用程序和Web服务器之间进行交互. 一个Rack应用程序可以被任何和Rack兼容的Web服务器调用.</p>
+
+<p>目前几乎所有的主流Ruby服务器都支持Rack接口. Rack通过一种被称作句柄(Handler)的机制实现对Web服务器的支持.</p>
+
+<p>另一方面, 几乎所有的主流Web框架都支持Rack接口. 这就意味着使用这些框架编写的应用程序都是标准的Rack应用程序.</p>
+
+<p>Rack还有一个杀手锏:Rack中间件. Rack利用中间件(Middleware)实现最大程度的模块化编程. Rack中间件对Ruby Web框架也有很深的影响:</p>
+
+<ul>
+  <li>不同的Web框架之间可以重用中间件,这意味着你编写的一个中间件可以在几乎所有的主流框架中使用</li>
+  <li>可以通过不同的中间件组合组装出同一个Web框架的不同变种, 以适应不同的应用场合.</li>
+  <li>可以组合多个不同的Web应用框架为同一个更大的系统服务</li>
+</ul>
+
+<h3 id="rack的使用">
+<a id="rack的使用" class="anchor" href="#rack%E7%9A%84%E4%BD%BF%E7%94%A8" aria-hidden="true"><span class="octicon octicon-link"></span></a>Rack的使用</h3>
+
+<p>Rack协议将Rack应用描述成一个可以响应call方法的Ruby对象, 它接收一个来自外界的参数(env),然后返回一个只包含三个值的数组.</p>
+
+<blockquote>
+  <p>A Rack application is an Ruby Object(not a class) that responds to call. It tasks exactly one argument, the enviroment and returns an Array of exactly three values: the status,  the headers, and the body.</p>
+</blockquote>
+
+<p>一个Rack应用程序就是一个Ruby对象, 只要这个对象能够响应call. Ruby中能够响应call方法的对象很多, 包括:</p>
+
+<ul>
+  <li>一个 Proc 对象</li>
+  <li>一个 lambda 对象</li>
+  <li>一个 method 对象</li>
+  <li>任何一个对象, 它的类的实例方法中包含一个 call 方法</li>
+</ul>
+
+<p>Rack应用对象接收一个环境(env)参数, 然后返回一个三元数组:</p>
+
+<ul>
+  <li>一个状态码(status), 即HTTP协议定义的状态码</li>
+  <li>一个头(headers), 是一个Hash, 包含了所有的HTTP header</li>
+  <li>一个响应体(body), 它是一个字符串数组</li>
+</ul>
+
+<p>Rack在Web Server 和应用程序之间提供了最小的API接口, 如果Web Server都遵循Rack提供的这套规则, 那么所有的框架都能通过Rack协议使用Web Server.</p>
+
+<p>所有的Web Server只需要在Rack::Handler模块中实现一个 run方法的类即可:</p>
+
+<pre><code class="language-ruby"># Rack 内置的 Web Server:  WEBrick
+module Rack
+  module Handler
+    class WEBrick &lt; ::WEBrick::HTTPServlet::AbstractServlet
+      def self.run(app, options = {})
+        environment  = ENV['RACK_ENV'] || 'development'
+        default_host = environment == 'development' ? 'localhost' : nil
+
+        options[:BindAddress] = options.delete(:Host) || default_host
+        options[:Port] ||= 8080
+        @server = ::WEBrick::HTTPServer.new(options)
+        @server.mount '/', Rack::Handler::WEBrick, app
+        yield @server if block_given?
+        @server.start
+      end
+    end
+  end
+end
+</code></pre>
+
+<p>这个类方法接收两个参数: Rack应用对象和包含各种参数的options 字典. 所有应用程序对象在接受到一个#call方法传来的env时, 都会返回一个三元组:</p>
+
+<pre><code class="language-ruby">[status, headers, body]
+</code></pre>
+
+<p>最后的body响应体是一个由多个响应内容组成的数组, Rack使用的Web Server会将body中几个部分连接到一起最后拼成一个完整的HTTP响应后返回.</p>
+
+<p><strong>我们可以任务当一个请求来临时, <code>Rack</code>应用会调用<code>call</code>方法, 参数为<code>env</code>, 经过应用的处理之后, 返回我们构造好的 <code>response</code></strong></p>
+
+<p>我们可以使用Pry在 console中尝试使用Rack:</p>
+
+<pre><code class="language-shell">$ pry
+[7] pry(main)&gt; require 'rack'
+=&gt; false
+[8] pry(main)&gt; app = -&gt; (env) {[200, {}, ["Hello World"]]}
+=&gt; #&lt;Proc:0x00007fc1644f62d0@(pry):8 (lambda)&gt;
+[9] pry(main)&gt; Rack::Handler::WEBrick.run app, Port: 3000
+
+[2018-03-03 10:45:59] INFO  WEBrick 1.3.1
+[2018-03-03 10:45:59] INFO  ruby 2.4.2 (2017-09-14) [x86_64-darwin17]
+[2018-03-03 10:45:59] INFO  WEBrick::HTTPServer#start: pid=32799 port=3000
+
+::1 - - [03/Mar/2018:10:46:23 CST] "GET /admin HTTP/1.1" 200 11
+- -&gt; /admin
+::1 - - [03/Mar/2018:10:46:25 CST] "GET / HTTP/1.1" 200 11
+- -&gt; /
+::1 - - [03/Mar/2018:10:46:26 CST] "GET /favicon.ico HTTP/1.1" 200 11
+http://localhost:3000/ -&gt; /favicon.ico
+
+</code></pre>
+
+<p>在浏览器中输入 <code>http://localhost:3000</code>, 就会出现<code>Hello World</code>.</p>
+
+<p>除了使用 lambda外,我们的应用程序还可以使用method对象:</p>
+
+<pre><code class="language-ruby">[10] pry(main)&gt; def my_method(env)
+[10] pry(main)*   [200, {}, ['Hello World']]
+[10] pry(main)* end
+=&gt; :my_method
+
+[11] pry(main)&gt; rack_app = method(:my_method)
+=&gt; #&lt;Method: Object#my_method&gt;
+[12] pry(main)&gt; rack_app.call({})
+=&gt; [200, {}, ["Hello World"]]
+[13] pry(main)&gt;
+
+# 此处我们使用另外一个Web Server Thin
+[14] pry(main)&gt; Rack::Handler::Thin.run rack_app, Port: 3000
+Thin web server (v1.7.2 codename Bachmanity)
+Maximum connections set to 1024
+Listening on localhost:3000, CTRL+C to stop
+</code></pre>
+
+<p>一个合法的Rack程序也可以是任何对象, 只要它的类定义了call方法:</p>
+
+<pre><code class="language-ruby">[15] pry(main)&gt; class MyRackApp
+[15] pry(main)*   def call(env)
+[15] pry(main)*     [200, {}, ['Hello from MyRackApp']]
+[15] pry(main)*   end
+[15] pry(main)* end
+=&gt; :call
+[16] pry(main)&gt; rack_app = MyRackApp.new
+=&gt; #&lt;MyRackApp:0x00007f8e6aecd880&gt;
+[17] pry(main)&gt;
+</code></pre>
+
+<p>以上几种方式都是在 console中启动的Web Server 来处理浏览器的请求, 实际应用中一般是将代码统一放在 config.ru 文件中:</p>
+
+<pre><code class="language-ruby"># config.ru
+run Proc.new { |env| ['200', {'Content-Type' =&gt; 'text/html'}, ['Hello World']] }
+</code></pre>
+
+<p>在同一目录下使用 backup 命令就可以启动一个 Web Server 进程:</p>
+
+<pre><code class="language-shell"># 如果文件名恰好为 config.ru, 我们可以省略配置文件直接运行 rackup
+$ rackup config.ru
+
+Puma starting in single mode...
+* Version 3.11.2 (ruby 2.4.2-p198), codename: Love Song
+* Min threads: 0, max threads: 16
+* Environment: development
+* Listening on tcp://localhost:9292
+Use Ctrl-C to stop
+
+</code></pre>
+
+<blockquote>
+  <p>我们可以使用  httpie 工具代替 curl 在命令行中发出 HTTP请求, 这样可以直接在命令行中获取我们需要的诸多信息.</p>
+</blockquote>
+
+<p>使用 http 工具发出请求:</p>
+
+<pre><code class="language-shell">http http:localhost:9292
+
+HTTP/1.1 200 OK
+Content-Type: text/html
+Transfer-Encoding: chunked
+
+Hello World
+</code></pre>
+
+<p>从上述请求返回的响应中可以看出, Puma 按照 config.ru文件中的代码对HTTP请求进行了处理</p>
+
+<h2 id="rack初探">
+<a id="rack初探" class="anchor" href="#rack%E5%88%9D%E6%8E%A2" aria-hidden="true"><span class="octicon octicon-link"></span></a>Rack初探</h2>
+
+<p>本节探究一下Rack为Rack应用程序提供的几个基础接口和概念, 对Rack源码也解读一下.</p>
+
+<h4 id="环境变量env">
+<a id="环境变量env" class="anchor" href="#%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8Fenv" aria-hidden="true"><span class="octicon octicon-link"></span></a>环境变量(env)</h4>
+
+<p>Rack用一个环境参数(env)来调调用Rack应用程序, 它是一个<code>Hash</code>实例,它包含了全部的HTTP请求信息.</p>
+
+<p>首先将env对应的 key =&gt; value 打印出来:</p>
+
+<pre><code class="language-ruby"># !/usr/bin/env ruby
+require 'rack'
+
+app = lambda do |env|
+  env.to_a.sort.each {|key, value| puts "#{key} =&gt; #{value}"}
+  [200, {}, ['Hello World']]
+end
+
+Rack::Handler::Thin.run app, Port: 3000
+</code></pre>
+
+<p>这个简单的Rack应用程序会把env的内容都打印出来. 采用 http 发出请求 <code>http :3000/admin/?name=hwbnju</code>可以看到如下输出:</p>
+
+<pre><code class="language-shell">GATEWAY_INTERFACE =&gt; CGI/1.2
+HTTP_ACCEPT =&gt; */*
+HTTP_ACCEPT_ENCODING =&gt; gzip, deflate
+HTTP_CONNECTION =&gt; keep-alive
+HTTP_HOST =&gt; localhost:8080
+HTTP_USER_AGENT =&gt; HTTPie/0.9.9
+HTTP_VERSION =&gt; HTTP/1.1
+PATH_INFO =&gt; /admin
+QUERY_STRING =&gt; name=hwbnju
+REMOTE_ADDR =&gt; ::1
+REQUEST_METHOD =&gt; GET
+REQUEST_PATH =&gt; /
+REQUEST_URI =&gt; /?name=hwbnju
+SCRIPT_NAME =&gt;
+SERVER_NAME =&gt; localhost
+SERVER_PORT =&gt; 3000
+SERVER_PROTOCOL =&gt; HTTP/1.1
+SERVER_SOFTWARE =&gt; thin 1.7.2 codename Bachmanity
+async.callback =&gt; #&lt;Method: Thin::Connection#post_process&gt;
+async.close =&gt; #&lt;EventMachine::DefaultDeferrable:0x00007ffe978b6030&gt;
+rack.errors =&gt; #&lt;IO:0x00007ffe950a27d8&gt;
+rack.input =&gt; #&lt;StringIO:0x00007ffe978b67d8&gt;
+rack.multiprocess =&gt; false
+rack.multithread =&gt; false
+rack.run_once =&gt; false
+rack.url_scheme =&gt; http
+rack.version =&gt; [1, 0]
+</code></pre>
+
+<p>环境变量大致可以分为两类:</p>
+
+<ul>
+  <li>
+    <p>CGI变量:</p>
+
+    <ul>
+      <li>REQUEST_METHOD: HTTP请求的方法, 可以是 GET POST</li>
+      <li>PATH_INFO: 访问的路径, 此处为 <code>/admin</code>
+</li>
+      <li>QUERY_STRING: 查询字符串, 此处为 <code>name=hwbnju</code>
+</li>
+    </ul>
+  </li>
+  <li>
+    <p>rack特定的变量: <code>rack.**</code></p>
+
+    <ul>
+      <li>
+        <p>rack.input: 一个IO对象, 可以读取 raw HTTP request</p>
+      </li>
+      <li>
+        <p>rack,errors: 一个IO对象, 用于错误输出. Web服务器会把它输出到服务器日志文件. 它也是Rack::Logger以及 Rack::CommenLogger的输出对象</p>
+      </li>
+      <li>
+        <p>rack.hijack, rack.hijack? rack.hijack_to: 实现 websocket</p>
+      </li>
+      <li>
+        <p>rack.multiprocess, rack.multithread: 这两个对象知识了Rack应用的运行环境是否是多进程、多线程.</p>
+
+        <p>这里着重说明一下: Rack 服务器可以根据负载情况同时启动Rack应用的多个实例.一般来说,多进程方式比较安全: 如果要使用多线程, 不但要保证Rack应用程序是线程安全, 还需要保证Rack中间件是线程安全.</p>
+
+        <ul>
+          <li>即有可能通过多进程(每个进程是一个实例) Unicorn</li>
+          <li>通过多线程(一个进程, 多个线程, 每个线程一个实例) Thin</li>
+          <li>将二者结合起来(多进程, 同时每个进程内多个线程实例) Puma Passeger</li>
+        </ul>
+      </li>
+      <li>
+        <p>rack.run_once: 服务器是否只运行Rack应用实例一次就把它释放掉. 这意味着服务器会对每个HTTP请求构造一个新的Rack应用实例(包括所有的中间件的初始化工作). 一般来说只有CGI服务器会这么做.</p>
+      </li>
+      <li>
+        <p>rack.url_scheme: http or https</p>
+      </li>
+      <li>
+        <p>rack.verison: rack spec 的版本</p>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<p><strong>Rack env 不但可以从Web Server向Rack应用程序和中间件传递这些信息, 还用于在Rack中间件中间或者中间件与应用程序之间传递消息</strong></p>
+
+<p><img src="http://img.nju520.me/2018-03-03-rack-env.png" alt="rack env"></p>
+
+<p>现在可以想象我们自己编写一个Rack程序, 我可以直接判断用户请求的方法、路径名、查询参数等信息, 然后直接调用对应的处理程序, 非常高效地实现各种丰富多彩的功能.</p>
+
+<p>但是直接存取环境虽然直接高效, 但却需要手工处理很多麻烦的事情. 比如解析查询的参数, 维护用户的会话信息, 处理浏览器不支持PUT的情况, 在响应时添加合适的HTTP头等等.</p>
+
+<p>Rack提供了丰富的API可以帮助我们快速方便地编写灵活的应用逻辑. 我们从两个最重要的类开始研究: Request 和 Response</p>
+
+<h4 id="rackrequest">
+<a id="rackrequest" class="anchor" href="#rackrequest" aria-hidden="true"><span class="octicon octicon-link"></span></a>Rack::Request</h4>
+
+<p>我们可以将传入Rack应用程序的环境变量(env)是包含一次HTTP请求的所有参数信息.  在Rack内部是将 env 转换成一个 request对象进行操作. <code>Rack::Request</code>为存取 env 提供了方便的接口.</p>
+
+<blockquote>
+  <p>Rack::Request provides a convenient interface to a Rack environment.  It is stateless, the environment +env+ passed to the constructor will be directly modified.
+  req = Rack::Request.new(env)
+  req.post?
+  req.params[“data”]</p>
+</blockquote>
+
+<pre><code class="language-ruby">request = Rack::Request.new
+</code></pre>
+
+<p>新创建的<code>request</code>对象直接持有传入的env对象并在需要的时候对它进行修改, 它自己没有任何状态.</p>
+
+<p>我们可以通过Hash的形式取得用户请求的参数, 比如:</p>
+
+<pre><code class="language-ruby">request.params[:somekey]
+</code></pre>
+
+<p>下面的程序就是让用户猜测我们最喜欢的浏览器. 用户可以输入 http://localhost:3000/guess?client=XXX 这样的 url</p>
+
+<pre><code class="language-ruby">#! /usr/bin/env ruby
+require 'rack'
+
+app = -&gt; (env) do
+  request = Rack::Request.new(env)
+  if request.path_info == '/guess'
+    client = request['client']
+    if client == 'chrome'
+      [200, {}, ['Google Chrome']]
+    else
+      [200, {}, ['Please choose another browser']]
+    end
+  else
+    [200, {}, ['you need guess something']]
+  end
+end
+
+Rack::Handler::WEBrick.run app, :Port =&gt; 3000
+
+</code></pre>
+
+<p>当用户请求的 <code>path_info</code> 不是 <code>/guess</code>, 我们就返回<code>you need guess something</code>. 当用户输入的查询参数不包括 <code>client=chrome</code>时,我们则要求用户更换另外的浏览器名字.</p>
+
+<p>我们直接用Hash存取用户的请求参数在很大程度上方便我们程序的实现.</p>
+
+<p><code>Rack::Request</code>提供了询问当前HTTP请求类型的简洁方法</p>
+
+<ul>
+  <li>request_method: 请求的HTTP方法, 包含 GET POST PUT DELETE HEAD</li>
+  <li>get? : HTTP请求是否为 GET</li>
+  <li>head? : HTTP请求是否为 HEAD</li>
+  <li>post? : HTTP请求是否为 POST</li>
+  <li>puts? : HTTP请求是否为 PUT</li>
+  <li>xhr? : HTTP请求是否为 XMLHttpRequest请求(即Ajax请求)</li>
+</ul>
+
+<h5 id="源码解读">
+<a id="源码解读" class="anchor" href="#%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB" aria-hidden="true"><span class="octicon octicon-link"></span></a>源码解读:</h5>
+
+<pre><code class="language-ruby"># rack/lib/request.rb
+# request 类比较简单, 主要是对 env 进行处理
+# Rack::Request 本身是无状态的,  env 传入 Request对象的构造方法中, 它可以直接被修改
+# 以下代码为节选, 完整代码请参考:
+# 重点说明一下 super 方法的使用
+# 1. super       调用时, 将沿着继承链调用祖先类/模块的方法, 并携带传递给当前调用对象的全部方法参数
+# 2. super()     调用时, 则不会传递调用者任何参数
+# 3. super(a, b) 调用时, 则传递部分参数a, b
+
+require 'rack/utils'
+require 'rack/media_type'
+
+module Rack
+  class Request
+    def initialize(env)
+      @params = nil
+      super(env)
+    end
+
+    def params
+      @params ||= super
+    end
+
+    def update_param(k, v)
+      super
+      @params = nil
+    end
+
+    def delete_param(k)
+      v = super
+      @params = nil
+      v  
+    end
+
+    # 对 header 进行操作的 helper
+    module Env
+      # the enviroment of the request
+      attr_reader :env
+
+      # env is an instance of Hash
+      def initialize(env)
+        @env = env
+        super()
+      end
+
+      def has_header?(name)
+        @env.key? name
+      end
+
+      def fetch_header(name, &amp;block)
+      end
+
+      def set_header(name, v)
+      end
+
+      def add_header(key, v)
+      end
+
+      def delete_header(name)
+      end
+
+      def initialize_copy(other)
+        @env = other.env.dup
+      end
+    end
+
+    # 一些辅助方法, 用来解析 env
+    module Helpers
+
+	  def body;  			get_header(RACK_INPUT); end
+      def path_info;    	get_header(PATH_INFO); end
+      def request_method;	get_header(REQUEST_METHOD); end
+
+      # 判断请求的方法类型
+      def get?;				request_method == GET; end
+      def trace?;			request_method == TRACE; end
+    end
+
+    # 将上述两个模块 include 加入 Request类的继承链中
+    # Rack::Request.ancestors
+    #[Env, Helpers, ...]
+    include Env
+    include Helpers
+  end
+end
+</code></pre>
+
+<h4 id="rackresponse">
+<a id="rackresponse" class="anchor" href="#rackresponse" aria-hidden="true"><span class="octicon octicon-link"></span></a>Rack::Response</h4>
+
+<p>前面的例子中我们都是手动构造返回数组, 但是在一个复杂的应用程序中, 我么可能需要对响应做更多的控制. 例如设置各种各样的HTTP响应头, 处理 cookie 等工作.</p>
+
+<p><code>Rack::Response</code>提供了对响应的状态、HTTP头和内容进行处理的方便接口</p>
+
+<h5 id="响应体">
+<a id="响应体" class="anchor" href="#%E5%93%8D%E5%BA%94%E4%BD%93" aria-hidden="true"><span class="octicon octicon-link"></span></a>响应体</h5>
+
+<p><code>Request</code>提供了两种方式来生成响应体:</p>
+
+<ul>
+  <li>直接设置 <code>response.body</code>. 此时必须手动设置 <code>Content-Length</code> 的值</li>
+  <li>采用 <code>response.write</code> 增量写入内容, 自动填充 <code>Content-Length</code>的值</li>
+</ul>
+
+<p>不管采用哪种方式, 最后都得采用<code>response.finish</code> 完成 <code>response</code>的构建. 除了一些必要的检查外, <code>finish</code> 将装配出符合Rack规范的一个三元数组,也就是之前手动返回的那个数组: [status, heades, body]</p>
+
+<p>采用第一种形式构造 body:</p>
+<pre><code class="language-ruby">#! /usr/bin/env ruby
+require 'rack'
+require_relative 'decorator'
+
+app = -&gt; (env) do
+ request = Rack::Request.new(env)
+ response = Rack::Response.new
+
+ body = "===========header==========&lt;br/&gt;"
+ if request.path_info == "/hello"
+   body &lt;&lt; "you say hello"
+   client = request['client']
+   body &lt;&lt; " from #{client}" if client
+ else
+   body &lt;&lt; "you need provide some client information"
+ end
+
+ body &lt;&lt; "&lt;br/&gt;===========footer=========="
+ response.body = [body]
+ response.headers['Content-Length'] = body.bytesize.to_s
+ response.headers['Content-type'] = 'text/html'
+ response.finish
+end
+
+Rack::Handler::WEBrick.run app, :Port =&gt; 3000
+
+</code></pre>
+
+<p>采用第二种形式构造 body:</p>
+
+<pre><code class="language-ruby">
+#! /usr/bin/env ruby
+require 'rack'
+require_relative 'decorator'
+
+app = -&gt; (env) do
+  request = Rack::Request.new(env)
+  response = Rack::Response.new
+
+  response.write("===========header==========&lt;br/&gt;")
+  if request.path_info == '/hello'
+    response.write("You say hello")
+    client = request['client']
+    response.write(" from #{client}") if client
+  else
+    response.write("You need provide some client information")
+  end
+  response.write"&lt;br/&gt;===========footer=========="
+  response.headers['Content-type'] = 'text/html'  
+  response.finish
+end
+
+# use Decorator
+# run app
+Rack::Handler::WEBrick.run app, :Port =&gt; 3000
+
+</code></pre>
+
+<h5 id="响应码">
+<a id="响应码" class="anchor" href="#%E5%93%8D%E5%BA%94%E7%A0%81" aria-hidden="true"><span class="octicon octicon-link"></span></a>响应码</h5>
+
+<p>我们可以直接存取<code>Response</code>的对象来改变状态码. 如果没有任何设置, 状态码就为200.</p>
+
+<p>Response还提供了一个 <code>redirect</code>方法直接进行重定向:</p>
+
+<pre><code class="language-ruby">redirect(target, status = 302)
+</code></pre>
+
+<h3 id="响应头">
+<a id="响应头" class="anchor" href="#%E5%93%8D%E5%BA%94%E5%A4%B4" aria-hidden="true"><span class="octicon octicon-link"></span></a>响应头</h3>
+
+<p>我们还可以直接写入 <code>Response</code>的头信息 <code>headers</code>, 这是一个<code>Hash</code></p>
+
+<pre><code class="language-ruby">response.headers['Content-Type'] = 'text/plain'
+</code></pre>
+
+<h5 id="源码解读-1">
+<a id="源码解读-1" class="anchor" href="#%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>源码解读</h5>
+
+<pre><code class="language-ruby">require 'rack/request'
+require 'rack/utils'
+require 'rack/body_proxy'
+require 'rack/media_type'
+require 'time'
+
+module Rack
+  # Rack::Response 为创建 Rack response提供了简介的接口.
+  # 它允许设置响应头(header) cookies
+  # 我们可以使用 write 增量不断地写入响应内容, 直到调用 finish 结束
+
+  class Response
+  	attr_accessor :length, :status, :body
+    attr_reader :header
+    alias headers haeder
+
+    def	initialize(body = [], status = [], header = [])
+      @status = status.to_i
+      @header = Utils::HeaderHash.new.merge(header)
+
+      @writer = lambda {|x| @body &lt;&lt; x} # 后续调用 @writer.call(x) 向body中添加内容
+      @block = nil
+      @length = 0
+      @body = []
+      if body.respond_to? :to_str
+      	write body.to_str
+      elsif body.respond_to? :each
+      	body.each {|part| write part.to_s}
+      else
+      	raise TypeError, 'stringable or iterable required'
+      end
+
+      yield self if block_given?
+    end
+
+    def	finish(&amp;block)
+      @block = block
+
+      if [204, 304].include?(status.to_i)
+      	delete_header CONTENT_TYPE
+      	delete_header CONETENT_LENGTH
+      	close
+      	[status.to_i, header, []]
+      else
+        [status, header, BodyProxy.new(self){}]
+      end
+    end
+
+    # 向body后插入数据
+    def write(str)
+      s = str.to_s
+      @length += s.bytesize unless chunked
+      @writer.call s
+
+      set_header(CONTENT_LENGTH, @length.to_s) unless chunked?
+      str
+    end
+
+    # 关闭
+    def close
+      body.close if body.respond_to?(:close)
+    end
+
+
+  end
+end
+</code></pre>
+
+<h2 id="rack中间件">
+<a id="rack中间件" class="anchor" href="#rack%E4%B8%AD%E9%97%B4%E4%BB%B6" aria-hidden="true"><span class="octicon octicon-link"></span></a>Rack中间件</h2>
+
+<p>什么是中间件? 简单讲中间件就是在Ruby Web Server和Rack应用程序之间执行的代码.</p>
+
+<p>Rack协议和中间件是Rack能达到今天地位不可或缺的两个特性. Rack协议规定了 WebServer 和 Rack 应用程序之间应该如何通信, 而Rack中间件能够在上层改变HTTP的响应或者请求, 在不改变应用的基础上为Rack应用增加新的功能.</p>
+
+<h3 id="一个简单的中间件">
+<a id="一个简单的中间件" class="anchor" href="#%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84%E4%B8%AD%E9%97%B4%E4%BB%B6" aria-hidden="true"><span class="octicon octicon-link"></span></a>一个简单的中间件</h3>
+
+<p>前面一节中介绍<code>Rack::Response</code>时,我们在程序输出的前后分别添加了头信息和尾信息. 我们可以尝试把实际的程序输出和包装的过程剥离开来. 首先去掉头信息和尾信息的输出:</p>
+
+<pre><code class="language-ruby">#! /usr/bin/env ruby
+require 'rack'
+require_relative 'decorator'
+
+app = -&gt; (env) do
+  request = Rack::Request.new(env)
+  response = Rack::Response.new
+
+  if request.path_info == '/hello'
+    response.write("You say hello")
+    client = request['client']
+    response.write(" from #{client}") if client
+  else
+    response.write("You need provide some client information")
+  end
+  response.headers['Content-type'] = 'text/html'
+  # response.finish 返回的正是 response 本身.
+  response.finish
+end
+
+# use Decorator
+# run app
+Rack::Handler::WEBrick.run Decorator.new(app), :Port =&gt; 3000
+
+</code></pre>
+
+<p>最后一行我们采用的是</p>
+
+<pre><code class="language-ruby">Rack::Handler::WEBrick.run Decorator.new(app), Port: 3000
+
+# 相当于调用了
+# (Decorator.new(app)).call(env)
+# decorator.call(env)
+# 上述方法内部先调用 @app的 call(env)
+# 再对返回的三元数组进行处理之后, 返回新的三元数组
+</code></pre>
+
+<p>接下来我们就要定义一个 Decorator类, 创建 Decorator实例时传入原始的 rack_app 作为其参数. 这个实例也能够被Rack的Handler调用–显然这个实例也是合法的Rack应用程序. 因此 Decorator类需要一个call方法.</p>
+
+<pre><code class="language-ruby"># decorator.rb
+class Decorator
+  # 初始化方法接收一个标准的Rack应用程序参数, 并且可以传入 代码块
+  def initialize(app, &amp;block)
+    @app = app
+    @block = @block
+  end
+
+  def call(env)
+    status, headers, body = @app.call(env)
+    new_body = "===========header==========&lt;br/&gt;"
+    # 这里的body实际上是一个 response实例, 它能够响应`each`方法
+    body.each {|str| new_body &lt;&lt; str}
+    new_body &lt;&lt; "&lt;br/&gt;===========footer=========="
+    headers['Content-Length'] = new_body.bytesize.to_s
+
+    # 最后返回加上头尾信息的新的三元数组
+    [status, headers, [new_body]]
+  end
+end
+</code></pre>
+
+<p>运行程序, 我们可以在命令行中得到和之前一样的结果:</p>
+
+<pre><code class="language-shell">$ http http://localhost:3000/hello
+===========header==========
+You say hello
+===========footer==========
+</code></pre>
+
+<h3 id="rack响应的标准">
+<a id="rack响应的标准" class="anchor" href="#rack%E5%93%8D%E5%BA%94%E7%9A%84%E6%A0%87%E5%87%86" aria-hidden="true"><span class="octicon octicon-link"></span></a>Rack响应的标准</h3>
+
+<p><strong>任何中间件本身必须是一个合法的Rack应该程序</strong></p>
+
+<p>Rack协议要求Rack应用程序的call方法返回一个数组, 包含三个成员</p>
+
+<ul>
+  <li>status(状态码): 这是一个HTTP状态, 不一定是整数, 但是必须能够响应<code>to_i</code>方法并返回一个整数</li>
+  <li>headers(响应头): 这个头必须能够响应<code>each</code>放啊, 并且每次产生一个key和value.</li>
+  <li>body(响应体): 必须能够响应<code>each</code>方法, 而且每次必须产生一个字符串.  Rack::Response的实例是合法的响应体, 应为它能够正确响应<code>each</code>方法.所以body不一定非得是数组, 只要能响应<code>each</code>方法即可.</li>
+</ul>
+
+<p>中间件可以实现 通用逻辑和业务逻辑分离, 这些通用的逻辑可以被应用到各种各样不同的业务逻辑.</p>
+
+<p>比如说我们实现了一个用于身份认证的中间件, 那么这个中间件就可以应用到任何Rack应用程序中.</p>
+
+<p>由于几乎所有的Ruby Web框架编写的应用程序都是Rack应用, 因此任何Web应用程序都可以不加修改地使用我们编写的身份认证中间件来实现用户身份认证.</p>
+
+<p><img src="" alt="中间件架构"></p>
+
+<p>Web框架的作者可以用中间件的形式实现整个框架. 由于中间件本身也是合法的Rack应用程序, 这就意味着中间件外面还可以包装中间件. 原先需要单片实现的整个框架被分割成多个中间件, 每个中间件只关系自己需要实现的功能. 这样的好处显而易见:</p>
+
+<ul>
+  <li>每个中间件独立开发, 甚至可以被独立地替换</li>
+  <li>我们可以用不同方式去组合中间件, 最大程度低满足不同应用程序的需要</li>
+</ul>
+
+<h3 id="装配中间件">
+<a id="装配中间件" class="anchor" href="#%E8%A3%85%E9%85%8D%E4%B8%AD%E9%97%B4%E4%BB%B6" aria-hidden="true"><span class="octicon octicon-link"></span></a>装配中间件</h3>
+
+<p>我们往往需要在一个应用程序里面装载很多中间件, 最直接的方式是采用 <code>new</code> 方法.</p>
+
+<pre><code class="language-ruby"># 两个中间件 Middleware1 Middleware2, 一个应用程序 rack_app
+Rack::Handler::Thin.run(Middleware1.new(Middleware2.new(rack_app, options2), options1))
+</code></pre>
+
+<p>如果我们要使用很多中间件, 上述代码肯定会越来越繁琐.在Ruby中,我们可以使用<code>DSL</code>来优雅地装配中间件:</p>
+
+<pre><code class="language-ruby">class Builder
+  # 加入中间件
+  def use
+  end
+
+  # 加入应用程序
+  def run
+  end
+end
+
+# Builder生成一个最终程序
+app = Builder.new {
+    use Middleware1
+    use Middleware2
+    run RackApplication
+}.to_app
+# 启动Web Server来运行此app
+Rack::Handler::XXX.run app
+</code></pre>
+
+<p><code>use</code>  和 <code>run</code>  作为DSL中的动词. 这些DSL使用的范围通常是一个 <code>block</code></p>
+
+<ul>
+  <li>use: 使用一个中间件</li>
+  <li>run: 运行原始的rack程序(在Rack源代码中run也仅仅是将原始的rack程序加入中间件栈中, 并没有运行)</li>
+</ul>
+
+<p>前述例子中<code>Decorator</code> 只必须得在生成新的响应体 <code>new_body</code>以后设置新的 <code>Content-Type</code>:</p>
+
+<pre><code class="language-ruby">headers['Content-Type'] = new_body.bytesize.to_s
+</code></pre>
+
+<p>Rack自带了很多中间件, 其中一个中间件就是 <code>Rack::ContentLength</code>, 它可以自动设置响应中的<code>Content-Length. 我们可以使用如下方式使用 </code>Rack` 自带的中间件:</p>
+
+<pre><code class="language-ruby">#! usr/bin/env ruby
+require 'rack'
+require 'decorator'
+
+app = Builder.new {
+    use Rack::ContentLength
+    use Decorator
+    run lambda {|env| [200, {"Content-Type" =&gt; "text/html"}, ["Hello World"]]}
+}.to_app
+
+Rack::Handler::WEBrick.run app, Port: 3000
+
+</code></pre>
+
+<pre><code class="language-ruby"># decorator.rb
+class Decorator
+  def initialize(app, &amp;block)
+    @app = app
+    @block = @block
+  end
+
+  def call(env)
+    status, headers, body = @app.call(env)
+    new_body = ""
+    new_body &lt;&lt; "===========header==========&lt;br/&gt;"
+    body.each {|str| new_body &lt;&lt; str}
+    new_body &lt;&lt; "&lt;br/&gt;===========footer=========="
+    # 注释掉下面一行, 采用Rack自带的中间件自动添加头部信息: Content-Length
+    # headers['Content-Length'] = new_body.bytesize.to_s
+
+    # 最后返回加上头尾信息的新的三元数组
+    [status, headers, [new_body]]
+  end
+end
+</code></pre>
+
+<p>万事俱备, 只欠东风. 现在我们还是思考如何实现<code>Builder</code>.</p>
+
+<p>根据上面的模板, 我们对 <code>Builder</code>几个方法要求如下:</p>
+
+<ul>
+  <li>initialize: 签名应该是 initialize(&amp;block). 为了能够让 <code>use</code>、<code>run</code>这些方法称为DSL语言的<strong>动词</strong>,initialize应该 <code>initialize_eval</code>当前实例</li>
+  <li>use: 签名应该是 `use(middleware_class, options, &amp;block). 它应该记录需要创建的中间件以及它们的顺序. 同时还可以保存传入中间件时携带的参数和代码块</li>
+  <li>run: 签名应该为 <code>run(rack_app)</code>. 记录原始的<code>rack应该程序</code>
+</li>
+  <li>to_app: 根据<code>use</code>和<code>run</code>记录的信息创建出最终的应用程序</li>
+</ul>
+
+<h4 id="简单实现">
+<a id="简单实现" class="anchor" href="#%E7%AE%80%E5%8D%95%E5%AE%9E%E7%8E%B0" aria-hidden="true"><span class="octicon octicon-link"></span></a>简单实现</h4>
+
+<p>我们首先通过传统方法来实现<code>Builder</code>, 用数组记录所有需要创建的中间件信息, 最后<code>to_app</code>时候把它们创建出来</p>
+
+<pre><code class="language-ruby">#Rack应用构造类
+class Builder
+  def initialize(&amp;block)
+    @middlewares = []
+    self.instance_eval(&amp;block)
+  end
+
+  def use(middleware)
+    @middlewares &lt;&lt; middleware
+  end
+
+  def run(app)
+    @app = app
+  end
+
+  def to_app
+    @middlewares.reverse.inject(@app) {|app, middleware| middleware.new(app)}
+  end
+
+end
+</code></pre>
+
+<p><code>Builder</code>类中<code>to_app</code>的实现,首先对加入的<code>middlewares</code>进行了<code>reverse</code>,这是因为对所有使用的中间件, 我们必须持有它们的顺序信息. 第一个被<code>use</code>的中间件包在最外面一层, 第二个被<code>use</code>的中间件在第二层, 依次类推, 直至包含了原始的<code>Rack应用程序</code>.</p>
+
+<h4 id="更ruby化的实现">
+<a id="更ruby化的实现" class="anchor" href="#%E6%9B%B4ruby%E5%8C%96%E7%9A%84%E5%AE%9E%E7%8E%B0" aria-hidden="true"><span class="octicon octicon-link"></span></a>更<code>Ruby</code>化的实现</h4>
+
+<p>上面传统的方法有一定的局限性. 例如如果我们需要在<code>use</code>中间件的过程中带上一些选项, 甚至执行某些代码. <code>use</code>描述的是中间件创建的过程, 创建过程需要携带自动的参数, 需要执行某些代码–但是这个创建过程并不是在现在就要被执行, 而是在<code>to_app</code>时候被执行.</p>
+
+<p><strong>对那些需要在以后执行的代码, Ruby给出了最好的解决答案就是<code>lambda</code></strong>.</p>
+
+<pre><code class="language-ruby">class Builder
+  def initialize(&amp;block)
+    @middlewares = []
+    self.instance_eval(&amp;block)
+  end
+
+  def use(middleware_class, *options, &amp;block)
+    @middlewares &lt;&lt; lambda {|app| middleware_class.new(app, *options, &amp;block)}
+  end
+
+  def run(app)
+    @app = app
+  end
+
+  def to_app
+    @middlewares.reverse.inject(@app) {|app, middleware| middleware.call(app)}
+  end
+end
+
+</code></pre>
+
+<p><code>use</code>方法把中间件的创建过程以<code>lambda</code>的方式保存在<code>@middlewares</code>数组中, 而中间件的创建过程就是以<code>app</code>为参数创建一个最终版的<code>app</code>.</p>
+
+<p>我们可以修改之前的<code>Decorator</code>, 为其加上参数配置和代码块.</p>
+
+<pre><code class="language-ruby">#! /usr/bin/env ruby
+require 'rack'
+
+class Decorator
+
+  def initialize(app, *options, &amp;block)
+    @app = app
+    @options = (options[0] || {})
+    @block = block
+  end
+
+  def call(env)
+    # body is an instance of Array
+    status, headers, body = @app.call(env)
+    @block.call if @block
+
+    new_body = ""
+    new_body &lt;&lt; (@options[:header] || "===========header==========&lt;br/&gt;")
+    body.each {|str| new_body &lt;&lt; str}
+    new_body &lt;&lt; (@options[:footer] || "&lt;br/&gt;===========footer==========")
+    [status, headers, [new_body]]
+  end
+end
+
+</code></pre>
+
+<p>最后修改一下我们的运行程序, 为<code>Decorator</code>添加参数和代码块</p>
+
+<pre><code class="language-ruby"># my_app.rb
+# !/usr/bin/env ruby
+
+require 'rack'
+require_relative 'builder'
+require_relative 'decorator'
+
+app = Builder.new {
+  use Rack::ContentLength
+  use Decorator, header: '************* header ****************&lt;br/&gt;'
+  run lambda { |env| [200, {'Content-Type' =&gt; 'text/html'}, ['Hello World']] }
+}.to_app
+
+Rack::Handler::WEBrick.run app, Port: 3000
+
+</code></pre>
+
+<p>运行程序, 我们可以看到如下输出:</p>
+
+<pre><code class="language-shell">$ ./my_app.rb
+λ ruby my_app.rb
+[2018-03-04 09:57:04] INFO  WEBrick 1.3.1
+[2018-03-04 09:57:04] INFO  ruby 2.4.2 (2017-09-14) [x86_64-darwin17]
+[2018-03-04 09:57:04] INFO  WEBrick::HTTPServer#start: pid=32569 port=3000
+::1 - - [04/Mar/2018:09:57:07 CST] "GET /hello HTTP/1.1" 200 85
+- -&gt; /hello
+::1 - - [04/Mar/2018:09:58:59 CST] "GET /hello HTTP/1.1" 200 85
+- -&gt; /hello
+::1 - - [04/Mar/2018:09:58:59 CST] "GET /favicon.ico HTTP/1.1" 200 85
+http://localhost:3000/hello -&gt; /favicon.ico
+
+
+************* header ****************
+Hello World
+===========footer==========
+</code></pre>
+
+<h4 id="configru-配置文件">
+<a id="configru-配置文件" class="anchor" href="#configru-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6" aria-hidden="true"><span class="octicon octicon-link"></span></a>config.ru 配置文件</h4>
+
+<p>以上两种方式是我们手动实现的中间件装载过程, 实际使用过程中我们可以把装载过程写在<code>config.ru</code>配置文件中, 然后运行命令 <code>rackup config.ru</code>即可完成中间件的加载和 Web Server的启动</p>
+
+<pre><code class="language-ruby"># config.ru
+require_relative 'decorator'
+
+use Rack::ContentLength
+use Decorator, header: "******** header **********&lt;/br&gt;"
+run lambda { |env| [200, {'Content-Type' =&gt; 'text/html'}, ['Hello World']] }
+</code></pre>
+
+<pre><code class="language-shell">$ rackup
+Puma starting in single mode...
+* Version 3.11.2 (ruby 2.4.2-p198), codename: Love Song
+* Min threads: 0, max threads: 16
+* Environment: development
+* Listening on tcp://localhost:9292
+Use Ctrl-C to stop
+</code></pre>
+
+<p>以上主要对<code>Rack</code>进行了简单的介绍, 并且自行实现了中间件的构造和装载代码.</p>
+
+<p>下一篇着重研究<code>Rack</code>源码, 以及Web Server的启动过程</p>
+
+
+      <h3>关于图片和转载</h3>
+
+      <a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="知识共享许可协议" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br />本作品采用<a rel="license" href="http://creativecommons.org/licenses/by/4.0/">知识共享署名 4.0 国际许可协议</a>进行许可。
+
+      转载时请注明原文链接，图片在使用时请保留图片中的全部内容，可适当缩放并在引用处附上图片所在的文章链接，图片使用 Sketch 进行绘制。
+
+      <h3>关于评论和留言</h3>
+
+      如果对本文 <a href="/rack-start">Ruby Rack 协议及其应用(一)</a> 的内容有疑问，请在下面的评论系统中留言，谢谢。
+
+      <blockquote>
+        <p>原文链接：<a href="/rack-start">Ruby Rack 协议及其应用(一) · 雄关漫道真如铁</a></p>
+
+        <p>Follow: <a href="https://github.com/nju520">nju520 · GitHub</a></p>
+      </blockquote>
+
+    </section>
+
+    <footer class="post-footer">
+
+      <!-- Everything inside the #author tags pulls data from the author -->
+      <!-- #author-->
+
+      
+      <figure class="author-image">
+        <a class="img" href="https://github.com/nju520" style="background-image: url(/assets/images/hacker.png)"><span class="hidden">'s Picture</span></a>
+      </figure>
+      
+
+      <section class="author">
+        <h4><a href="https://github.com/nju520">nju520</a></h4>
+
+        
+        <p> Ruby / Go / JS</p>
+        
+        <div class="author-meta">
+          <span class="author-location icon-location"> Hangzhou, China</span>
+          <span class="author-link icon-link"><a href="http://localhost:4000"> hwbnju.com</a></span>
+        </div>
+      </section>
+
+      <!-- /author  -->
+
+      <section class="share">
+        <h4>Share this post</h4>
+        <a class="icon-twitter" href="http://twitter.com/share?text=Ruby Rack 协议及其应用(一)&amp;url=http://localhost:4000rack-start"
+          onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+          <span class="hidden">Twitter</span>
+        </a>
+        <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000rack-start"
+          onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+          <span class="hidden">Facebook</span>
+        </a>
+        <a class="icon-google-plus" href="https://plus.google.com/share?url=http://localhost:4000rack-start"
+          onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+          <span class="hidden">Google+</span>
+        </a>
+      </section>
+
+      <div id="gitalk-container"></div>
+      <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+      <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+      <script>
+       const gitalk = new Gitalk({
+         clientID: 'e552ed507a5a4581d8a1',
+         clientSecret: '0abbd4193a0f9b2700936214ff6fda088c665a73',
+         repo: 'bobo-comments',
+         owner: 'nju520',
+         admin: ['nju520'],
+         // labels: ['Gitalk', 'gitment'].concat(["Rack系列","rack","ruby","rails","server"]),
+         // id: location.origin + location.pathname,
+         id: "http://hwbnju.com/rack-start",
+         distractionFreeMode: false
+       });
+
+       gitalk.render('gitalk-container')
+      </script>
+
+    </footer>
+
+  </article>
+
+</main>
+
+<aside class="read-next">
+
+  <!-- [[! next_post ]] -->
+  
+  <a class="read-next-story no-cover" href="rails-callback-best-prectice-part-1">
+    <section class="post">
+      <h2>Rails Callback Best Prectice Part 1</h2>
+      <p>Here are our guidelines: ``` Omit when possible Asynchronous by default Prefer after_commit to after_save...</p>
+    </section>
+  </a>
+  
+  <!-- [[! /next_post ]] -->
+  <!-- [[! prev_post ]] -->
+  
+  <a class="read-next-story prev no-cover" href="javascript-bind">
+    <section class="post">
+      <h2>JavaScript bind 原理和实现</h2>
+      <p>bind 原理 bind是 ECMAScript 新增的方法, 这个方法的主要作用就是将函数绑定到某个对象. 当在函数 func()上调用 bind()方法并传入一个对象比如 bobo 作为参数, 返回一个新的函数. 返回的函数运行时以传入的第一个对象作为 this. 当这个新的函数以函数调用的方式调用时,...</p>
+    </section>
+  </a>
+  
+  <!-- [[! /prev_post ]] -->
+</aside>
+
+<!-- /post -->
+
+
+      <footer class="site-footer clearfix">
+        <section class="copyright"><a href="/">雄关漫道真如铁</a> &copy; 2019</section>
+        <section class="poweredby">Proudly published with <a href="https://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/biomadeira/jasper">Jasper</a></section>
+      </footer>
+    </div>
+    <!-- [[! Ghost outputs important scripts and data with this tag ]] -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <!-- [[! The main JavaScript file for Casper ]] -->
+    <script type="text/javascript" src="/assets/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="/assets/js/index.js"></script>
+    <script type="text/javascript" src="/assets/js/prism.js"></script>
+    <script type="text/javascript" src="/assets/js/toc.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+  </body>
+</html>
